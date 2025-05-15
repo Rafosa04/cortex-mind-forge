@@ -20,6 +20,9 @@ interface GraphNode {
   tags?: string[];
   createdAt?: string;
   relevancia?: number;
+  // Add properties for neural animation
+  pulseSpeed?: number;
+  pulsePhase?: number;
 }
 
 interface GraphLink {
@@ -42,6 +45,39 @@ export default function SubbrainGraph({ graphData, onNodeClick }: SubbrainGraphP
   const [dimensions, setDimensions] = useState({ width: 800, height: 600 });
   const [hoveredNode, setHoveredNode] = useState<GraphNode | null>(null);
   const [tooltipPos, setTooltipPos] = useState({ x: 0, y: 0, show: false });
+  const [animationTick, setAnimationTick] = useState(0);
+
+  // Animation frame for continuous updates
+  useEffect(() => {
+    // Set up animation frame for continuous pulse effect
+    let animationFrameId: number;
+    
+    const animate = () => {
+      setAnimationTick(prev => prev + 1);
+      animationFrameId = requestAnimationFrame(animate);
+    };
+    
+    animationFrameId = requestAnimationFrame(animate);
+    
+    // Clean up on unmount
+    return () => {
+      cancelAnimationFrame(animationFrameId);
+    };
+  }, []);
+
+  // Initialize random pulse phases and speeds for each node
+  useEffect(() => {
+    if (graphData?.nodes) {
+      const enhancedNodes = graphData.nodes.map(node => ({
+        ...node,
+        pulsePhase: Math.random() * Math.PI * 2, // Random starting phase
+        pulseSpeed: 0.5 + Math.random() * 1.5    // Random speed modifier
+      }));
+
+      // This doesn't modify the original graphData, just adds the properties if they don't exist
+      graphData.nodes = enhancedNodes;
+    }
+  }, [graphData]);
 
   // Handle window resize
   useEffect(() => {
@@ -59,10 +95,10 @@ export default function SubbrainGraph({ graphData, onNodeClick }: SubbrainGraphP
   // Initialize physics simulation and forces
   useEffect(() => {
     if (graphRef.current) {
-      // Configure physics for Obsidian-like behavior
-      graphRef.current.d3Force('charge')?.strength(-180);
-      graphRef.current.d3Force('link')?.distance(120).strength(0.6);
-      graphRef.current.d3Force('center')?.strength(0.05);
+      // Configure physics for Obsidian-like behavior with smoother movement
+      graphRef.current.d3Force('charge')?.strength(-120);  // Reduced strength for smoother motion
+      graphRef.current.d3Force('link')?.distance(150).strength(0.4);  // More room between nodes
+      graphRef.current.d3Force('center')?.strength(0.03);  // Gentler centering force
       
       // Add collision force to prevent node overlap
       // Use forceCollide with a radius parameter
@@ -98,32 +134,68 @@ export default function SubbrainGraph({ graphData, onNodeClick }: SubbrainGraphP
   const nodeCanvasObject = useCallback((node: GraphNode, ctx: CanvasRenderingContext2D, globalScale: number) => {
     const nodeColor = getNodeColor(node.type);
     const isHovered = node === hoveredNode;
-    const radius = node.type === "athena" ? 14 : 10;
-    const pulseAmount = isHovered ? 1 + Math.sin(Date.now() / 200) * 0.1 : 1;
-    const drawRadius = radius * pulseAmount;
+    
+    // Base radius depends on node type
+    const baseRadius = node.type === "athena" ? 14 : 10;
+    
+    // Calculate pulsing effect - more pronounced for hovered nodes
+    // Use the node's unique phase and speed to create varied pulsing
+    const time = Date.now() / 1000;
+    const pulsePhase = node.pulsePhase || 0;
+    const pulseSpeed = node.pulseSpeed || 1;
+    const pulseFactor = Math.sin((time * pulseSpeed) + pulsePhase);
+    
+    // Different pulse amounts based on node type and hover state
+    let pulseAmount;
+    if (isHovered) {
+      pulseAmount = 1 + pulseFactor * 0.2;  // 20% size variation when hovered
+    } else {
+      // Different pulse intensities based on node type
+      const typePulseIntensity = {
+        athena: 0.15,
+        subcerebro: 0.12,
+        projeto: 0.1,
+        habito: 0.08,
+        favorito: 0.07,
+        pensamento: 0.05
+      };
+      const intensity = typePulseIntensity[node.type] || 0.08;
+      pulseAmount = 1 + pulseFactor * intensity;
+    }
+    
+    const drawRadius = baseRadius * pulseAmount;
 
-    // Background glow for all nodes (Obsidian-like effect)
-    const glowRadius = isHovered ? 20 : 12;
-    const glowAlpha = isHovered ? 0.3 : 0.15;
+    // Neural connection glow effect
+    const glowRadius = isHovered ? 25 : 15 + pulseFactor * 3;
+    const glowAlpha = isHovered ? 0.35 : 0.15 + Math.abs(pulseFactor) * 0.08;
     
     ctx.beginPath();
     ctx.arc(node.x || 0, node.y || 0, glowRadius, 0, 2 * Math.PI, false);
     ctx.fillStyle = `rgba(${hexToRgb(nodeColor)}, ${glowAlpha})`;
     ctx.fill();
     
-    // Outer glow (stronger for hovered nodes)
+    // Secondary outer glow (stronger for hovered nodes)
     if (isHovered) {
       ctx.beginPath();
-      ctx.arc(node.x || 0, node.y || 0, drawRadius + 8, 0, 2 * Math.PI, false);
+      ctx.arc(node.x || 0, node.y || 0, drawRadius + 10, 0, 2 * Math.PI, false);
       ctx.fillStyle = `rgba(${hexToRgb(nodeColor)}, 0.2)`;
       ctx.fill();
     }
     
-    // Main node
+    // Main node with more vibrant appearance
     ctx.beginPath();
     ctx.arc(node.x || 0, node.y || 0, drawRadius, 0, 2 * Math.PI, false);
-    ctx.fillStyle = nodeColor;
-    ctx.shadowBlur = isHovered ? 15 : 8;
+    
+    // Gradient fill for more dimension
+    const gradient = ctx.createRadialGradient(
+      (node.x || 0), (node.y || 0), 0,
+      (node.x || 0), (node.y || 0), drawRadius
+    );
+    gradient.addColorStop(0, lightenColor(nodeColor, 20));
+    gradient.addColorStop(1, nodeColor);
+    
+    ctx.fillStyle = gradient;
+    ctx.shadowBlur = isHovered ? 15 : 8 + Math.abs(pulseFactor) * 3;
     ctx.shadowColor = nodeColor;
     ctx.fill();
     ctx.shadowBlur = 0;
@@ -159,7 +231,7 @@ export default function SubbrainGraph({ graphData, onNodeClick }: SubbrainGraphP
         show: true 
       });
     }
-  }, [hoveredNode]);
+  }, [hoveredNode, animationTick]);
 
   const linkCanvasObject = useCallback((link: GraphLink, ctx: CanvasRenderingContext2D) => {
     const source = typeof link.source === 'object' ? link.source : { x: 0, y: 0 };
@@ -185,28 +257,44 @@ export default function SubbrainGraph({ graphData, onNodeClick }: SubbrainGraphP
     gradient.addColorStop(0, `rgba(${hexToRgb(sourceColor)}, 0.3)`);
     gradient.addColorStop(1, `rgba(${hexToRgb(targetColor)}, 0.3)`);
     
-    // Draw link
+    // Draw link with slight curve for more organic look
+    const midX = (start.x + end.x) / 2;
+    const midY = (start.y + end.y) / 2;
+    const offset = 5 * Math.sin(Date.now() / 5000); // Subtle movement
+    
     ctx.beginPath();
     ctx.moveTo(start.x, start.y);
-    ctx.lineTo(end.x, end.y);
+    ctx.quadraticCurveTo(midX + offset, midY + offset, end.x, end.y);
     ctx.strokeStyle = gradient;
     ctx.lineWidth = 1.5;
     ctx.stroke();
     
-    // Add subtle animated particles along the link
+    // Add animated particles along the link - neural impulse effect
     const now = Date.now();
-    const numParticles = 1;
+    const numParticles = 2;
     for (let i = 0; i < numParticles; i++) {
-      const t = ((now / 2000) + i / numParticles) % 1;
-      const x = start.x + dx * t;
-      const y = start.y + dy * t;
+      const t = ((now / 3000) + i / numParticles) % 1;
       
-      ctx.beginPath();
-      ctx.arc(x, y, 1.5, 0, 2 * Math.PI, false);
-      ctx.fillStyle = `rgba(${hexToRgb(targetColor)}, 0.7)`;
-      ctx.fill();
+      // Calculate position along the quadratic curve
+      const invT = 1 - t;
+      const x = invT * invT * start.x + 2 * invT * t * (midX + offset) + t * t * end.x;
+      const y = invT * invT * start.y + 2 * invT * t * (midY + offset) + t * t * end.y;
+      
+      // Draw with tail effect
+      const tailLength = 5;
+      for (let j = 0; j < tailLength; j++) {
+        const tailT = Math.max(0, t - 0.01 * j);
+        const invTailT = 1 - tailT;
+        const tailX = invTailT * invTailT * start.x + 2 * invTailT * tailT * (midX + offset) + tailT * tailT * end.x;
+        const tailY = invTailT * invTailT * start.y + 2 * invTailT * tailT * (midY + offset) + tailT * tailT * end.y;
+        
+        ctx.beginPath();
+        ctx.arc(tailX, tailY, 1.5 - (j * 0.2), 0, 2 * Math.PI, false);
+        ctx.fillStyle = `rgba(${hexToRgb(targetColor)}, ${0.7 - (j * 0.1)})`;
+        ctx.fill();
+      }
     }
-  }, []);
+  }, [animationTick]);
 
   const handleNodeHover = (node: GraphNode | null) => {
     setHoveredNode(node);
@@ -240,6 +328,25 @@ export default function SubbrainGraph({ graphData, onNodeClick }: SubbrainGraphP
     
     return `${r}, ${g}, ${b}`;
   };
+  
+  // Helper function to lighten a color
+  const lightenColor = (hex: string, percent: number): string => {
+    // Remove # if present
+    hex = hex.replace("#", "");
+    
+    // Parse the hex values
+    const r = parseInt(hex.substring(0, 2), 16);
+    const g = parseInt(hex.substring(2, 4), 16);
+    const b = parseInt(hex.substring(4, 6), 16);
+    
+    // Lighten
+    const lightenR = Math.min(255, Math.floor(r + (255 - r) * (percent / 100)));
+    const lightenG = Math.min(255, Math.floor(g + (255 - g) * (percent / 100)));
+    const lightenB = Math.min(255, Math.floor(b + (255 - b) * (percent / 100)));
+    
+    // Convert back to hex
+    return `#${lightenR.toString(16).padStart(2, '0')}${lightenG.toString(16).padStart(2, '0')}${lightenB.toString(16).padStart(2, '0')}`;
+  };
 
   return (
     <div className="w-full h-full bg-[#0c0c1c] relative">
@@ -252,7 +359,7 @@ export default function SubbrainGraph({ graphData, onNodeClick }: SubbrainGraphP
         linkCanvasObject={linkCanvasObject}
         nodeRelSize={6}
         backgroundColor="#0c0c1c"
-        d3VelocityDecay={0.25}
+        d3VelocityDecay={0.15}  // Lower for more fluid movement
         cooldownTicks={100}
         onNodeHover={handleNodeHover}
         onNodeClick={handleNodeClick}
