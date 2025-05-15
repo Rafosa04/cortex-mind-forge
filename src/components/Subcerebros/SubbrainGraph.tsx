@@ -1,4 +1,3 @@
-
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import ForceGraph2D, { ForceGraphMethods } from "react-force-graph-2d";
 import { motion } from "framer-motion";
@@ -281,13 +280,17 @@ export function SubbrainGraph({ onNodeClick, searchQuery, filterType, filterArea
   // Handle mouse hover over node
   const handleNodeHover = useCallback((node: any) => {
     if (node) {
-      // Update tooltip position dynamically using DOM ref from graph
-      const graphElem = graphRef.current?._d3Zoom?.owner?.__zoom?.subject();
-      if (graphElem) {
-        const containerRect = graphElem.getBoundingClientRect();
-        const x = containerRect.left + graphElem.__zoom.x + node.x! * graphElem.__zoom.k;
-        const y = containerRect.top + graphElem.__zoom.y + node.y! * graphElem.__zoom.k;
-        setTooltipPos({ x, y });
+      // Update tooltip position using clientX/clientY from last mouse position
+      // This avoids accessing internal properties like _d3Zoom that don't exist on the type
+      const canvas = document.querySelector('canvas');
+      if (canvas) {
+        const rect = canvas.getBoundingClientRect();
+        // Use the node's x/y position relative to the canvas
+        // Apply a simple transform to convert graph coordinates to screen coordinates
+        setTooltipPos({
+          x: rect.left + window.scrollX + node.x,
+          y: rect.top + window.scrollY + node.y
+        });
       }
       
       // Highlight connected nodes and links
