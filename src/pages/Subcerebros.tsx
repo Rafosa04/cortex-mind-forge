@@ -197,6 +197,7 @@ export default function Subcerebros() {
           onNodeClick={handleNodeClick} 
           searchQuery={searchQuery} 
           filterType={filterType} 
+          filterArea={filterArea}
         />
         
         {/* Visual hint overlay - shows only on initial load */}
@@ -414,7 +415,8 @@ function formatNodeType(type: string): string {
     projeto: "Projeto",
     habito: "Hábito",
     favorito: "Favorito",
-    pensamento: "Pensamento"
+    pensamento: "Pensamento",
+    athena: "Athena IA"
   };
   
   return types[type] || "Desconhecido";
@@ -422,8 +424,9 @@ function formatNodeType(type: string): string {
 
 function getNodeColor(type: string): string {
   const colors: Record<string, string> = {
-    subcerebro: "#993887", // roxo (secondary)
-    projeto: "#60B5B5", // azul (primary)
+    athena: "#9f7aea", // lilás
+    subcerebro: "#993887", // roxo
+    projeto: "#60B5B5", // azul
     habito: "#34D399", // verde
     favorito: "#FBBF24", // amarelo
     pensamento: "#D1D5DB" // cinza claro
@@ -434,6 +437,7 @@ function getNodeColor(type: string): string {
 
 function getNodeClass(type: string): string {
   const classes: Record<string, string> = {
+    athena: "bg-purple-500/20 text-purple-500",
     subcerebro: "bg-secondary/20 text-secondary",
     projeto: "bg-primary/20 text-primary",
     habito: "bg-green-500/20 text-green-500",
@@ -446,6 +450,7 @@ function getNodeClass(type: string): string {
 
 function getNodeBgClass(type: string): string {
   const classes: Record<string, string> = {
+    athena: "bg-purple-500",
     subcerebro: "bg-secondary",
     projeto: "bg-primary",
     habito: "bg-green-500",
@@ -458,6 +463,8 @@ function getNodeBgClass(type: string): string {
 
 function getNodeIcon(type: string) {
   switch (type) {
+    case 'athena':
+      return <Brain size={20} />;
     case 'subcerebro':
       return <Brain size={20} />;
     case 'projeto':
