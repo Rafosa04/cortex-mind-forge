@@ -101,7 +101,6 @@ export default function SubbrainGraph({ graphData, onNodeClick }: SubbrainGraphP
       graphRef.current.d3Force('center')?.strength(0.03);  // Gentler centering force
       
       // Add collision force to prevent node overlap
-      // Fixed: Pass the required radius parameter to forceCollide
       graphRef.current.d3Force('collide', forceCollide(40).strength(0.7));
       
       // Add a small random force to create gentle movement
@@ -117,8 +116,8 @@ export default function SubbrainGraph({ graphData, onNodeClick }: SubbrainGraphP
         }
       }, 1000);
 
-      // Add gentle orbital movement - nodes will slightly orbit around Athena
-      const orbitNodes = setInterval(() => {
+      // Enhanced autonomous node movement
+      const moveNodes = setInterval(() => {
         if (graphData && graphData.nodes) {
           const athenaNode = graphData.nodes.find(node => node.id === 'athena');
           
@@ -134,41 +133,95 @@ export default function SubbrainGraph({ graphData, onNodeClick }: SubbrainGraphP
                 const dy = athenaNode.y - node.y;
                 const dist = Math.sqrt(dx * dx + dy * dy);
                 
-                // Apply a very subtle orbital motion - perpendicular to the radius
-                const orbitFactor = 0.0003; // Very small to keep motion subtle
-                const orbit_dx = -dy * orbitFactor;
-                const orbit_dy = dx * orbitFactor;
+                // Calculate normalized time for smooth cyclic motion
+                const time = Date.now() / 1000;
+                const nodePhase = (node.pulsePhase || 0);
+                const nodeSpeed = (node.pulseSpeed || 1) * 0.2;
                 
-                // Apply a tiny attraction to maintain reasonable distances
-                const attractFactor = 0.0001;
-                const attract_dx = dx * attractFactor;
-                const attract_dy = dy * attractFactor;
+                // Apply gentle orbital motion with individualized paths
+                const orbitFactor = 0.0005;
+                const orbit_dx = Math.sin(time * nodeSpeed + nodePhase) * orbitFactor * dist;
+                const orbit_dy = Math.cos(time * nodeSpeed + nodePhase * 0.8) * orbitFactor * dist;
                 
-                // Add some subtle randomness for natural motion
-                const randomFactor = 0.0002;
-                const random_dx = (Math.random() - 0.5) * randomFactor;
-                const random_dy = (Math.random() - 0.5) * randomFactor;
+                // Add slight attraction/repulsion based on optimal distance
+                const optimalDist = 200;
+                const forceFactor = 0.0002;
+                const distanceDiff = dist - optimalDist;
+                const attract_dx = (dx / dist) * distanceDiff * forceFactor;
+                const attract_dy = (dy / dist) * distanceDiff * forceFactor;
                 
-                // Apply the combined forces
+                // Add subtle random wobble for natural unpredictability
+                const randomFactor = 0.0001;
+                const wobble_freq = 0.5;
+                const random_dx = Math.sin(time * wobble_freq + nodePhase * 2) * randomFactor * dist;
+                const random_dy = Math.cos(time * wobble_freq + nodePhase * 3) * randomFactor * dist;
+                
+                // Apply the combined forces to create smooth autonomous movement
                 if (node.vx !== undefined && node.vy !== undefined) {
                   node.vx += orbit_dx + attract_dx + random_dx;
                   node.vy += orbit_dy + attract_dy + random_dy;
+                  
+                  // Dampen velocity to prevent excessive movement
+                  node.vx *= 0.99;
+                  node.vy *= 0.99;
                 }
               }
             });
+            
+            // Apply gentle forces to maintain connections and relationship distances
+            if (graphData.links) {
+              graphData.links.forEach(link => {
+                const source = typeof link.source === 'object' ? link.source : 
+                  graphData.nodes.find(n => n.id === link.source);
+                const target = typeof link.target === 'object' ? link.target : 
+                  graphData.nodes.find(n => n.id === link.target);
+                  
+                if (source && target && 
+                    source.x !== undefined && source.y !== undefined && 
+                    target.x !== undefined && target.y !== undefined) {
+                  
+                  // Skip if either node is being dragged or is Athena
+                  if (source === draggedNode || target === draggedNode ||
+                      source.id === 'athena' || target.id === 'athena') return;
+                      
+                  // Calculate current distance
+                  const dx = target.x - source.x;
+                  const dy = target.y - source.y;
+                  const dist = Math.sqrt(dx * dx + dy * dy);
+                  
+                  // Apply gentle force to maintain reasonable connection distance
+                  const optimalDist = 150;
+                  const strength = 0.0001;
+                  const factor = (dist - optimalDist) * strength;
+                  
+                  // Apply forces to both nodes proportionally
+                  if (source.vx !== undefined && source.vy !== undefined && 
+                      !source.fx && !source.fy) {
+                    source.vx += dx * factor;
+                    source.vy += dy * factor;
+                  }
+                  
+                  if (target.vx !== undefined && target.vy !== undefined && 
+                      !target.fx && !target.fy) {
+                    target.vx -= dx * factor;
+                    target.vy -= dy * factor;
+                  }
+                }
+              });
+            }
             
             // Restart the simulation with a tiny alpha to keep movement gentle
             if (graphRef.current) {
               const simulation = graphRef.current.d3Force();
               if (simulation) {
-                simulation.alpha(0.05).restart();
+                simulation.alpha(0.1).restart();
               }
             }
           }
         }
-      }, 100);
+      }, 50); // Update more frequently for smoother movement
 
-      return () => clearInterval(orbitNodes);
+      return () => clearInterval(moveNodes);
     }
   }, [graphData, draggedNode]);
 
@@ -311,40 +364,69 @@ export default function SubbrainGraph({ graphData, onNodeClick }: SubbrainGraphP
     gradient.addColorStop(0, `rgba(${hexToRgb(sourceColor)}, 0.3)`);
     gradient.addColorStop(1, `rgba(${hexToRgb(targetColor)}, 0.3)`);
     
-    // Draw link with slight curve for more organic look
+    // Enhanced dynamic curve based on time and node properties
+    const time = Date.now() / 1000;
+    
+    // Use node properties or default values for animation
+    const sourcePhase = typeof link.source === 'object' ? link.source.pulsePhase || 0 : 0;
+    const targetPhase = typeof link.target === 'object' ? link.target.pulsePhase || 0 : 0;
+    const avgPhase = (sourcePhase + targetPhase) / 2;
+    
+    // Calculate dynamic offset for smooth undulation
+    const baseOffset = 5;
+    const dynamicOffset = baseOffset * Math.sin(time * 0.5 + avgPhase);
+    
     const midX = (start.x + end.x) / 2;
     const midY = (start.y + end.y) / 2;
-    const offset = 5 * Math.sin(Date.now() / 5000); // Subtle movement
+    const ctrlX = midX + dynamicOffset * Math.sin(time * 0.3 + avgPhase);
+    const ctrlY = midY + dynamicOffset * Math.cos(time * 0.3 + avgPhase);
     
+    // Draw link with smooth curve for more organic look
     ctx.beginPath();
     ctx.moveTo(start.x, start.y);
-    ctx.quadraticCurveTo(midX + offset, midY + offset, end.x, end.y);
+    ctx.quadraticCurveTo(ctrlX, ctrlY, end.x, end.y);
     ctx.strokeStyle = gradient;
     ctx.lineWidth = 1.5;
     ctx.stroke();
     
-    // Add animated particles along the link - neural impulse effect
-    const now = Date.now();
-    const numParticles = 2;
-    for (let i = 0; i < numParticles; i++) {
-      const t = ((now / 3000) + i / numParticles) % 1;
+    // Enhanced neural impulse animation
+    const particleCount = 2;
+    const particleSpeed = 0.3; // Speed factor for particle movement
+    const now = Date.now() / 1000;
+    
+    // Customize particle effect based on node types
+    const isAthenaConnection = 
+      (typeof link.source === 'object' && link.source.id === 'athena') || 
+      (typeof link.target === 'object' && link.target.id === 'athena');
+    
+    const particleSize = isAthenaConnection ? 2 : 1.5;
+    const tailLength = isAthenaConnection ? 6 : 4;
+    const particleColor = isAthenaConnection ? sourceColor : targetColor;
+    
+    // Phase offset based on connection for varied timing
+    const phaseOffset = avgPhase;
+    
+    for (let i = 0; i < particleCount; i++) {
+      // Calculate time offset for each particle
+      const timeOffset = i / particleCount;
+      const particleTime = ((now * particleSpeed) + timeOffset + phaseOffset) % 1;
       
       // Calculate position along the quadratic curve
-      const invT = 1 - t;
-      const x = invT * invT * start.x + 2 * invT * t * (midX + offset) + t * t * end.x;
-      const y = invT * invT * start.y + 2 * invT * t * (midY + offset) + t * t * end.y;
+      const invT = 1 - particleTime;
+      const x = invT * invT * start.x + 2 * invT * particleTime * ctrlX + particleTime * particleTime * end.x;
+      const y = invT * invT * start.y + 2 * invT * particleTime * ctrlY + particleTime * particleTime * end.y;
       
-      // Draw with tail effect
-      const tailLength = 5;
+      // Draw with tail effect for motion blur
       for (let j = 0; j < tailLength; j++) {
-        const tailT = Math.max(0, t - 0.01 * j);
+        const tailT = Math.max(0, particleTime - 0.01 * j);
         const invTailT = 1 - tailT;
-        const tailX = invTailT * invTailT * start.x + 2 * invTailT * tailT * (midX + offset) + tailT * tailT * end.x;
-        const tailY = invTailT * invTailT * start.y + 2 * invTailT * tailT * (midY + offset) + tailT * tailT * end.y;
+        const tailX = invTailT * invTailT * start.x + 2 * invTailT * tailT * ctrlX + tailT * tailT * end.x;
+        const tailY = invTailT * invTailT * start.y + 2 * invTailT * tailT * ctrlY + tailT * tailT * end.y;
         
         ctx.beginPath();
-        ctx.arc(tailX, tailY, 1.5 - (j * 0.2), 0, 2 * Math.PI, false);
-        ctx.fillStyle = `rgba(${hexToRgb(targetColor)}, ${0.7 - (j * 0.1)})`;
+        ctx.arc(tailX, tailY, particleSize - (j * 0.2), 0, 2 * Math.PI, false);
+        const tailOpacity = 0.7 - (j * 0.1);
+        ctx.fillStyle = `rgba(${hexToRgb(particleColor)}, ${tailOpacity})`;
         ctx.fill();
       }
     }
