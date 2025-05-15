@@ -10,8 +10,20 @@ import { DrawerDetalheProjeto } from "@/components/Projetos/DrawerDetalheProjeto
 import { FiltroLateralProjetos } from "@/components/Projetos/FiltroLateralProjetos";
 import { FloatingAthenaButton } from "@/components/Projetos/FloatingAthenaButton";
 
-// Mock dos projetos com detalhes extra
-const projetos = [
+// Declaração explícita do tipo Projeto com status limitado
+type StatusProjeto = "ativo" | "pausado" | "concluído";
+type Projeto = {
+  nome: string;
+  progresso: number;
+  tags: string[];
+  status: StatusProjeto;
+  descricao: string;
+  datas: { criado: string; prazo: string; ultima: string };
+  etapas: { texto: string; feita: boolean }[];
+};
+
+// Mock dos projetos com detalhes extra e tipos ajustados
+const projetos: Projeto[] = [
   {
     nome: "Nova Rotina Saudável",
     progresso: 65,
@@ -53,17 +65,18 @@ const projetos = [
   },
 ];
 
-// Modos de visualização possíveis
+// Modos de visualização possíveis, com type literal
 const modosVisao = ["Lista", "Kanban", "Linha do tempo", "Galeria"] as const;
+type ModoVisao = typeof modosVisao[number];
 
 export default function Projetos() {
   const [modalAberto, setModalAberto] = React.useState(false);
   const [detalheAberto, setDetalheAberto] = React.useState(false);
-  const [projetoSelecionado, setProjetoSelecionado] = React.useState<typeof projetos[0] | null>(null);
-  const [modoVisao, setModoVisao] = React.useState<typeof modosVisao[number]>("Lista");
+  const [projetoSelecionado, setProjetoSelecionado] = React.useState<Projeto | null>(null);
+  const [modoVisao, setModoVisao] = React.useState<ModoVisao>("Lista");
   const [abrirAthena, setAbrirAthena] = React.useState(false);
 
-  const handleVerDetalhes = (projeto: typeof projetos[0]) => {
+  const handleVerDetalhes = (projeto: Projeto) => {
     setProjetoSelecionado(projeto);
     setDetalheAberto(true);
   };
@@ -92,7 +105,6 @@ export default function Projetos() {
           <NovaCelulaModal open={modalAberto} onOpenChange={setModalAberto} />
         </header>
         <FiltroProjetos />
-
         {/* Grid/List view simulada */}
         <div className="relative">
           {modoVisao === "Lista" && (
@@ -138,7 +150,6 @@ export default function Projetos() {
             </div>
           )}
         </div>
-
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
@@ -150,7 +161,7 @@ export default function Projetos() {
       </div>
       {/* Drawer lateral de detalhes */}
       <DrawerDetalheProjeto
-        projeto={projetoSelecionado as any}
+        projeto={projetoSelecionado}
         open={detalheAberto}
         onOpenChange={setDetalheAberto}
       />
