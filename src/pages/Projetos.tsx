@@ -8,7 +8,13 @@ import { Plus } from "lucide-react";
 import { motion } from "framer-motion";
 
 // Dados mockados (trocar para fetch/supabase em versões futuras)
-const projetos = [
+// Definindo explicitamente o tipo dos projetos para status literal
+const projetos: {
+  nome: string;
+  progresso: number;
+  tags: string[];
+  status: "ativo" | "pausado" | "concluído";
+}[] = [
   {
     nome: "Nova Rotina Saudável",
     progresso: 65,
