@@ -5,7 +5,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Brain } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
-import { Select } from "@/components/ui/select";
+import { 
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from "@/components/ui/select";
 
 interface NovoSubcerebroFormProps {
   onSubmit: () => void;
@@ -21,9 +27,13 @@ export function NovoSubcerebroForm({ onSubmit }: NovoSubcerebroFormProps) {
   
   const [isGenerating, setIsGenerating] = useState(false);
   
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleSelectChange = (value: string) => {
+    setFormData(prev => ({ ...prev, area: value }));
   };
   
   const handleGenerateWithAI = () => {
@@ -107,20 +117,22 @@ export function NovoSubcerebroForm({ onSubmit }: NovoSubcerebroFormProps) {
       <div className="space-y-2">
         <Label htmlFor="area">Área de Foco</Label>
         <Select
-          id="area"
-          name="area"
           value={formData.area}
-          onChange={handleChange}
-          className="w-full"
+          onValueChange={handleSelectChange}
         >
-          <option value="pessoal">Pessoal</option>
-          <option value="profissional">Profissional</option>
-          <option value="saude">Saúde</option>
-          <option value="criatividade">Criatividade</option>
-          <option value="financas">Finanças</option>
-          <option value="relacionamentos">Relacionamentos</option>
-          <option value="educacao">Educação</option>
-          <option value="outro">Outro</option>
+          <SelectTrigger id="area" className="w-full">
+            <SelectValue placeholder="Selecione uma área" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="pessoal">Pessoal</SelectItem>
+            <SelectItem value="profissional">Profissional</SelectItem>
+            <SelectItem value="saude">Saúde</SelectItem>
+            <SelectItem value="criatividade">Criatividade</SelectItem>
+            <SelectItem value="financas">Finanças</SelectItem>
+            <SelectItem value="relacionamentos">Relacionamentos</SelectItem>
+            <SelectItem value="educacao">Educação</SelectItem>
+            <SelectItem value="outro">Outro</SelectItem>
+          </SelectContent>
         </Select>
       </div>
       
