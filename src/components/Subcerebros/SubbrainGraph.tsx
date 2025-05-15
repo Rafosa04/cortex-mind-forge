@@ -1,4 +1,3 @@
-
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import ForceGraph2D, { ForceGraphMethods } from "react-force-graph-2d";
 import { forceCollide } from "d3-force"; // More specific import
@@ -10,8 +9,8 @@ interface GraphNode {
   type: "athena" | "subcerebro" | "projeto" | "habito" | "favorito" | "pensamento";
   x?: number;
   y?: number;
-  fx?: number;
-  fy?: number;
+  fx?: number | null;
+  fy?: number | null;
   vx?: number;
   vy?: number;
   connections?: any[];
@@ -46,6 +45,7 @@ export default function SubbrainGraph({ graphData, onNodeClick }: SubbrainGraphP
   const [hoveredNode, setHoveredNode] = useState<GraphNode | null>(null);
   const [tooltipPos, setTooltipPos] = useState({ x: 0, y: 0, show: false });
   const [animationTick, setAnimationTick] = useState(0);
+  const [draggedNode, setDraggedNode] = useState<GraphNode | null>(null);
 
   // Animation frame for continuous updates
   useEffect(() => {
@@ -116,8 +116,61 @@ export default function SubbrainGraph({ graphData, onNodeClick }: SubbrainGraphP
           graphRef.current.zoomToFit(400, 50);
         }
       }, 1000);
+
+      // Add gentle orbital movement - nodes will slightly orbit around Athena
+      const orbitNodes = setInterval(() => {
+        if (graphData && graphData.nodes) {
+          const athenaNode = graphData.nodes.find(node => node.id === 'athena');
+          
+          if (athenaNode && athenaNode.x && athenaNode.y) {
+            graphData.nodes.forEach(node => {
+              // Skip Athena and dragged nodes
+              if (node.id === 'athena' || (node === draggedNode)) return;
+              
+              // Only apply gentle forces, don't set positions directly
+              if (node.x !== undefined && node.y !== undefined && !node.fx && !node.fy) {
+                // Calculate vector from node to Athena
+                const dx = athenaNode.x - node.x;
+                const dy = athenaNode.y - node.y;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                
+                // Apply a very subtle orbital motion - perpendicular to the radius
+                const orbitFactor = 0.0003; // Very small to keep motion subtle
+                const orbit_dx = -dy * orbitFactor;
+                const orbit_dy = dx * orbitFactor;
+                
+                // Apply a tiny attraction to maintain reasonable distances
+                const attractFactor = 0.0001;
+                const attract_dx = dx * attractFactor;
+                const attract_dy = dy * attractFactor;
+                
+                // Add some subtle randomness for natural motion
+                const randomFactor = 0.0002;
+                const random_dx = (Math.random() - 0.5) * randomFactor;
+                const random_dy = (Math.random() - 0.5) * randomFactor;
+                
+                // Apply the combined forces
+                if (node.vx !== undefined && node.vy !== undefined) {
+                  node.vx += orbit_dx + attract_dx + random_dx;
+                  node.vy += orbit_dy + attract_dy + random_dy;
+                }
+              }
+            });
+            
+            // Restart the simulation with a tiny alpha to keep movement gentle
+            if (graphRef.current) {
+              const simulation = graphRef.current.d3Force();
+              if (simulation) {
+                simulation.alpha(0.05).restart();
+              }
+            }
+          }
+        }
+      }, 100);
+
+      return () => clearInterval(orbitNodes);
     }
-  }, [graphData]);
+  }, [graphData, draggedNode]);
 
   const getNodeColor = (type: string): string => {
     const colors: Record<string, string> = {
@@ -134,6 +187,7 @@ export default function SubbrainGraph({ graphData, onNodeClick }: SubbrainGraphP
   const nodeCanvasObject = useCallback((node: GraphNode, ctx: CanvasRenderingContext2D, globalScale: number) => {
     const nodeColor = getNodeColor(node.type);
     const isHovered = node === hoveredNode;
+    const isDragged = node === draggedNode;
     
     // Base radius depends on node type
     const baseRadius = node.type === "athena" ? 14 : 10;
@@ -145,10 +199,10 @@ export default function SubbrainGraph({ graphData, onNodeClick }: SubbrainGraphP
     const pulseSpeed = node.pulseSpeed || 1;
     const pulseFactor = Math.sin((time * pulseSpeed) + pulsePhase);
     
-    // Different pulse amounts based on node type and hover state
+    // Different pulse amounts based on node type and hover/drag state
     let pulseAmount;
-    if (isHovered) {
-      pulseAmount = 1 + pulseFactor * 0.2;  // 20% size variation when hovered
+    if (isHovered || isDragged) {
+      pulseAmount = 1 + pulseFactor * 0.2;  // 20% size variation when hovered/dragged
     } else {
       // Different pulse intensities based on node type
       const typePulseIntensity = {
@@ -166,16 +220,16 @@ export default function SubbrainGraph({ graphData, onNodeClick }: SubbrainGraphP
     const drawRadius = baseRadius * pulseAmount;
 
     // Neural connection glow effect
-    const glowRadius = isHovered ? 25 : 15 + pulseFactor * 3;
-    const glowAlpha = isHovered ? 0.35 : 0.15 + Math.abs(pulseFactor) * 0.08;
+    const glowRadius = isHovered || isDragged ? 25 : 15 + pulseFactor * 3;
+    const glowAlpha = isHovered || isDragged ? 0.35 : 0.15 + Math.abs(pulseFactor) * 0.08;
     
     ctx.beginPath();
     ctx.arc(node.x || 0, node.y || 0, glowRadius, 0, 2 * Math.PI, false);
     ctx.fillStyle = `rgba(${hexToRgb(nodeColor)}, ${glowAlpha})`;
     ctx.fill();
     
-    // Secondary outer glow (stronger for hovered nodes)
-    if (isHovered) {
+    // Secondary outer glow (stronger for hovered/dragged nodes)
+    if (isHovered || isDragged) {
       ctx.beginPath();
       ctx.arc(node.x || 0, node.y || 0, drawRadius + 10, 0, 2 * Math.PI, false);
       ctx.fillStyle = `rgba(${hexToRgb(nodeColor)}, 0.2)`;
@@ -195,13 +249,13 @@ export default function SubbrainGraph({ graphData, onNodeClick }: SubbrainGraphP
     gradient.addColorStop(1, nodeColor);
     
     ctx.fillStyle = gradient;
-    ctx.shadowBlur = isHovered ? 15 : 8 + Math.abs(pulseFactor) * 3;
+    ctx.shadowBlur = isHovered || isDragged ? 15 : 8 + Math.abs(pulseFactor) * 3;
     ctx.shadowColor = nodeColor;
     ctx.fill();
     ctx.shadowBlur = 0;
 
-    // Draw label if zoomed in enough or node is hovered
-    const fontSize = (globalScale > 0.7 || isHovered) ? 12 / Math.max(0.5, Math.min(1, globalScale)) : 0;
+    // Draw label if zoomed in enough or node is hovered/dragged
+    const fontSize = (globalScale > 0.7 || isHovered || isDragged) ? 12 / Math.max(0.5, Math.min(1, globalScale)) : 0;
     if (fontSize > 0) {
       const label = node.label || "";
       ctx.font = `${fontSize}px Inter, sans-serif`;
@@ -231,7 +285,7 @@ export default function SubbrainGraph({ graphData, onNodeClick }: SubbrainGraphP
         show: true 
       });
     }
-  }, [hoveredNode, animationTick]);
+  }, [hoveredNode, animationTick, draggedNode]);
 
   const linkCanvasObject = useCallback((link: GraphLink, ctx: CanvasRenderingContext2D) => {
     const source = typeof link.source === 'object' ? link.source : { x: 0, y: 0 };
@@ -316,6 +370,41 @@ export default function SubbrainGraph({ graphData, onNodeClick }: SubbrainGraphP
     }
   };
 
+  // New drag node handlers
+  const handleNodeDragStart = (node: GraphNode) => {
+    setDraggedNode(node);
+    // Fix the node in place during drag
+    if (node.id !== 'athena') {  // Don't allow Athena to be moved
+      node.fx = node.x;
+      node.fy = node.y;
+    }
+  };
+
+  const handleNodeDrag = (node: GraphNode, translate: { x: number, y: number }) => {
+    // Only update position if it's not Athena
+    if (node.id !== 'athena') {
+      node.fx = translate.x;
+      node.fy = translate.y;
+      
+      // Make sure connections follow
+      if (graphRef.current) {
+        const simulation = graphRef.current.d3Force();
+        if (simulation) {
+          simulation.alpha(0.1).restart();
+        }
+      }
+    }
+  };
+
+  const handleNodeDragEnd = (node: GraphNode) => {
+    setDraggedNode(null);
+    // Keep the node at its new position but allow it to move with forces again
+    if (node.id !== 'athena') {
+      node.fx = null;
+      node.fy = null;
+    }
+  };
+
   // Helper function to convert hex to rgb for glow effects
   const hexToRgb = (hex: string): string => {
     // Remove # if present
@@ -363,6 +452,10 @@ export default function SubbrainGraph({ graphData, onNodeClick }: SubbrainGraphP
         cooldownTicks={100}
         onNodeHover={handleNodeHover}
         onNodeClick={handleNodeClick}
+        onNodeDrag={handleNodeDrag}
+        onNodeDragEnd={handleNodeDragEnd}
+        onNodeDragStart={handleNodeDragStart}
+        enableNodeDrag={true}
         onEngineStop={() => {
           if (graphRef.current) {
             graphRef.current.zoomToFit(400, 50);
