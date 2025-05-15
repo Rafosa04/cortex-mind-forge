@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 
@@ -9,8 +8,27 @@ import SuggestedConnections from "@/components/Connecta/SuggestedConnections";
 import NewPostButton from "@/components/Connecta/NewPostButton";
 import NewPostModal from "@/components/Connecta/NewPostModal";
 
+// Define the type for a post to ensure consistency
+interface Post {
+  id: string;
+  author: {
+    name: string;
+    avatar: string;
+    username: string;
+  };
+  content: string;
+  imageUrl?: string;
+  createdAt: string;
+  likes: number;
+  comments: number;
+  saves: number;
+  liked: boolean;
+  saved: boolean;
+  category?: "focus" | "expansion" | "reflection";
+}
+
 // Dados de exemplo para a demonstração
-const mockPosts = [
+const mockPosts: Post[] = [
   {
     id: "1",
     author: {
@@ -92,7 +110,7 @@ const mockConnections = [
 export default function Connecta() {
   const [activeTab, setActiveTab] = useState("feed");
   const [feedType, setFeedType] = useState("all");
-  const [posts, setPosts] = useState(mockPosts);
+  const [posts, setPosts] = useState<Post[]>(mockPosts);
   const [isPostModalOpen, setIsPostModalOpen] = useState(false);
   
   // Simular diferentes feeds baseados no tipo selecionado
@@ -114,7 +132,7 @@ export default function Connecta() {
   }, [feedType]);
   
   const handleAddPost = (content: string, imageUrl?: string) => {
-    const newPost = {
+    const newPost: Post = {
       id: Date.now().toString(),
       author: {
         name: "Você",
@@ -128,7 +146,8 @@ export default function Connecta() {
       comments: 0,
       saves: 0,
       liked: false,
-      saved: false
+      saved: false,
+      category: "reflection" // Default category for new posts
     };
     
     setPosts(prev => [newPost, ...prev]);
