@@ -1,4 +1,3 @@
-
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import ForceGraph2D from "react-force-graph-2d";
 import { motion } from "framer-motion";
@@ -15,11 +14,13 @@ interface GraphNode {
   lastAccess?: string;
   relevancia?: number;
   connections?: any[];
+  x?: number;
+  y?: number;
 }
 
 interface GraphLink {
-  source: string;
-  target: string;
+  source: string | GraphNode;
+  target: string | GraphNode;
   value?: number;
 }
 
@@ -54,7 +55,7 @@ export function SubbrainGraph({ onNodeClick, searchQuery, filterType, filterArea
       { 
         id: "athena", 
         label: "Athena IA", 
-        type: "athena", 
+        type: "athena" as const, 
         tags: ["inteligência artificial", "assistente", "central"],
         createdAt: "01/01/2025",
         lastAccess: "15/05/2025",
@@ -204,8 +205,11 @@ export function SubbrainGraph({ onNodeClick, searchQuery, filterType, filterArea
     if (!START || !END || typeof START.x !== 'number' || typeof END.x !== 'number') return;
 
     // Determine if link should be highlighted
-    const isHighlighted = highlightLinks.has(`${START.id}-${END.id}`) || 
-                          highlightLinks.has(`${END.id}-${START.id}`);
+    const sourceId = typeof START === 'object' ? START.id : START;
+    const targetId = typeof END === 'object' ? END.id : END;
+    
+    const isHighlighted = highlightLinks.has(`${sourceId}-${targetId}`) || 
+                          highlightLinks.has(`${targetId}-${sourceId}`);
                           
     // Calculate link length for potential length-based styling
     const dx = END.x - START.x;
@@ -260,7 +264,7 @@ export function SubbrainGraph({ onNodeClick, searchQuery, filterType, filterArea
   }, [highlightLinks]);
 
   // Handle mouse hover over node
-  const handleNodeHover = useCallback((node: GraphNode | null) => {
+  const handleNodeHover = useCallback((node: any) => {
     if (node) {
       // Update tooltip position dynamically using DOM ref from graph
       const graphElem = graphRef.current?._d3Zoom?.owner?.__zoom?.subject();
@@ -272,8 +276,8 @@ export function SubbrainGraph({ onNodeClick, searchQuery, filterType, filterArea
       }
       
       // Highlight connected nodes and links
-      const newHighlightNodes = new Set([node.id]);
-      const newHighlightLinks = new Set();
+      const newHighlightNodes = new Set<string>([node.id]);
+      const newHighlightLinks = new Set<string>();
       
       // Find connections in links data
       graphData.links.forEach(link => {
@@ -433,162 +437,161 @@ const mockNodes = [
   { 
     id: 1, 
     label: "Cérebro Principal", 
-    type: "subcerebro", 
+    type: "subcerebro" as const, 
     tags: ["central", "core", "hub"], 
     createdAt: "15/05/2025", 
     lastAccess: "15/05/2025", 
     relevancia: 10,
     connections: [
-      { id: 2, label: "Projeto Alpha", type: "projeto" },
-      { id: 3, label: "Hábito de Meditação", type: "habito" },
-      { id: 6, label: "Desenvolvimento Pessoal", type: "subcerebro" },
-      { id: 10, label: "Ideias de Negócio", type: "subcerebro" },
-      { id: 12, label: "Criação de Conteúdo", type: "subcerebro" }
+      { id: 2, label: "Projeto Alpha", type: "projeto" as const },
+      { id: 3, label: "Hábito de Meditação", type: "habito" as const },
+      { id: 6, label: "Desenvolvimento Pessoal", type: "subcerebro" as const },
+      { id: 10, label: "Ideias de Negócio", type: "subcerebro" as const },
+      { id: 12, label: "Criação de Conteúdo", type: "subcerebro" as const }
     ]
   },
   { 
     id: 2, 
     label: "Projeto Alpha", 
-    type: "projeto", 
+    type: "projeto" as const, 
     tags: ["trabalho", "prioridade", "inovação"], 
     createdAt: "10/05/2025", 
     lastAccess: "14/05/2025", 
     relevancia: 8,
     connections: [
-      { id: 1, label: "Cérebro Principal", type: "subcerebro" },
-      { id: 4, label: "Artigo sobre IA", type: "favorito" },
-      { id: 11, label: "Cronograma do Projeto", type: "pensamento" }
+      { id: 1, label: "Cérebro Principal", type: "subcerebro" as const },
+      { id: 4, label: "Artigo sobre IA", type: "favorito" as const },
+      { id: 11, label: "Cronograma do Projeto", type: "pensamento" as const }
     ]
   },
   { 
     id: 3, 
     label: "Hábito de Meditação", 
-    type: "habito", 
+    type: "habito" as const, 
     tags: ["saúde", "foco", "mindfulness", "diário"], 
     createdAt: "05/05/2025", 
     lastAccess: "15/05/2025",
     relevancia: 7,
     connections: [
-      { id: 1, label: "Cérebro Principal", type: "subcerebro" },
-      { id: 5, label: "Insight sobre paz mental", type: "pensamento" },
-      { id: 9, label: "Curso de Meditação", type: "favorito" }
+      { id: 1, label: "Cérebro Principal", type: "subcerebro" as const },
+      { id: 5, label: "Insight sobre paz mental", type: "pensamento" as const },
+      { id: 9, label: "Curso de Meditação", type: "favorito" as const }
     ]
   },
   { 
     id: 4, 
     label: "Artigo sobre IA", 
-    type: "favorito", 
+    type: "favorito" as const, 
     tags: ["tecnologia", "aprendizado", "pesquisa", "data science"], 
     createdAt: "12/05/2025", 
     lastAccess: "13/05/2025", 
     relevancia: 6,
     connections: [
-      { id: 2, label: "Projeto Alpha", type: "projeto" },
-      { id: 10, label: "Ideias de Negócio", type: "subcerebro" }
+      { id: 2, label: "Projeto Alpha", type: "projeto" as const },
+      { id: 10, label: "Ideias de Negócio", type: "subcerebro" as const }
     ]
   },
   { 
     id: 5, 
     label: "Insight sobre paz mental", 
-    type: "pensamento", 
+    type: "pensamento" as const, 
     tags: ["reflexão", "bem-estar", "consciência"], 
     createdAt: "14/05/2025", 
     lastAccess: "14/05/2025", 
     relevancia: 5,
     connections: [
-      { id: 3, label: "Hábito de Meditação", type: "habito" }
+      { id: 3, label: "Hábito de Meditação", type: "habito" as const }
     ]
   },
   { 
     id: 6, 
     label: "Desenvolvimento Pessoal", 
-    type: "subcerebro", 
+    type: "subcerebro" as const, 
     tags: ["crescimento", "evolução", "aprendizado", "mindset"], 
     createdAt: "01/05/2025", 
     lastAccess: "10/05/2025", 
     relevancia: 9,
     connections: [
-      { id: 1, label: "Cérebro Principal", type: "subcerebro" },
-      { id: 7, label: "Livro Atomic Habits", type: "favorito" },
-      { id: 8, label: "Hábito de Leitura", type: "habito" }
+      { id: 1, label: "Cérebro Principal", type: "subcerebro" as const },
+      { id: 7, label: "Livro Atomic Habits", type: "favorito" as const },
+      { id: 8, label: "Hábito de Leitura", type: "habito" as const }
     ]
   },
   { 
     id: 7, 
     label: "Livro Atomic Habits", 
-    type: "favorito", 
+    type: "favorito" as const, 
     tags: ["leitura", "produtividade", "hábitos", "comportamento"], 
     createdAt: "02/05/2025", 
     lastAccess: "09/05/2025", 
     relevancia: 7,
     connections: [
-      { id: 6, label: "Desenvolvimento Pessoal", type: "subcerebro" },
-      { id: 8, label: "Hábito de Leitura", type: "habito" }
+      { id: 6, label: "Desenvolvimento Pessoal", type: "subcerebro" as const },
+      { id: 8, label: "Hábito de Leitura", type: "habito" as const }
     ]
   },
   { 
     id: 8, 
     label: "Hábito de Leitura", 
-    type: "habito", 
+    type: "habito" as const, 
     tags: ["conhecimento", "rotina", "livros", "diário"], 
     createdAt: "03/05/2025", 
     lastAccess: "15/05/2025", 
     relevancia: 6,
     connections: [
-      { id: 6, label: "Desenvolvimento Pessoal", type: "subcerebro" },
-      { id: 7, label: "Livro Atomic Habits", type: "favorito" }
+      { id: 6, label: "Desenvolvimento Pessoal", type: "subcerebro" as const },
+      { id: 7, label: "Livro Atomic Habits", type: "favorito" as const }
     ]
   },
   { 
     id: 9, 
     label: "Curso de Meditação", 
-    type: "favorito", 
+    type: "favorito" as const, 
     tags: ["mindfulness", "curso", "saúde mental"], 
     createdAt: "05/05/2025", 
     lastAccess: "12/05/2025", 
     relevancia: 5,
     connections: [
-      { id: 3, label: "Hábito de Meditação", type: "habito" }
+      { id: 3, label: "Hábito de Meditação", type: "habito" as const }
     ]
   },
   { 
     id: 10, 
     label: "Ideias de Negócio", 
-    type: "subcerebro", 
+    type: "subcerebro" as const, 
     tags: ["empreendedorismo", "inovação", "projetos"], 
     createdAt: "08/05/2025", 
     lastAccess: "11/05/2025", 
     relevancia: 8,
     connections: [
-      { id: 1, label: "Cérebro Principal", type: "subcerebro" },
-      { id: 4, label: "Artigo sobre IA", type: "favorito" },
-      { id: 11, label: "Cronograma do Projeto", type: "pensamento" }
+      { id: 1, label: "Cérebro Principal", type: "subcerebro" as const },
+      { id: 4, label: "Artigo sobre IA", type: "favorito" as const },
+      { id: 11, label: "Cronograma do Projeto", type: "pensamento" as const }
     ]
   },
   { 
     id: 11, 
     label: "Cronograma do Projeto", 
-    type: "pensamento", 
+    type: "pensamento" as const, 
     tags: ["organização", "tempo", "planejamento"], 
     createdAt: "09/05/2025", 
     lastAccess: "14/05/2025", 
     relevancia: 7,
     connections: [
-      { id: 2, label: "Projeto Alpha", type: "projeto" },
-      { id: 10, label: "Ideias de Negócio", type: "subcerebro" }
+      { id: 2, label: "Projeto Alpha", type: "projeto" as const },
+      { id: 10, label: "Ideias de Negócio", type: "subcerebro" as const }
     ]
   },
   { 
     id: 12, 
     label: "Criação de Conteúdo", 
-    type: "subcerebro", 
+    type: "subcerebro" as const, 
     tags: ["marketing", "mídias sociais", "comunicação"], 
     createdAt: "07/05/2025", 
     lastAccess: "13/05/2025", 
     relevancia: 6,
     connections: [
-      { id: 1, label: "Cérebro Principal", type: "subcerebro" }
+      { id: 1, label: "Cérebro Principal", type: "subcerebro" as const }
     ]
   }
 ];
-
