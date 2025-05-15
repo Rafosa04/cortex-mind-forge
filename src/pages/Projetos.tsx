@@ -1,44 +1,73 @@
 
+import React from "react";
+import { Button } from "@/components/ui/button";
+import { FiltroProjetos } from "@/components/Projetos/FiltroProjetos";
+import { ProjetoCard } from "@/components/Projetos/ProjetoCard";
+import { NovaCelulaModal } from "@/components/Projetos/NovaCelulaModal";
+import { Plus } from "lucide-react";
 import { motion } from "framer-motion";
 
+// Dados mockados (trocar para fetch/supabase em versões futuras)
+const projetos = [
+  {
+    nome: "Nova Rotina Saudável",
+    progresso: 65,
+    tags: ["saúde", "inspiração"],
+    status: "ativo",
+  },
+  {
+    nome: "TCC Neurociência",
+    progresso: 25,
+    tags: ["estudo"],
+    status: "pausado",
+  },
+  {
+    nome: "Organização Financeira",
+    progresso: 92,
+    tags: ["finanças"],
+    status: "concluído",
+  },
+];
+
 export default function Projetos() {
+  const [modalAberto, setModalAberto] = React.useState(false);
+
   return (
-    <div className="w-full max-w-4xl mx-auto">
-      <motion.h2
-        className="text-2xl font-bold text-secondary mb-6"
-        initial={{ opacity: 0, y: 16 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4 }}
-      >
-        Meus projetos mentais
-      </motion.h2>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-5">
-        {/* Placeholder de cards de projetos */}
-        {[1, 2].map(n => (
-          <motion.div
-            key={n}
-            initial={{ opacity: 0, y: 14 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 * n }}
-            className="rounded-xl bg-card p-6 shadow border border-border"
-          >
-            <h3 className="text-lg font-semibold mb-2 text-primary">
-              Projeto {n}
-            </h3>
-            <div className="text-xs mb-2">Status: <span className="text-secondary">Em progresso</span></div>
-            <div className="w-full h-2 bg-background rounded-full my-3">
-              <div className="h-2 rounded-full bg-primary" style={{ width: `${40 * n}%` }} />
-            </div>
-            <button className="mt-4 text-secondary underline">Ver detalhes</button>
-          </motion.div>
+    <div className="w-full max-w-5xl mx-auto mt-3 fade-in">
+      <header className="flex items-center justify-between py-2 mb-2 gap-4">
+        <motion.h2
+          className="text-2xl md:text-3xl font-bold text-primary drop-shadow"
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4 }}
+        >
+          Meus Projetos
+        </motion.h2>
+        <Button
+          variant="default"
+          className="flex items-center gap-2 px-5 py-2 bg-primary hover:bg-secondary text-background rounded-lg font-bold shadow animate-card-pop neon-anim"
+          onClick={() => setModalAberto(true)}
+        >
+          <Plus className="w-5 h-5" /> Nova Célula
+        </Button>
+        <NovaCelulaModal open={modalAberto} onOpenChange={setModalAberto} />
+      </header>
+      <FiltroProjetos />
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-7 fade-in mt-1">
+        {projetos.map((projeto, i) => (
+          <ProjetoCard key={i} projeto={projeto} />
         ))}
       </div>
-      <motion.button
-        className="mt-10 px-8 py-2 rounded-lg bg-primary text-background font-bold shadow animate-card-pop"
-        whileHover={{ scale: 1.06 }}
+
+      <motion.div
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.1 }}
+        className="text-secondary text-center text-sm italic mt-12 select-none"
       >
-        Criar com Athena
-      </motion.button>
+        “O CÓRTEX não exibe projetos. Ele manifesta células vivas que evoluem com você.”
+      </motion.div>
     </div>
   );
 }
