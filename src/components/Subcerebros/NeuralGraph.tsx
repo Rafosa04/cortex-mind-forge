@@ -1,3 +1,4 @@
+
 import React, { useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import SubbrainGraph from './SubbrainGraph';
@@ -316,12 +317,17 @@ export function NeuralGraph({
     
     setFilteredData({ nodes: filteredNodes, links: filteredLinks });
   }, [mockNodes, mockLinks, searchQuery, filterType, filterArea]);
+  
+  // Prepare the graph data
+  const graphData = {
+    nodes: filteredData.nodes,
+    links: filteredData.links
+  };
 
   return (
     <div ref={canvasRef} className="w-full h-full">
       <SubbrainGraph 
-        nodes={filteredData.nodes}
-        links={filteredData.links}
+        graphData={graphData}
         onNodeClick={onNodeClick}
       />
     </div>
