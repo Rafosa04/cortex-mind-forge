@@ -102,7 +102,7 @@ export default function SubbrainGraph({ graphData, onNodeClick }: SubbrainGraphP
       
       // Add collision force to prevent node overlap
       // Fixed: Pass the required radius parameter to forceCollide
-      graphRef.current.d3Force('collide', forceCollide(40).strength(0.7));
+      graphRef.current.d3Force('collide', forceCollide(40));
       
       // Add a small random force to create gentle movement
       const simulation = graphRef.current.d3Force();
@@ -113,7 +113,7 @@ export default function SubbrainGraph({ graphData, onNodeClick }: SubbrainGraphP
       // Initial zoom after 1 second to ensure graph is settled
       setTimeout(() => {
         if (graphRef.current) {
-          graphRef.current.zoomToFit(400, 50);
+          graphRef.current.zoomToFit(400);
         }
       }, 1000);
 
@@ -370,21 +370,13 @@ export default function SubbrainGraph({ graphData, onNodeClick }: SubbrainGraphP
     }
   };
 
-  // New drag node handlers
-  const handleNodeDragStart = (node: GraphNode) => {
-    setDraggedNode(node);
-    // Fix the node in place during drag
-    if (node.id !== 'athena') {  // Don't allow Athena to be moved
-      node.fx = node.x;
-      node.fy = node.y;
-    }
-  };
-
+  // Node drag handlers
   const handleNodeDrag = (node: GraphNode, translate: { x: number, y: number }) => {
     // Only update position if it's not Athena
     if (node.id !== 'athena') {
       node.fx = translate.x;
       node.fy = translate.y;
+      setDraggedNode(node);
       
       // Make sure connections follow
       if (graphRef.current) {
@@ -454,11 +446,10 @@ export default function SubbrainGraph({ graphData, onNodeClick }: SubbrainGraphP
         onNodeClick={handleNodeClick}
         onNodeDrag={handleNodeDrag}
         onNodeDragEnd={handleNodeDragEnd}
-        onNodeDragStart={handleNodeDragStart}
         enableNodeDrag={true}
         onEngineStop={() => {
           if (graphRef.current) {
-            graphRef.current.zoomToFit(400, 50);
+            graphRef.current.zoomToFit(400);
           }
         }}
       />
