@@ -1,5 +1,6 @@
+
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import ForceGraph2D from "react-force-graph-2d";
+import ForceGraph2D, { ForceGraphMethods } from "react-force-graph-2d";
 import { motion } from "framer-motion";
 import { Brain } from "lucide-react";
 import { toast } from "@/components/ui/use-toast";
@@ -37,7 +38,7 @@ interface SubbrainGraphProps {
 }
 
 export function SubbrainGraph({ onNodeClick, searchQuery, filterType, filterArea = 'all' }: SubbrainGraphProps) {
-  const graphRef = useRef<any>(null);
+  const graphRef = useRef<ForceGraphMethods<GraphNode, GraphLink>>(null);
   const [graphData, setGraphData] = useState<GraphData>({ nodes: [], links: [] });
   const [dimensions, setDimensions] = useState({
     width: window.innerWidth,
@@ -116,6 +117,20 @@ export function SubbrainGraph({ onNodeClick, searchQuery, filterType, filterArea
     setGraphData({ nodes, links });
   }, [searchQuery, filterType, filterArea]);
   
+  // Configure d3 forces using refs
+  useEffect(() => {
+    if (graphRef.current) {
+      // Set charge force
+      graphRef.current.d3Force('charge')?.strength((node: any) => 
+        node.type === "subcerebro" ? -250 : 
+        node.type === "athena" ? -350 : -180
+      );
+
+      // Set link distance
+      graphRef.current.d3Force('link')?.distance(120);
+    }
+  }, [graphData]);
+
   // Handle window resize
   useEffect(() => {
     const handleResize = () => {
@@ -230,7 +245,7 @@ export function SubbrainGraph({ onNodeClick, searchQuery, filterType, filterArea
     
     // Determine line width based on link value and highlight state
     const lineWidth = isHighlighted ? 2.5 : 
-                     link.source.type === "athena" || link.target.type === "athena" ? 2 : 
+                     (link.source.type === "athena" || link.target.type === "athena") ? 2 : 
                      1.5;
     
     // Draw base line
@@ -314,8 +329,9 @@ export function SubbrainGraph({ onNodeClick, searchQuery, filterType, filterArea
         description: "Ativando análise completa do seu CÓRTEX...",
         duration: 3000,
       });
-      // Additional Athena-specific logic could be implemented here
+      console.log("Athena node clicked:", node);
     } else {
+      console.log("Node clicked:", node);
       onNodeClick(node);
     }
     
@@ -326,10 +342,19 @@ export function SubbrainGraph({ onNodeClick, searchQuery, filterType, filterArea
     }
   }, [onNodeClick]);
 
+  // Handle engine stop - zoom to fit when graph stabilizes
+  const handleEngineStop = useCallback(() => {
+    console.log("Force graph simulation has converged");
+    if (graphRef.current) {
+      // Zoom to fit all nodes with some padding
+      graphRef.current.zoomToFit(400);
+    }
+  }, []);
+
   // Calculate optimal container dimensions
   // We leave some margin for the UI elements
   const containerWidth = dimensions.width;
-  const containerHeight = dimensions.height * 0.85; 
+  const containerHeight = dimensions.height * 0.85; // 85vh 
 
   return (
     <div className="relative w-full h-full">
@@ -351,13 +376,9 @@ export function SubbrainGraph({ onNodeClick, searchQuery, filterType, filterArea
         d3AlphaDecay={0.02}
         d3VelocityDecay={0.3}
         cooldownTime={2000}
-        d3Force="charge"
-        linkDistance={120}
         nodeAutoColorBy="type"
         enablePointerInteraction={true}
-        onEngineStop={() => {
-          console.log("Force graph simulation has converged");
-        }}
+        onEngineStop={handleEngineStop}
       />
 
       {/* Custom tooltip on hover */}
