@@ -15,6 +15,11 @@ interface GraphNode {
   vx?: number;
   vy?: number;
   connections?: any[];
+  // Add missing properties to fix the type errors
+  lastAccess?: string;
+  tags?: string[];
+  createdAt?: string;
+  relevancia?: number;
 }
 
 interface GraphLink {
@@ -60,7 +65,8 @@ export default function SubbrainGraph({ graphData, onNodeClick }: SubbrainGraphP
       graphRef.current.d3Force('center')?.strength(0.05);
       
       // Add collision force to prevent node overlap
-      graphRef.current.d3Force('collide', d3.forceCollide().radius(40).strength(0.7));
+      // Fix line 66 - d3.forceCollide() requires a radius parameter
+      graphRef.current.d3Force('collide', d3.forceCollide(40).strength(0.7));
       
       // Add a small random force to create gentle movement
       const simulation = graphRef.current.d3Force();
