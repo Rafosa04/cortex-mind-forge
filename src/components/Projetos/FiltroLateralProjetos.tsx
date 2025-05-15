@@ -3,6 +3,9 @@ import React from "react";
 import { Grid2x2, List, CalendarDays, GalleryHorizontal, Tag } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
+// Import ModoVisao from parent types
+export type ModoVisao = "Lista" | "Kanban" | "Linha do tempo" | "Galeria";
+
 const modos = [
   { nome: "Lista", icon: List },
   { nome: "Kanban", icon: Grid2x2 },
@@ -10,7 +13,13 @@ const modos = [
   { nome: "Galeria", icon: GalleryHorizontal }
 ];
 
-export function FiltroLateralProjetos({ modo, setModo }: { modo: string, setModo: (m: string) => void }) {
+export function FiltroLateralProjetos({
+  modo,
+  setModo
+}: {
+  modo: ModoVisao,
+  setModo: (m: ModoVisao) => void
+}) {
   return (
     <aside className="hidden md:flex flex-col gap-3 bg-[#141429]/60 border-r border-[#993887] px-3 py-6 min-w-[180px] max-w-[200px] rounded-2xl mr-8 glass-morphism">
       <div className="font-bold text-primary text-lg mb-2 tracking-wide">Visão</div>
@@ -20,7 +29,7 @@ export function FiltroLateralProjetos({ modo, setModo }: { modo: string, setModo
             key={m.nome}
             variant={modo === m.nome ? "secondary" : "ghost"}
             className="justify-start gap-2"
-            onClick={() => setModo(m.nome)}
+            onClick={() => setModo(m.nome as ModoVisao)}
           >
             <m.icon className="w-5 h-5" /> {m.nome}
           </Button>
@@ -38,3 +47,4 @@ export function FiltroLateralProjetos({ modo, setModo }: { modo: string, setModo
     </aside>
   );
 }
+
