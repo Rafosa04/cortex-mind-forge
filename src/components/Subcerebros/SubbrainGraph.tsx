@@ -101,7 +101,7 @@ export default function SubbrainGraph({ graphData, onNodeClick }: SubbrainGraphP
       graphRef.current.d3Force('center')?.strength(0.03);  // Gentler centering force
       
       // Add collision force to prevent node overlap
-      // Use forceCollide with a radius parameter
+      // Fixed: Pass the required radius parameter to forceCollide
       graphRef.current.d3Force('collide', forceCollide(40).strength(0.7));
       
       // Add a small random force to create gentle movement
