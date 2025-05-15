@@ -1,7 +1,7 @@
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import ForceGraph2D, { ForceGraphMethods } from "react-force-graph-2d";
-import * as d3 from "d3";
+import { forceCollide } from "d3-force"; // More specific import
 import { motion } from "framer-motion";
 
 interface GraphNode {
@@ -65,8 +65,8 @@ export default function SubbrainGraph({ graphData, onNodeClick }: SubbrainGraphP
       graphRef.current.d3Force('center')?.strength(0.05);
       
       // Add collision force to prevent node overlap
-      // Fix line 66 - d3.forceCollide() requires a radius parameter
-      graphRef.current.d3Force('collide', d3.forceCollide(40).strength(0.7));
+      // Use forceCollide with a radius parameter
+      graphRef.current.d3Force('collide', forceCollide(40).strength(0.7));
       
       // Add a small random force to create gentle movement
       const simulation = graphRef.current.d3Force();
