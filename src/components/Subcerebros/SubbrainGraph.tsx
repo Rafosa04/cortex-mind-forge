@@ -1,8 +1,10 @@
+
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import ForceGraph2D, { ForceGraphMethods } from "react-force-graph-2d";
 import { motion } from "framer-motion";
 import { Brain } from "lucide-react";
 import { toast } from "@/components/ui/use-toast";
+import * as d3 from "d3-force";
 
 // Define TypeScript interfaces for our data
 interface GraphNode {
@@ -16,6 +18,9 @@ interface GraphNode {
   connections?: any[];
   x?: number;
   y?: number;
+  fx?: number | null;
+  fy?: number | null;
+  color?: string;
 }
 
 interface GraphLink {
@@ -41,21 +46,36 @@ export function SubbrainGraph({ onNodeClick, searchQuery, filterType, filterArea
   const [graphData, setGraphData] = useState<GraphData>({ nodes: [], links: [] });
   const [dimensions, setDimensions] = useState({
     width: window.innerWidth,
-    height: window.innerHeight
+    height: window.innerHeight * 0.85
   });
   const [hoveredNode, setHoveredNode] = useState<GraphNode | null>(null);
   const [tooltipPos, setTooltipPos] = useState({ x: 0, y: 0 });
   const [highlightNodes, setHighlightNodes] = useState<Set<string>>(new Set());
   const [highlightLinks, setHighlightLinks] = useState<Set<string>>(new Set());
   
+  // Update dimensions on window resize
+  useEffect(() => {
+    const handleResize = () => {
+      setDimensions({
+        width: window.innerWidth,
+        height: window.innerHeight * 0.85 // 85vh
+      });
+    };
+    
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+  
   // Convert mock data to graph format
   useEffect(() => {
-    // Start with Athena as central node
+    // Start with Athena as central node (fixed position at center)
     const nodes: GraphNode[] = [
       { 
         id: "athena", 
         label: "Athena IA", 
-        type: "athena", 
+        type: "athena",
+        fx: 0, // Fixed x position at center
+        fy: 0, // Fixed y position at center
         tags: ["inteligência artificial", "assistente", "central"],
         createdAt: "01/01/2025",
         lastAccess: "15/05/2025",
@@ -119,29 +139,25 @@ export function SubbrainGraph({ onNodeClick, searchQuery, filterType, filterArea
   // Configure d3 forces using refs
   useEffect(() => {
     if (graphRef.current) {
-      // Set charge force
+      // Set charge force - controls node repulsion
       graphRef.current.d3Force('charge')?.strength((node: any) => 
         node.type === "subcerebro" ? -250 : 
         node.type === "athena" ? -350 : -180
       );
 
-      // Set link distance
-      graphRef.current.d3Force('link')?.distance(120);
+      // Set link distance - controls the length of connecting lines
+      graphRef.current.d3Force('link')?.distance(120).strength(0.8);
+      
+      // Add center force - pulls nodes toward center
+      graphRef.current.d3Force('center')?.strength(0.2);
+      
+      // Add collision force - prevents node overlap
+      graphRef.current.d3Force('collide', d3.forceCollide(30));
+      
+      // Reheat the simulation to ensure forces take effect
+      graphRef.current.d3ReheatSimulation();
     }
   }, [graphData]);
-
-  // Handle window resize
-  useEffect(() => {
-    const handleResize = () => {
-      setDimensions({
-        width: window.innerWidth,
-        height: window.innerHeight
-      });
-    };
-    
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
 
   // Node canvas object for custom rendering
   const nodeCanvasObject = useCallback((node: any, ctx: CanvasRenderingContext2D, globalScale: number) => {
@@ -354,18 +370,13 @@ export function SubbrainGraph({ onNodeClick, searchQuery, filterType, filterArea
     }
   }, []);
 
-  // Calculate optimal container dimensions
-  // We leave some margin for the UI elements
-  const containerWidth = dimensions.width;
-  const containerHeight = dimensions.height * 0.85; // 85vh 
-
   return (
     <div className="relative w-full h-full">
       <ForceGraph2D
         ref={graphRef}
         graphData={graphData}
-        width={containerWidth}
-        height={containerHeight}
+        width={dimensions.width}
+        height={dimensions.height}
         backgroundColor="#0C0C1C"
         nodeRelSize={6}
         nodeCanvasObject={nodeCanvasObject}
@@ -612,3 +623,4 @@ const mockNodes = [
     ]
   }
 ];
+
