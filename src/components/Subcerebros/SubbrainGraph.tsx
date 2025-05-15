@@ -55,7 +55,7 @@ export function SubbrainGraph({ onNodeClick, searchQuery, filterType, filterArea
       { 
         id: "athena", 
         label: "Athena IA", 
-        type: "athena" as const, 
+        type: "athena", 
         tags: ["inteligência artificial", "assistente", "central"],
         createdAt: "01/01/2025",
         lastAccess: "15/05/2025",
@@ -295,7 +295,7 @@ export function SubbrainGraph({ onNodeClick, searchQuery, filterType, filterArea
         }
       });
       
-      setHighlightNodes(newHighlightNodes);
+      setHighlightNodes(newHighlightNodes as Set<string>);
       setHighlightLinks(newHighlightLinks);
     } else {
       // Clear highlights when not hovering any node
@@ -348,17 +348,10 @@ export function SubbrainGraph({ onNodeClick, searchQuery, filterType, filterArea
         nodeLabel={null} // We'll use our custom tooltip instead
         onNodeHover={handleNodeHover}
         onNodeClick={handleNodeClick}
-        forceEngine="d3"
         d3AlphaDecay={0.02}
         d3VelocityDecay={0.3}
         cooldownTime={2000}
-        d3Force={
-          // Configure the force simulation
-          ("charge" as any, (node: any) => 
-            node.type === "subcerebro" ? -250 : 
-            node.type === "athena" ? -350 : -180
-          )
-        }
+        d3Force="charge"
         linkDistance={120}
         nodeAutoColorBy="type"
         enablePointerInteraction={true}
