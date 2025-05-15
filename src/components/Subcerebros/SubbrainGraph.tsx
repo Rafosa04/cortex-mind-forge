@@ -102,7 +102,7 @@ export default function SubbrainGraph({ graphData, onNodeClick }: SubbrainGraphP
       
       // Add collision force to prevent node overlap
       // Fixed: Pass the required radius parameter to forceCollide
-      graphRef.current.d3Force('collide', forceCollide(40));
+      graphRef.current.d3Force('collide', forceCollide(40).strength(0.7));
       
       // Add a small random force to create gentle movement
       const simulation = graphRef.current.d3Force();
@@ -113,7 +113,7 @@ export default function SubbrainGraph({ graphData, onNodeClick }: SubbrainGraphP
       // Initial zoom after 1 second to ensure graph is settled
       setTimeout(() => {
         if (graphRef.current) {
-          graphRef.current.zoomToFit(400);
+          graphRef.current.zoomToFit(400, 50);
         }
       }, 1000);
 
@@ -449,7 +449,7 @@ export default function SubbrainGraph({ graphData, onNodeClick }: SubbrainGraphP
         enableNodeDrag={true}
         onEngineStop={() => {
           if (graphRef.current) {
-            graphRef.current.zoomToFit(400);
+            graphRef.current.zoomToFit(400, 50);
           }
         }}
       />
