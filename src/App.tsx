@@ -21,6 +21,7 @@ import Configuracoes from "./pages/Configuracoes";
 import Planos from "./pages/Planos";
 import Landing from "./pages/Landing";
 import ChatAthena from "./pages/ChatAthena";
+import Connecta from "./pages/Connecta";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -49,6 +50,7 @@ const App = () => (
             <Route path="/planos" element={<Planos />} />
             <Route path="/landing" element={<Landing />} />
             <Route path="/athena" element={<ChatAthena />} />
+            <Route path="/connecta" element={<Connecta />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

@@ -1,578 +1,177 @@
-import React, { useCallback, useEffect, useRef, useState } from "react";
-import ForceGraph2D, { ForceGraphMethods } from "react-force-graph-2d";
-import { forceCollide } from "d3-force"; // More specific import
-import { motion } from "framer-motion";
+
+import React, { useEffect, useState, useRef, useCallback } from 'react';
+import ForceGraph2D from 'react-force-graph-2d';
+import { motion } from 'framer-motion';
 
 interface GraphNode {
   id: string;
   label: string;
-  type: "athena" | "subcerebro" | "projeto" | "habito" | "favorito" | "pensamento";
+  type: string;
+  relevancia: number;
+  connections: any[];
+  area?: string;
+  fx?: number;
+  fy?: number;
   x?: number;
   y?: number;
-  fx?: number | null;
-  fy?: number | null;
-  vx?: number;
-  vy?: number;
-  connections?: any[];
-  // Add missing properties to fix the type errors
-  lastAccess?: string;
-  tags?: string[];
-  createdAt?: string;
-  relevancia?: number;
-  // Add properties for neural animation
-  pulseSpeed?: number;
-  pulsePhase?: number;
 }
 
 interface GraphLink {
   source: string | GraphNode;
   target: string | GraphNode;
+  impulse?: number;
 }
 
-interface GraphData {
-  nodes: GraphNode[];
-  links: GraphLink[];
-}
-
-interface SubbrainGraphProps {
-  graphData: GraphData;
+export interface SubbrainGraphProps {
+  graphData: {
+    nodes: GraphNode[];
+    links: GraphLink[];
+  };
   onNodeClick: (node: any) => void;
 }
 
-export default function SubbrainGraph({ graphData, onNodeClick }: SubbrainGraphProps) {
-  const graphRef = useRef<ForceGraphMethods<GraphNode, GraphLink>>(null);
+const SubbrainGraph: React.FC<SubbrainGraphProps> = ({ graphData, onNodeClick }) => {
+  const fgRef = useRef<any>(null);
   const [dimensions, setDimensions] = useState({ width: 800, height: 600 });
-  const [hoveredNode, setHoveredNode] = useState<GraphNode | null>(null);
-  const [tooltipPos, setTooltipPos] = useState({ x: 0, y: 0, show: false });
-  const [animationTick, setAnimationTick] = useState(0);
-  const [draggedNode, setDraggedNode] = useState<GraphNode | null>(null);
-
-  // Animation frame for continuous updates
-  useEffect(() => {
-    // Set up animation frame for continuous pulse effect
-    let animationFrameId: number;
-    
-    const animate = () => {
-      setAnimationTick(prev => prev + 1);
-      animationFrameId = requestAnimationFrame(animate);
-    };
-    
-    animationFrameId = requestAnimationFrame(animate);
-    
-    // Clean up on unmount
-    return () => {
-      cancelAnimationFrame(animationFrameId);
-    };
-  }, []);
-
-  // Initialize random pulse phases and speeds for each node
-  useEffect(() => {
-    if (graphData?.nodes) {
-      const enhancedNodes = graphData.nodes.map(node => ({
-        ...node,
-        pulsePhase: Math.random() * Math.PI * 2, // Random starting phase
-        pulseSpeed: 0.5 + Math.random() * 1.5    // Random speed modifier
-      }));
-
-      // This doesn't modify the original graphData, just adds the properties if they don't exist
-      graphData.nodes = enhancedNodes;
+  const [nodePositions, setNodePositions] = useState<Map<string, {x: number, y: number}>>(new Map());
+  const [impulses, setImpulses] = useState<Map<string, number>>(new Map());
+  
+  // Get color based on node type
+  const getNodeColor = (node: GraphNode) => {
+    switch (node.type) {
+      case 'athena':
+        return '#9b87f5';
+      case 'subcerebro':
+        return '#8B5CF6';
+      case 'projeto':
+        return '#0EA5E9';
+      case 'habito':
+        return '#10B981';
+      case 'favorito':
+        return '#F59E0B';
+      case 'pensamento':
+        return '#EC4899';
+      default:
+        return '#9b87f5';
     }
-  }, [graphData]);
-
-  // Handle window resize
-  useEffect(() => {
-    const handleResize = () => {
-      setDimensions({
-        width: window.innerWidth,
-        height: window.innerHeight * 0.85,
-      });
-    };
-    window.addEventListener("resize", handleResize);
-    handleResize();
-    return () => window.removeEventListener("resize", handleResize);
-  }, []);
-
-  // Initialize physics simulation and forces
-  useEffect(() => {
-    if (graphRef.current) {
-      // Configure physics for Obsidian-like behavior with smoother movement
-      graphRef.current.d3Force('charge')?.strength(-120);  // Reduced strength for smoother motion
-      graphRef.current.d3Force('link')?.distance(150).strength(0.4);  // More room between nodes
-      graphRef.current.d3Force('center')?.strength(0.03);  // Gentler centering force
-      
-      // Add collision force to prevent node overlap
-      graphRef.current.d3Force('collide', forceCollide(40).strength(0.7));
-      
-      // Add a small random force to create gentle movement
-      const simulation = graphRef.current.d3Force();
-      if (simulation) {
-        simulation.alpha(1).restart();
-      }
-
-      // Initial zoom after 1 second to ensure graph is settled
-      setTimeout(() => {
-        if (graphRef.current) {
-          graphRef.current.zoomToFit(400, 50);
-        }
-      }, 1000);
-
-      // Enhanced autonomous node movement
-      const moveNodes = setInterval(() => {
-        if (graphData && graphData.nodes) {
-          const athenaNode = graphData.nodes.find(node => node.id === 'athena');
-          
-          if (athenaNode && athenaNode.x && athenaNode.y) {
-            graphData.nodes.forEach(node => {
-              // Skip Athena and dragged nodes
-              if (node.id === 'athena' || (node === draggedNode)) return;
-              
-              // Only apply gentle forces, don't set positions directly
-              if (node.x !== undefined && node.y !== undefined && !node.fx && !node.fy) {
-                // Calculate vector from node to Athena
-                const dx = athenaNode.x - node.x;
-                const dy = athenaNode.y - node.y;
-                const dist = Math.sqrt(dx * dx + dy * dy);
-                
-                // Calculate normalized time for smooth cyclic motion
-                const time = Date.now() / 1000;
-                const nodePhase = (node.pulsePhase || 0);
-                const nodeSpeed = (node.pulseSpeed || 1) * 0.2;
-                
-                // Apply gentle orbital motion with individualized paths
-                const orbitFactor = 0.0005;
-                const orbit_dx = Math.sin(time * nodeSpeed + nodePhase) * orbitFactor * dist;
-                const orbit_dy = Math.cos(time * nodeSpeed + nodePhase * 0.8) * orbitFactor * dist;
-                
-                // Add slight attraction/repulsion based on optimal distance
-                const optimalDist = 200;
-                const forceFactor = 0.0002;
-                const distanceDiff = dist - optimalDist;
-                const attract_dx = (dx / dist) * distanceDiff * forceFactor;
-                const attract_dy = (dy / dist) * distanceDiff * forceFactor;
-                
-                // Add subtle random wobble for natural unpredictability
-                const randomFactor = 0.0001;
-                const wobble_freq = 0.5;
-                const random_dx = Math.sin(time * wobble_freq + nodePhase * 2) * randomFactor * dist;
-                const random_dy = Math.cos(time * wobble_freq + nodePhase * 3) * randomFactor * dist;
-                
-                // Apply the combined forces to create smooth autonomous movement
-                if (node.vx !== undefined && node.vy !== undefined) {
-                  node.vx += orbit_dx + attract_dx + random_dx;
-                  node.vy += orbit_dy + attract_dy + random_dy;
-                  
-                  // Dampen velocity to prevent excessive movement
-                  node.vx *= 0.99;
-                  node.vy *= 0.99;
-                }
-              }
-            });
-            
-            // Apply gentle forces to maintain connections and relationship distances
-            if (graphData.links) {
-              graphData.links.forEach(link => {
-                const source = typeof link.source === 'object' ? link.source : 
-                  graphData.nodes.find(n => n.id === link.source);
-                const target = typeof link.target === 'object' ? link.target : 
-                  graphData.nodes.find(n => n.id === link.target);
-                  
-                if (source && target && 
-                    source.x !== undefined && source.y !== undefined && 
-                    target.x !== undefined && target.y !== undefined) {
-                  
-                  // Skip if either node is being dragged or is Athena
-                  if (source === draggedNode || target === draggedNode ||
-                      source.id === 'athena' || target.id === 'athena') return;
-                      
-                  // Calculate current distance
-                  const dx = target.x - source.x;
-                  const dy = target.y - source.y;
-                  const dist = Math.sqrt(dx * dx + dy * dy);
-                  
-                  // Apply gentle force to maintain reasonable connection distance
-                  const optimalDist = 150;
-                  const strength = 0.0001;
-                  const factor = (dist - optimalDist) * strength;
-                  
-                  // Apply forces to both nodes proportionally
-                  if (source.vx !== undefined && source.vy !== undefined && 
-                      !source.fx && !source.fy) {
-                    source.vx += dx * factor;
-                    source.vy += dy * factor;
-                  }
-                  
-                  if (target.vx !== undefined && target.vy !== undefined && 
-                      !target.fx && !target.fy) {
-                    target.vx -= dx * factor;
-                    target.vy -= dy * factor;
-                  }
-                }
-              });
-            }
-            
-            // Restart the simulation with a tiny alpha to keep movement gentle
-            if (graphRef.current) {
-              const simulation = graphRef.current.d3Force();
-              if (simulation) {
-                simulation.alpha(0.1).restart();
-              }
-            }
-          }
-        }
-      }, 50); // Update more frequently for smoother movement
-
-      return () => clearInterval(moveNodes);
-    }
-  }, [graphData, draggedNode]);
-
-  const getNodeColor = (type: string): string => {
-    const colors: Record<string, string> = {
-      athena: "#9f7aea", // lilás
-      subcerebro: "#993887", // roxo
-      projeto: "#60B5B5", // azul
-      habito: "#34D399", // verde
-      favorito: "#FBBF24", // amarelo
-      pensamento: "#cbd5e0", // cinza claro
-    };
-    return colors[type] || "#cbd5e0";
-  };
-
-  const nodeCanvasObject = useCallback((node: GraphNode, ctx: CanvasRenderingContext2D, globalScale: number) => {
-    const nodeColor = getNodeColor(node.type);
-    const isHovered = node === hoveredNode;
-    const isDragged = node === draggedNode;
-    
-    // Base radius depends on node type
-    const baseRadius = node.type === "athena" ? 14 : 10;
-    
-    // Calculate pulsing effect - more pronounced for hovered nodes
-    // Use the node's unique phase and speed to create varied pulsing
-    const time = Date.now() / 1000;
-    const pulsePhase = node.pulsePhase || 0;
-    const pulseSpeed = node.pulseSpeed || 1;
-    const pulseFactor = Math.sin((time * pulseSpeed) + pulsePhase);
-    
-    // Different pulse amounts based on node type and hover/drag state
-    let pulseAmount;
-    if (isHovered || isDragged) {
-      pulseAmount = 1 + pulseFactor * 0.2;  // 20% size variation when hovered/dragged
-    } else {
-      // Different pulse intensities based on node type
-      const typePulseIntensity = {
-        athena: 0.15,
-        subcerebro: 0.12,
-        projeto: 0.1,
-        habito: 0.08,
-        favorito: 0.07,
-        pensamento: 0.05
-      };
-      const intensity = typePulseIntensity[node.type] || 0.08;
-      pulseAmount = 1 + pulseFactor * intensity;
-    }
-    
-    const drawRadius = baseRadius * pulseAmount;
-
-    // Neural connection glow effect
-    const glowRadius = isHovered || isDragged ? 25 : 15 + pulseFactor * 3;
-    const glowAlpha = isHovered || isDragged ? 0.35 : 0.15 + Math.abs(pulseFactor) * 0.08;
-    
-    ctx.beginPath();
-    ctx.arc(node.x || 0, node.y || 0, glowRadius, 0, 2 * Math.PI, false);
-    ctx.fillStyle = `rgba(${hexToRgb(nodeColor)}, ${glowAlpha})`;
-    ctx.fill();
-    
-    // Secondary outer glow (stronger for hovered/dragged nodes)
-    if (isHovered || isDragged) {
-      ctx.beginPath();
-      ctx.arc(node.x || 0, node.y || 0, drawRadius + 10, 0, 2 * Math.PI, false);
-      ctx.fillStyle = `rgba(${hexToRgb(nodeColor)}, 0.2)`;
-      ctx.fill();
-    }
-    
-    // Main node with more vibrant appearance
-    ctx.beginPath();
-    ctx.arc(node.x || 0, node.y || 0, drawRadius, 0, 2 * Math.PI, false);
-    
-    // Gradient fill for more dimension
-    const gradient = ctx.createRadialGradient(
-      (node.x || 0), (node.y || 0), 0,
-      (node.x || 0), (node.y || 0), drawRadius
-    );
-    gradient.addColorStop(0, lightenColor(nodeColor, 20));
-    gradient.addColorStop(1, nodeColor);
-    
-    ctx.fillStyle = gradient;
-    ctx.shadowBlur = isHovered || isDragged ? 15 : 8 + Math.abs(pulseFactor) * 3;
-    ctx.shadowColor = nodeColor;
-    ctx.fill();
-    ctx.shadowBlur = 0;
-
-    // Draw label if zoomed in enough or node is hovered/dragged
-    const fontSize = (globalScale > 0.7 || isHovered || isDragged) ? 12 / Math.max(0.5, Math.min(1, globalScale)) : 0;
-    if (fontSize > 0) {
-      const label = node.label || "";
-      ctx.font = `${fontSize}px Inter, sans-serif`;
-      ctx.textAlign = "center";
-      ctx.textBaseline = "top";
-      
-      // Background for text (improved readability)
-      const textWidth = ctx.measureText(label).width;
-      ctx.fillStyle = "rgba(12, 12, 28, 0.75)";
-      ctx.fillRect(
-        (node.x || 0) - textWidth / 2 - 2,
-        (node.y || 0) + drawRadius + 2,
-        textWidth + 4,
-        fontSize + 2
-      );
-      
-      // Draw text
-      ctx.fillStyle = "#fff";
-      ctx.fillText(label, node.x || 0, (node.y || 0) + drawRadius + 2);
-    }
-    
-    // Update tooltip position if this is the hovered node
-    if (isHovered) {
-      setTooltipPos({ 
-        x: (node.x || 0) + 20, 
-        y: (node.y || 0) - 100, 
-        show: true 
-      });
-    }
-  }, [hoveredNode, animationTick, draggedNode]);
-
-  const linkCanvasObject = useCallback((link: GraphLink, ctx: CanvasRenderingContext2D) => {
-    const source = typeof link.source === 'object' ? link.source : { x: 0, y: 0 };
-    const target = typeof link.target === 'object' ? link.target : { x: 0, y: 0 };
-    
-    // Create smooth gradient for links
-    const sourceType = typeof link.source === 'object' ? link.source.type : 'unknown';
-    const targetType = typeof link.target === 'object' ? link.target.type : 'unknown';
-    
-    const sourceColor = getNodeColor(sourceType);
-    const targetColor = getNodeColor(targetType);
-    
-    const start = { x: source.x || 0, y: source.y || 0 };
-    const end = { x: target.x || 0, y: target.y || 0 };
-    
-    // Calculate link vector
-    const dx = end.x - start.x;
-    const dy = end.y - start.y;
-    const length = Math.sqrt(dx * dx + dy * dy);
-    
-    // Create gradient
-    const gradient = ctx.createLinearGradient(start.x, start.y, end.x, end.y);
-    gradient.addColorStop(0, `rgba(${hexToRgb(sourceColor)}, 0.3)`);
-    gradient.addColorStop(1, `rgba(${hexToRgb(targetColor)}, 0.3)`);
-    
-    // Enhanced dynamic curve based on time and node properties
-    const time = Date.now() / 1000;
-    
-    // Use node properties or default values for animation
-    const sourcePhase = typeof link.source === 'object' ? link.source.pulsePhase || 0 : 0;
-    const targetPhase = typeof link.target === 'object' ? link.target.pulsePhase || 0 : 0;
-    const avgPhase = (sourcePhase + targetPhase) / 2;
-    
-    // Calculate dynamic offset for smooth undulation
-    const baseOffset = 5;
-    const dynamicOffset = baseOffset * Math.sin(time * 0.5 + avgPhase);
-    
-    const midX = (start.x + end.x) / 2;
-    const midY = (start.y + end.y) / 2;
-    const ctrlX = midX + dynamicOffset * Math.sin(time * 0.3 + avgPhase);
-    const ctrlY = midY + dynamicOffset * Math.cos(time * 0.3 + avgPhase);
-    
-    // Draw link with smooth curve for more organic look
-    ctx.beginPath();
-    ctx.moveTo(start.x, start.y);
-    ctx.quadraticCurveTo(ctrlX, ctrlY, end.x, end.y);
-    ctx.strokeStyle = gradient;
-    ctx.lineWidth = 1.5;
-    ctx.stroke();
-    
-    // Enhanced neural impulse animation
-    const particleCount = 2;
-    const particleSpeed = 0.3; // Speed factor for particle movement
-    const now = Date.now() / 1000;
-    
-    // Customize particle effect based on node types
-    const isAthenaConnection = 
-      (typeof link.source === 'object' && link.source.id === 'athena') || 
-      (typeof link.target === 'object' && link.target.id === 'athena');
-    
-    const particleSize = isAthenaConnection ? 2 : 1.5;
-    const tailLength = isAthenaConnection ? 6 : 4;
-    const particleColor = isAthenaConnection ? sourceColor : targetColor;
-    
-    // Phase offset based on connection for varied timing
-    const phaseOffset = avgPhase;
-    
-    for (let i = 0; i < particleCount; i++) {
-      // Calculate time offset for each particle
-      const timeOffset = i / particleCount;
-      const particleTime = ((now * particleSpeed) + timeOffset + phaseOffset) % 1;
-      
-      // Calculate position along the quadratic curve
-      const invT = 1 - particleTime;
-      const x = invT * invT * start.x + 2 * invT * particleTime * ctrlX + particleTime * particleTime * end.x;
-      const y = invT * invT * start.y + 2 * invT * particleTime * ctrlY + particleTime * particleTime * end.y;
-      
-      // Draw with tail effect for motion blur
-      for (let j = 0; j < tailLength; j++) {
-        const tailT = Math.max(0, particleTime - 0.01 * j);
-        const invTailT = 1 - tailT;
-        const tailX = invTailT * invTailT * start.x + 2 * invTailT * tailT * ctrlX + tailT * tailT * end.x;
-        const tailY = invTailT * invTailT * start.y + 2 * invTailT * tailT * ctrlY + tailT * tailT * end.y;
-        
-        ctx.beginPath();
-        ctx.arc(tailX, tailY, particleSize - (j * 0.2), 0, 2 * Math.PI, false);
-        const tailOpacity = 0.7 - (j * 0.1);
-        ctx.fillStyle = `rgba(${hexToRgb(particleColor)}, ${tailOpacity})`;
-        ctx.fill();
-      }
-    }
-  }, [animationTick]);
-
-  const handleNodeHover = (node: GraphNode | null) => {
-    setHoveredNode(node);
-    if (!node) {
-      setTooltipPos(prev => ({ ...prev, show: false }));
-    }
-    document.body.style.cursor = node ? "pointer" : "default";
-  };
-
-  const handleNodeClick = (node: GraphNode) => {
-    if (onNodeClick) {
-      onNodeClick(node);
-    }
-    
-    // Visual feedback (zoom to node)
-    if (graphRef.current) {
-      graphRef.current.centerAt(node.x, node.y, 1000);
-      graphRef.current.zoom(1.5, 1000);
-    }
-  };
-
-  // Node drag handlers
-  const handleNodeDrag = (node: GraphNode, translate: { x: number, y: number }) => {
-    // Only update position if it's not Athena
-    if (node.id !== 'athena') {
-      node.fx = translate.x;
-      node.fy = translate.y;
-      setDraggedNode(node);
-      
-      // Make sure connections follow
-      if (graphRef.current) {
-        const simulation = graphRef.current.d3Force();
-        if (simulation) {
-          simulation.alpha(0.1).restart();
-        }
-      }
-    }
-  };
-
-  const handleNodeDragEnd = (node: GraphNode) => {
-    setDraggedNode(null);
-    // Keep the node at its new position but allow it to move with forces again
-    if (node.id !== 'athena') {
-      node.fx = null;
-      node.fy = null;
-    }
-  };
-
-  // Helper function to convert hex to rgb for glow effects
-  const hexToRgb = (hex: string): string => {
-    // Remove # if present
-    hex = hex.replace("#", "");
-    
-    // Parse the hex values
-    const r = parseInt(hex.substring(0, 2), 16);
-    const g = parseInt(hex.substring(2, 4), 16);
-    const b = parseInt(hex.substring(4, 6), 16);
-    
-    return `${r}, ${g}, ${b}`;
   };
   
-  // Helper function to lighten a color
-  const lightenColor = (hex: string, percent: number): string => {
-    // Remove # if present
-    hex = hex.replace("#", "");
+  // Generate random impulses along links
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (graphData.links.length === 0) return;
+      
+      // Randomly select a link to activate
+      const randomIndex = Math.floor(Math.random() * graphData.links.length);
+      const randomLink = graphData.links[randomIndex];
+      const linkId = `${randomLink.source}-${randomLink.target}`;
+      
+      setImpulses(prev => {
+        const newImpulses = new Map(prev);
+        newImpulses.set(linkId, 1); // Start impulse at full strength
+        return newImpulses;
+      });
+      
+      // Fade out impulse over time
+      setTimeout(() => {
+        setImpulses(prev => {
+          const newImpulses = new Map(prev);
+          newImpulses.delete(linkId);
+          return newImpulses;
+        });
+      }, 2000); // 2 seconds to complete animation
+    }, 800); // Create new impulse every 800ms
     
-    // Parse the hex values
-    const r = parseInt(hex.substring(0, 2), 16);
-    const g = parseInt(hex.substring(2, 4), 16);
-    const b = parseInt(hex.substring(4, 6), 16);
+    return () => clearInterval(interval);
+  }, [graphData.links]);
+  
+  // Initialize dimensions
+  useEffect(() => {
+    const updateDimensions = () => {
+      const container = document.getElementById('graph-container');
+      if (container) {
+        setDimensions({
+          width: container.clientWidth,
+          height: container.clientHeight || 600
+        });
+      }
+    };
     
-    // Lighten
-    const lightenR = Math.min(255, Math.floor(r + (255 - r) * (percent / 100)));
-    const lightenG = Math.min(255, Math.floor(g + (255 - g) * (percent / 100)));
-    const lightenB = Math.min(255, Math.floor(b + (255 - b) * (percent / 100)));
+    updateDimensions();
+    window.addEventListener('resize', updateDimensions);
     
-    // Convert back to hex
-    return `#${lightenR.toString(16).padStart(2, '0')}${lightenG.toString(16).padStart(2, '0')}${lightenB.toString(16).padStart(2, '0')}`;
-  };
-
+    return () => window.removeEventListener('resize', updateDimensions);
+  }, []);
+  
+  // Fit the graph after it's loaded
+  const handleEngineStop = useCallback(() => {
+    if (fgRef.current && graphData.nodes.length) {
+      // Using the direct method without accessing graphData property
+      fgRef.current.zoomToFit(400, 40);
+    }
+  }, [graphData.nodes.length]);
+  
+  // Animated node movement
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    
+    // Wait for graph to initialize
+    setTimeout(() => {
+      const moveNodes = () => {
+        if (!fgRef.current) return;
+        
+        // Using forceEngine methods directly
+        fgRef.current.d3Force('collide', null);
+        fgRef.current.d3Force('charge').strength(-60);
+        
+        graphData.nodes.forEach(node => {
+          if (node.id === 'athena') return; // Keep central node fixed
+          
+          // Create gentle random movement
+          const xMove = (Math.random() - 0.5) * 0.1;
+          const yMove = (Math.random() - 0.5) * 0.1;
+          
+          if (node.x !== undefined && node.y !== undefined) {
+            node.x += xMove;
+            node.y += yMove;
+          }
+        });
+        
+        fgRef.current.refresh();
+      };
+      
+      interval = setInterval(moveNodes, 100);
+    }, 2000);
+    
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [graphData.nodes]);
+  
   return (
-    <div className="w-full h-full bg-[#0c0c1c] relative">
+    <div id="graph-container" className="w-full h-full">
       <ForceGraph2D
-        ref={graphRef}
+        ref={fgRef}
         graphData={graphData}
+        nodeLabel="label"
+        nodeColor={getNodeColor}
+        nodeRelSize={8}
+        nodeVal={(node) => (node as GraphNode).relevancia || 1}
+        linkWidth={(link) => {
+          const linkId = `${link.source}-${link.target}`;
+          return impulses.has(linkId) ? 2 : 1;
+        }}
+        linkColor={(link) => {
+          const linkId = `${link.source}-${link.target}`;
+          return impulses.has(linkId) ? '#9b87f5' : 'rgba(155, 135, 245, 0.3)';
+        }}
+        onNodeClick={onNodeClick}
+        onEngineStop={handleEngineStop}
         width={dimensions.width}
         height={dimensions.height}
-        nodeCanvasObject={nodeCanvasObject}
-        linkCanvasObject={linkCanvasObject}
-        nodeRelSize={6}
-        backgroundColor="#0c0c1c"
-        d3VelocityDecay={0.15}  // Lower for more fluid movement
-        cooldownTicks={100}
-        onNodeHover={handleNodeHover}
-        onNodeClick={handleNodeClick}
-        onNodeDrag={handleNodeDrag}
-        onNodeDragEnd={handleNodeDragEnd}
-        enableNodeDrag={true}
-        onEngineStop={() => {
-          if (graphRef.current) {
-            graphRef.current.zoomToFit(400, 50);
-          }
-        }}
       />
-      
-      {/* Tooltip */}
-      {tooltipPos.show && hoveredNode && (
-        <motion.div 
-          className="absolute px-3 py-2 rounded-md bg-background/90 border border-card shadow-lg backdrop-blur-sm z-10"
-          style={{
-            left: tooltipPos.x,
-            top: tooltipPos.y,
-            pointerEvents: 'none'
-          }}
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.2 }}
-        >
-          <p className="font-medium mb-1 text-sm">{hoveredNode.label}</p>
-          <div className="text-xs text-foreground/70 space-y-1">
-            <p>Tipo: {formatNodeType(hoveredNode.type)}</p>
-            {hoveredNode.lastAccess && (
-              <p>Último acesso: {hoveredNode.lastAccess}</p>
-            )}
-            <p>Conexões: {hoveredNode.connections?.length || 0}</p>
-          </div>
-        </motion.div>
-      )}
     </div>
   );
-}
+};
 
-// Helper function to format node type
-function formatNodeType(type: string): string {
-  const types: Record<string, string> = {
-    subcerebro: "Subcérebro",
-    projeto: "Projeto",
-    habito: "Hábito",
-    favorito: "Favorito",
-    pensamento: "Pensamento",
-    athena: "Athena IA"
-  };
-  
-  return types[type] || "Desconhecido";
-}
+export default SubbrainGraph;
