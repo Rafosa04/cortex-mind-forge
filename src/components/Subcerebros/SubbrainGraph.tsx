@@ -145,7 +145,7 @@ export function SubbrainGraph({ graphData, onNodeClick, showMiniMap = true }: Su
     const now = Date.now();
     const pulseFactor = node.id === 'athena' ? 
       1 + 0.15 * Math.sin(now / 400) : 
-      1 + 0.1 * Math.sin(now / (800 + parseInt(node.id.substr(0, 1).charCodeAt(0) * 100)));
+      1 + 0.1 * Math.sin(now / (800 + parseInt(node.id.substring(0, 1).charCodeAt(0).toString()) * 100));
     
     nodeSize *= pulseFactor;
     
@@ -278,7 +278,8 @@ export function SubbrainGraph({ graphData, onNodeClick, showMiniMap = true }: Su
           node.fy = node.y;
         }}
         enableNodeDrag={true}
-        enableZoomPanInteraction={true}
+        enableZoomInteraction={true}
+        enablePanInteraction={true}
         width={dimensions.width}
         height={dimensions.height}
       />
@@ -329,7 +330,8 @@ export function SubbrainGraph({ graphData, onNodeClick, showMiniMap = true }: Su
               height={192}
               onNodeClick={null}
               onLinkClick={null}
-              enableZoomPanInteraction={false}
+              enableZoomInteraction={false}
+              enablePanInteraction={false}
               enableNodeDrag={false}
             />
           )}
