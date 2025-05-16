@@ -1,24 +1,24 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, Plus, Brain, Trash2, Edit, Link, LayoutGrid, Album, X } from "lucide-react";
+import { Search, Plus, Brain, Filter, LayoutGrid, X, Edit, Link, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Card } from "@/components/ui/card";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetClose } from "@/components/ui/sheet";
-import { NeuralGraph } from "@/components/Subcerebros/NeuralGraph";
-import { NovoSubcerebroForm } from "@/components/Subcerebros/NovoSubcerebroForm";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "@/components/ui/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
+import { 
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { NeuralGraph } from "@/components/Subcerebros/NeuralGraph";
+import { SubcerebroCreationForm } from "@/components/Subcerebros/SubcerebroCreationForm";
+import { timeAgo } from "@/lib/utils";
 
 export default function Subcerebros() {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -29,6 +29,7 @@ export default function Subcerebros() {
   const [filterArea, setFilterArea] = useState("all");
   const [isAthenaAnalyzing, setIsAthenaAnalyzing] = useState(false);
   const [athenaInsight, setAthenaInsight] = useState<string | null>(null);
+  const [showMiniMap, setShowMiniMap] = useState(true);
   
   // Handle node click - show sidebar with details
   const handleNodeClick = (node: any) => {
@@ -52,7 +53,7 @@ export default function Subcerebros() {
       if (selectedNode.type === "subcerebro") {
         insight = `Este subcérebro está conectado a ${selectedNode.connections.length} entidades. 
                   Observo que você tendeu a acessá-lo mais frequentemente em dias úteis, 
-                  geralmente relacionado a atividades de ${selectedNode.tags[0]} e ${selectedNode.tags[1]}. 
+                  geralmente relacionado a atividades de ${selectedNode.tags?.[0] || 'desenvolvimento'} e ${selectedNode.tags?.[1] || 'produtividade'}. 
                   Sugiro conectá-lo também ao nó de "Cronograma do Projeto" para aumentar sua produtividade nesta área.`;
       } else if (selectedNode.type === "projeto") {
         insight = `Este projeto está ativo há 5 dias e conectado a ${selectedNode.connections.length} outras entidades. 
@@ -61,10 +62,10 @@ export default function Subcerebros() {
       } else if (selectedNode.type === "habito") {
         insight = `Este hábito está conectado a ${selectedNode.connections.length} entidades no seu CÓRTEX. 
                   Sua consistência está em 87% nos últimos 10 dias. Continue assim! 
-                  Percebo que este hábito está fortalecendo especialmente sua área de ${selectedNode.tags[0]}.`;
+                  Percebo que este hábito está fortalecendo especialmente sua área de ${selectedNode.tags?.[0] || 'saúde'}.`;
       } else {
         insight = `Esta entidade está conectada a ${selectedNode.connections.length} outros nós e 
-                  parece ser parte importante do seu fluxo de pensamento sobre ${selectedNode.tags[0]}. 
+                  parece ser parte importante do seu fluxo de pensamento sobre ${selectedNode.tags?.[0] || 'produtividade'}. 
                   Sugiro associá-la também ao subcérebro de Desenvolvimento Pessoal para maximizar seu impacto.`;
       }
       
@@ -74,7 +75,7 @@ export default function Subcerebros() {
         title: "Análise da Athena completada",
         description: "Novos insights disponíveis.",
       });
-    }, 2000);
+    }, 1500);
   };
   
   // Close the Athena insight dialog
@@ -94,96 +95,102 @@ export default function Subcerebros() {
     setIsDetailsPanelOpen(false);
     setSelectedNode(null);
   };
+
+  // Toggle mini map
+  const toggleMiniMap = () => {
+    setShowMiniMap(!showMiniMap);
+    toast({
+      title: showMiniMap ? "Mini mapa desativado" : "Mini mapa ativado",
+      duration: 2000,
+    });
+  };
   
   return (
-    <div className="w-full max-w-7xl mx-auto relative">
+    <div className="w-full h-[calc(100vh-60px)] max-w-7xl mx-auto relative overflow-hidden">
       {/* Header Section with animations */}
       <motion.div
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
-        className="flex flex-col gap-6 mb-6"
+        className="absolute top-0 left-0 right-0 z-10 p-4 bg-background/80 backdrop-blur-md border-b border-border/30"
       >
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <motion.h2
-            initial={{ opacity: 0, scale: 0.92 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.5, delay: 0.1 }}
-            className="text-2xl font-bold text-primary flex items-center gap-2"
-          >
-            <Brain className="h-6 w-6" />
-            Subcérebros
-          </motion.h2>
-          <Button 
-            variant="secondary" 
-            onClick={() => setIsCreateModalOpen(true)}
-            className="flex items-center gap-2 group relative overflow-hidden"
-          >
-            <span className="absolute inset-0 bg-secondary/20 w-0 group-hover:w-full transition-all duration-500 ease-out"></span>
-            <Plus size={18} className="relative z-10" />
-            <span className="relative z-10">Novo Subcérebro</span>
-          </Button>
-        </div>
-        
-        {/* Search and Filters */}
-        <motion.div 
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.2 }}
-          className="flex flex-col lg:flex-row gap-3"
-        >
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-foreground/60" size={18} />
-            <Input
-              className="pl-10 border-card bg-background/30 focus:border-secondary"
-              placeholder="Buscar em todos os subcérebros..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
+        <div className="flex flex-col gap-4">
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+            <motion.h2
+              initial={{ opacity: 0, scale: 0.92 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.5, delay: 0.1 }}
+              className="text-2xl font-bold text-primary flex items-center gap-2"
+            >
+              <Brain className="h-6 w-6" />
+              Subcérebros
+            </motion.h2>
+            <Button 
+              variant="secondary" 
+              onClick={() => setIsCreateModalOpen(true)}
+              className="flex items-center gap-2 group relative overflow-hidden"
+            >
+              <span className="absolute inset-0 bg-purple-500/20 w-0 group-hover:w-full transition-all duration-500 ease-out"></span>
+              <Plus size={18} className="relative z-10" />
+              <span className="relative z-10">Novo Subcérebro</span>
+            </Button>
           </div>
-          <Select value={filterType} onValueChange={setFilterType}>
-            <SelectTrigger className="w-full lg:w-48 border-card bg-background/30">
-              <SelectValue placeholder="Todos os tipos" />
-            </SelectTrigger>
-            <SelectContent className="bg-card/95 backdrop-blur-md border-card">
-              <SelectItem value="all">Todos os tipos</SelectItem>
-              <SelectItem value="subcerebro">Subcérebros</SelectItem>
-              <SelectItem value="projeto">Projetos</SelectItem>
-              <SelectItem value="habito">Hábitos</SelectItem>
-              <SelectItem value="favorito">Favoritos</SelectItem>
-              <SelectItem value="pensamento">Pensamentos</SelectItem>
-            </SelectContent>
-          </Select>
           
-          <Select value={filterArea} onValueChange={setFilterArea}>
-            <SelectTrigger className="w-full lg:w-48 border-card bg-background/30">
-              <SelectValue placeholder="Todas as áreas" />
-            </SelectTrigger>
-            <SelectContent className="bg-card/95 backdrop-blur-md border-card">
-              <SelectItem value="all">Todas as áreas</SelectItem>
-              <SelectItem value="pessoal">Pessoal</SelectItem>
-              <SelectItem value="profissional">Profissional</SelectItem>
-              <SelectItem value="saude">Saúde</SelectItem>
-              <SelectItem value="criatividade">Criatividade</SelectItem>
-              <SelectItem value="financas">Finanças</SelectItem>
-              <SelectItem value="educacao">Educação</SelectItem>
-            </SelectContent>
-          </Select>
-        </motion.div>
-        
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.5, delay: 0.3 }}
-          className="text-sm text-foreground/70 italic text-center bg-card/20 backdrop-blur-sm py-2 px-4 rounded-md border border-card/50"
-        >
-          <span className="block md:hidden">
-            "Conecte, expanda, evolua."
-          </span>
-          <span className="hidden md:block">
+          {/* Search and Filters */}
+          <motion.div 
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.2 }}
+            className="flex flex-col lg:flex-row gap-3"
+          >
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-foreground/60" size={18} />
+              <Input
+                className="pl-10 border-card bg-background/30 focus:border-secondary"
+                placeholder="Buscar em todos os subcérebros..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
+            <Select value={filterType} onValueChange={setFilterType}>
+              <SelectTrigger className="w-full lg:w-48 border-card bg-background/30">
+                <SelectValue placeholder="Todos os tipos" />
+              </SelectTrigger>
+              <SelectContent className="bg-card/95 backdrop-blur-md border-card">
+                <SelectItem value="all">Todos os tipos</SelectItem>
+                <SelectItem value="subcerebro">Subcérebros</SelectItem>
+                <SelectItem value="projeto">Projetos</SelectItem>
+                <SelectItem value="habito">Hábitos</SelectItem>
+                <SelectItem value="favorito">Favoritos</SelectItem>
+                <SelectItem value="pensamento">Pensamentos</SelectItem>
+              </SelectContent>
+            </Select>
+            
+            <Select value={filterArea} onValueChange={setFilterArea}>
+              <SelectTrigger className="w-full lg:w-48 border-card bg-background/30">
+                <SelectValue placeholder="Todas as áreas" />
+              </SelectTrigger>
+              <SelectContent className="bg-card/95 backdrop-blur-md border-card">
+                <SelectItem value="all">Todas as áreas</SelectItem>
+                <SelectItem value="pessoal">Pessoal</SelectItem>
+                <SelectItem value="profissional">Profissional</SelectItem>
+                <SelectItem value="saude">Saúde</SelectItem>
+                <SelectItem value="criatividade">Criatividade</SelectItem>
+                <SelectItem value="financas">Finanças</SelectItem>
+                <SelectItem value="educacao">Educação</SelectItem>
+              </SelectContent>
+            </Select>
+          </motion.div>
+          
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.5, delay: 0.3 }}
+            className="text-sm text-foreground/70 italic text-center bg-card/20 backdrop-blur-sm py-2 px-4 rounded-md border border-card/50"
+          >
             "Cada subcérebro é uma constelação da sua consciência digital. Conecte, expanda, evolua."
-          </span>
-        </motion.div>
+          </motion.div>
+        </div>
       </motion.div>
 
       {/* Neural Graph Area with animated entry */}
@@ -191,27 +198,33 @@ export default function Subcerebros() {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.7, delay: 0.4 }}
-        className="w-full min-h-[70vh] rounded-lg shadow-xl border border-card bg-background/30 backdrop-blur-sm overflow-hidden relative"
+        className="w-full h-full pt-36 bg-[#0C0C1C] rounded-lg shadow-xl border border-card overflow-hidden relative"
       >
         <NeuralGraph 
           onNodeClick={handleNodeClick} 
           searchQuery={searchQuery} 
           filterType={filterType} 
           filterArea={filterArea}
+          showMiniMap={showMiniMap}
         />
-        
-        {/* Visual hint overlay - shows only on initial load */}
-        <motion.div 
-          initial={{ opacity: 0.8 }}
-          animate={{ opacity: 0 }}
-          transition={{ duration: 2, delay: 1.5 }}
-          className="absolute inset-0 pointer-events-none flex items-center justify-center"
+      </motion.div>
+
+      {/* Mini Map Toggle Button */}
+      <motion.div
+        initial={{ opacity: 0, scale: 0.8 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ delay: 0.8 }}
+        className="absolute bottom-6 right-6 z-20"
+      >
+        <Button
+          variant="outline"
+          size="sm"
+          className="rounded-full w-10 h-10 p-0 bg-background/30 backdrop-blur-md border-card"
+          onClick={toggleMiniMap}
+          title={showMiniMap ? "Desativar mini mapa" : "Ativar mini mapa"}
         >
-          <div className="text-center bg-background/50 backdrop-blur-sm p-5 rounded-xl">
-            <Brain size={48} className="mx-auto mb-3 text-primary opacity-80" />
-            <p className="text-foreground/70">Interaja com os nós para visualizar detalhes</p>
-          </div>
-        </motion.div>
+          <LayoutGrid size={18} />
+        </Button>
       </motion.div>
 
       {/* Node Details Side Panel */}
@@ -279,6 +292,12 @@ export default function Subcerebros() {
                             <span className="text-foreground/60">Último acesso:</span>
                             <span>{selectedNode.lastAccess}</span>
                           </p>
+                          {selectedNode.lastAccess && (
+                            <p className="flex justify-between">
+                              <span className="text-foreground/60">Há:</span>
+                              <span>{timeAgo(selectedNode.lastAccess)}</span>
+                            </p>
+                          )}
                         </div>
                       </div>
                       
@@ -293,36 +312,53 @@ export default function Subcerebros() {
                             className={`h-full ${getNodeBgClass(selectedNode.type)}`}
                           />
                         </div>
+                        <p className="text-xs text-right text-foreground/60">
+                          {selectedNode.relevancia || 5}/10
+                        </p>
                       </div>
                     </TabsContent>
                     
                     <TabsContent value="connections" className="space-y-4">
-                      <p className="text-sm font-medium text-foreground/70">Conexões</p>
-                      <div className="grid gap-2 overflow-y-auto max-h-[300px]">
-                        {selectedNode.connections?.map((conn: any, i: number) => (
-                          <div 
-                            key={i} 
-                            className="flex items-center gap-2 p-2 rounded-md bg-card/40 hover:bg-card/60 transition-colors cursor-pointer"
-                            onClick={() => {
-                              const clickedNode = {
-                                id: conn.id,
-                                label: conn.label,
-                                type: conn.type
-                              };
-                              handleNodeClick(clickedNode);
-                            }}
-                          >
-                            <span 
-                              className="h-2 w-2 rounded-full" 
-                              style={{ backgroundColor: getNodeColor(conn.type) }}
-                            />
-                            <span className="line-clamp-1">{conn.label}</span>
-                            <span className="ml-auto text-xs text-foreground/50 capitalize">
-                              {formatNodeType(conn.type)}
-                            </span>
-                          </div>
-                        ))}
-                      </div>
+                      <p className="text-sm font-medium text-foreground/70">
+                        Conexões ({selectedNode.connections?.length || 0})
+                      </p>
+                      {selectedNode.connections?.length > 0 ? (
+                        <div className="grid gap-2 overflow-y-auto max-h-[300px]">
+                          {selectedNode.connections?.map((conn: any, i: number) => (
+                            <div 
+                              key={i} 
+                              className="flex items-center gap-2 p-2 rounded-md bg-card/40 hover:bg-card/60 transition-colors cursor-pointer"
+                              onClick={() => {
+                                const clickedNode = {
+                                  id: conn.id,
+                                  label: conn.label,
+                                  type: conn.type,
+                                  connections: conn.connections || [],
+                                  tags: conn.tags || [],
+                                  relevancia: conn.relevancia || 5,
+                                  createdAt: conn.createdAt || '2024-05-01',
+                                  lastAccess: conn.lastAccess || '2024-05-15',
+                                };
+                                handleNodeClick(clickedNode);
+                              }}
+                            >
+                              <span 
+                                className="h-2 w-2 rounded-full" 
+                                style={{ backgroundColor: getNodeColor(conn.type) }}
+                              />
+                              <span className="line-clamp-1">{conn.label}</span>
+                              <span className="ml-auto text-xs text-foreground/50 capitalize">
+                                {formatNodeType(conn.type)}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="text-center py-6 text-foreground/50 bg-card/20 rounded-md">
+                          <p>Nenhuma conexão encontrada</p>
+                          <p className="text-xs mt-1">Crie novas conexões usando o botão abaixo</p>
+                        </div>
+                      )}
                     </TabsContent>
                   </Tabs>
                   
@@ -397,11 +433,11 @@ export default function Subcerebros() {
         <DialogContent className="bg-background/95 backdrop-blur-md border-card max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <span className="h-2 w-2 rounded-full bg-secondary"></span>
+              <span className="h-2 w-2 rounded-full bg-purple-500"></span>
               Criar Novo Subcérebro
             </DialogTitle>
           </DialogHeader>
-          <NovoSubcerebroForm onSubmit={() => setIsCreateModalOpen(false)} />
+          <SubcerebroCreationForm onSubmit={() => setIsCreateModalOpen(false)} />
         </DialogContent>
       </Dialog>
     </div>
@@ -411,12 +447,12 @@ export default function Subcerebros() {
 // Helper functions
 function formatNodeType(type: string): string {
   const types: Record<string, string> = {
+    athena: "Athena IA",
     subcerebro: "Subcérebro",
     projeto: "Projeto",
     habito: "Hábito",
     favorito: "Favorito",
-    pensamento: "Pensamento",
-    athena: "Athena IA"
+    pensamento: "Pensamento"
   };
   
   return types[type] || "Desconhecido";
@@ -424,11 +460,11 @@ function formatNodeType(type: string): string {
 
 function getNodeColor(type: string): string {
   const colors: Record<string, string> = {
-    athena: "#9f7aea", // lilás
-    subcerebro: "#993887", // roxo
-    projeto: "#60B5B5", // azul
-    habito: "#34D399", // verde
-    favorito: "#FBBF24", // amarelo
+    athena: "#9b87f5", // lilás
+    subcerebro: "#8B5CF6", // roxo
+    projeto: "#0EA5E9", // azul
+    habito: "#10B981", // verde
+    favorito: "#F59E0B", // amarelo
     pensamento: "#D1D5DB" // cinza claro
   };
   
@@ -438,8 +474,8 @@ function getNodeColor(type: string): string {
 function getNodeClass(type: string): string {
   const classes: Record<string, string> = {
     athena: "bg-purple-500/20 text-purple-500",
-    subcerebro: "bg-secondary/20 text-secondary",
-    projeto: "bg-primary/20 text-primary",
+    subcerebro: "bg-purple-600/20 text-purple-600",
+    projeto: "bg-blue-500/20 text-blue-500",
     habito: "bg-green-500/20 text-green-500",
     favorito: "bg-yellow-500/20 text-yellow-500",
     pensamento: "bg-gray-400/20 text-gray-400"
@@ -451,8 +487,8 @@ function getNodeClass(type: string): string {
 function getNodeBgClass(type: string): string {
   const classes: Record<string, string> = {
     athena: "bg-purple-500",
-    subcerebro: "bg-secondary",
-    projeto: "bg-primary",
+    subcerebro: "bg-purple-600",
+    projeto: "bg-blue-500",
     habito: "bg-green-500",
     favorito: "bg-yellow-500",
     pensamento: "bg-gray-400"
@@ -468,9 +504,22 @@ function getNodeIcon(type: string) {
     case 'subcerebro':
       return <Brain size={20} />;
     case 'projeto':
-      return <LayoutGrid size={20} />;
+      return (
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M2 9V5c0-1.1.9-2 2-2h3.93a2 2 0 0 1 1.66.9l.82 1.2a2 2 0 0 0 1.66.9H20a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-1" />
+          <path d="M2 13h10" />
+          <path d="m5 10-3 3 3 3" />
+        </svg>
+      );
     case 'habito':
-      return <Album size={20} />;
+      return (
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M22 12c0 6-4.39 10-9.806 10C7.792 22 4.24 19.972 3 16.5" />
+          <path d="m2 12 3-3 2.981 3" />
+          <path d="M2 12h10.713" />
+          <path d="M2.5 4c1-1.166 2-2 3.5-2 4.59 0 8 3.966 8 10 0 .947-.088 1.85-.248 2.698" />
+        </svg>
+      );
     case 'favorito':
       return (
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

@@ -1,22 +1,24 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
-import SubbrainGraph from './SubbrainGraph';
+import { SubbrainGraph } from './SubbrainGraph';
 
 interface NeuralGraphProps {
   onNodeClick: (node: any) => void;
   searchQuery?: string;
   filterType?: string;
   filterArea?: string;
+  showMiniMap?: boolean;
 }
 
 export function NeuralGraph({ 
   onNodeClick, 
   searchQuery = '', 
   filterType = 'all',
-  filterArea = 'all' 
+  filterArea = 'all',
+  showMiniMap = true
 }: NeuralGraphProps) {
-  const canvasRef = useRef<HTMLDivElement>(null);
+  const graphRef = useRef<HTMLDivElement>(null);
   const [mockNodes, setMockNodes] = useState<any[]>([]);
   const [mockLinks, setMockLinks] = useState<any[]>([]);
   const [filteredData, setFilteredData] = useState<{nodes: any[], links: any[]}>({ nodes: [], links: [] });
@@ -323,12 +325,37 @@ export function NeuralGraph({
     nodes: filteredData.nodes,
     links: filteredData.links
   };
+  
+  // No data view
+  if (filteredData.nodes.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full text-center p-4">
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="max-w-md"
+        >
+          <div className="bg-card/30 p-8 rounded-lg border border-card/50">
+            <div className="text-primary text-5xl mb-4">🧠</div>
+            <h3 className="text-xl font-semibold mb-2">Nenhum nó encontrado</h3>
+            <p className="text-foreground/70 mb-4">
+              Não encontramos nenhum subcérebro ou entidade que corresponda aos seus filtros.
+            </p>
+            <p className="text-xs text-foreground/50">
+              Tente remover algum filtro ou criar um novo subcérebro.
+            </p>
+          </div>
+        </motion.div>
+      </div>
+    );
+  }
 
   return (
-    <div ref={canvasRef} className="w-full h-full">
+    <div ref={graphRef} className="w-full h-full">
       <SubbrainGraph 
         graphData={graphData}
         onNodeClick={onNodeClick}
+        showMiniMap={showMiniMap}
       />
     </div>
   );
