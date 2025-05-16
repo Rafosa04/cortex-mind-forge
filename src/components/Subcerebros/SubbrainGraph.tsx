@@ -30,7 +30,6 @@ export interface SubbrainGraphProps {
     links: GraphLink[];
   };
   onNodeClick: (node: any) => void;
-  showMiniMap?: boolean; // We'll keep this prop but ignore it since we're removing the minimap
 }
 
 export function SubbrainGraph({ graphData, onNodeClick }: SubbrainGraphProps) {
@@ -155,19 +154,15 @@ export function SubbrainGraph({ graphData, onNodeClick }: SubbrainGraphProps) {
   
   // Custom node paint function for improved pulsating effect
   const paintNode = useCallback((node: GraphNode, ctx: CanvasRenderingContext2D, globalScale: number) => {
-    const isHovered = hoveredNode && hoveredNode.id === node.id;
     const label = node.label;
-    const fontSize = isHovered ? 14 : 12;
+    const fontSize = 12;
     const color = getNodeColor(node);
     
-    // Node size based on relevance and hover state
+    // Node size based on relevance
     let nodeSize = (3 + (node.relevancia || 1) / 2) / globalScale;
     if (node.id === 'athena') nodeSize *= 1.5; // Make Athena larger
     
-    // Additional size increase when hovered
-    if (isHovered) nodeSize *= 1.3;
-    
-    // Smoother pulsating effect with combination of sine waves
+    // Enhanced pulsating effect with combination of sine waves
     const now = Date.now();
     const nodeNum = parseInt(node.id.substring(node.id.length - 1)) || 1;
     const primaryFrequency = node.id === 'athena' ? 600 : 1000 + (nodeNum * 100);
@@ -183,11 +178,9 @@ export function SubbrainGraph({ graphData, onNodeClick }: SubbrainGraphProps) {
       1 + 0.08 * combinedWave : 
       1 + 0.06 * combinedWave;
     
-    nodeSize *= pulseFactor;
-    
-    // Enhanced glow effect
-    const glowSize = nodeSize * 1.5;
-    const baseGlowOpacity = isHovered ? 0.45 : 0.25;
+    // Keep node size consistent but let glow pulse
+    const glowSize = nodeSize * 1.5 * pulseFactor;
+    const baseGlowOpacity = 0.25;
     const glowOpacity = baseGlowOpacity + (0.05 * combinedWave);
     
     ctx.beginPath();
@@ -209,36 +202,21 @@ export function SubbrainGraph({ graphData, onNodeClick }: SubbrainGraphProps) {
     ctx.lineWidth = 0.5 / globalScale;
     ctx.stroke();
     
-    // Only draw labels for important nodes or when zoomed in or hovered
-    if (node.id === 'athena' || globalScale > 1 || isHovered) {
+    // Only draw labels for important nodes or when zoomed in
+    if (node.id === 'athena' || globalScale > 1) {
       ctx.font = `${fontSize / globalScale}px Sans-Serif`;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.fillStyle = 'white';
       
-      // Background for text
-      const textWidth = ctx.measureText(label).width;
-      const padding = 4 / globalScale;
-      
-      if (isHovered) {
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
-        ctx.fillRect(
-          (node.x || 0) - textWidth / 2 - padding,
-          (node.y || 0) + nodeSize + padding,
-          textWidth + padding * 2,
-          fontSize / globalScale + padding * 2
-        );
-        ctx.fillStyle = 'white';
-      }
-      
-      // Draw text
+      // Draw text below node
       ctx.fillText(
         label, 
         node.x || 0, 
-        (node.y || 0) + nodeSize + (fontSize / globalScale) / 2 + (isHovered ? padding : 0)
+        (node.y || 0) + nodeSize + (fontSize / globalScale) / 2
       );
     }
-  }, [hoveredNode]);
+  }, []);
   
   // Custom link paint function for enhanced animated links
   const paintLink = useCallback((link: any, ctx: CanvasRenderingContext2D) => {
@@ -257,11 +235,9 @@ export function SubbrainGraph({ graphData, onNodeClick }: SubbrainGraphProps) {
     const hasImpulse = impulses.has(linkId) || impulses.has(reverseLinkId);
     const impulseValue = impulses.get(linkId) || impulses.get(reverseLinkId) || 0;
     
-    // Set line width based on link state
-    const sourceIsHovered = hoveredNode && hoveredNode.id === source.id;
-    const targetIsHovered = hoveredNode && hoveredNode.id === target.id;
-    const isRelatedToHoveredNode = sourceIsHovered || targetIsHovered;
-    const lineWidth = isRelatedToHoveredNode ? 1.8 : 1.0;
+    // Set line width and opacity
+    const lineWidth = 1.0;
+    const opacity = 0.4;
     
     // Create gradient
     const gradient = ctx.createLinearGradient(
@@ -269,9 +245,6 @@ export function SubbrainGraph({ graphData, onNodeClick }: SubbrainGraphProps) {
     );
     gradient.addColorStop(0, sourceColor);
     gradient.addColorStop(1, targetColor);
-    
-    // Set line opacity based on hover state
-    const opacity = isRelatedToHoveredNode ? 0.9 : 0.4;
     
     // Draw link with gradient
     ctx.beginPath();
@@ -322,7 +295,7 @@ export function SubbrainGraph({ graphData, onNodeClick }: SubbrainGraphProps) {
     }
     
     ctx.globalAlpha = 1; // Reset alpha
-  }, [graphData.nodes, hoveredNode, impulses]);
+  }, [graphData.nodes, impulses]);
   
   return (
     <div className="relative w-full h-full bg-[#0C0C1C]">
@@ -334,8 +307,7 @@ export function SubbrainGraph({ graphData, onNodeClick }: SubbrainGraphProps) {
         nodeCanvasObject={paintNode}
         linkCanvasObject={paintLink}
         linkDirectionalParticles={0}
-        nodeLabel={null} // Using custom tooltip instead
-        onNodeHover={handleNodeHover}
+        nodeLabel={null} // No tooltip
         onNodeClick={(node) => {
           if (node) onNodeClick(node);
         }}
@@ -352,35 +324,6 @@ export function SubbrainGraph({ graphData, onNodeClick }: SubbrainGraphProps) {
         width={dimensions.width}
         height={dimensions.height}
       />
-      
-      {/* Custom tooltip for hover */}
-      {hoveredNode && (
-        <motion.div
-          initial={{ opacity: 0, scale: 0.8 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.15 }}
-          className="absolute pointer-events-none bg-background/90 backdrop-blur-sm p-2 rounded-md border border-card shadow-lg z-10"
-          style={{
-            left: tooltipPosition.x,
-            top: tooltipPosition.y
-          }}
-        >
-          <div className="flex items-center gap-2">
-            <span 
-              className="h-2 w-2 rounded-full"
-              style={{ backgroundColor: getNodeColor(hoveredNode) }}
-            ></span>
-            <span className="font-medium">{hoveredNode.label}</span>
-          </div>
-          <div className="text-xs text-foreground/70 mt-1">
-            <p>Tipo: {formatNodeType(hoveredNode.type)}</p>
-            <p>Último acesso: {hoveredNode.lastAccess || 'N/A'}</p>
-            <p>Conexões: {hoveredNode.connections?.length || 0}</p>
-          </div>
-        </motion.div>
-      )}
-      
-      {/* Minimap removed as requested */}
     </div>
   );
 }

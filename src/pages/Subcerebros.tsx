@@ -1,7 +1,6 @@
-
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, Plus, Brain, Filter, LayoutGrid, X, Edit, Link, Trash2 } from "lucide-react";
+import { Search, Plus, Brain, Link, X, Edit, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -29,7 +28,6 @@ export default function Subcerebros() {
   const [filterArea, setFilterArea] = useState("all");
   const [isAthenaAnalyzing, setIsAthenaAnalyzing] = useState(false);
   const [athenaInsight, setAthenaInsight] = useState<string | null>(null);
-  const [showMiniMap, setShowMiniMap] = useState(true);
   
   // Handle node click - show sidebar with details
   const handleNodeClick = (node: any) => {
@@ -94,15 +92,6 @@ export default function Subcerebros() {
     
     setIsDetailsPanelOpen(false);
     setSelectedNode(null);
-  };
-
-  // Toggle mini map
-  const toggleMiniMap = () => {
-    setShowMiniMap(!showMiniMap);
-    toast({
-      title: showMiniMap ? "Mini mapa desativado" : "Mini mapa ativado",
-      duration: 2000,
-    });
   };
   
   return (
@@ -205,26 +194,7 @@ export default function Subcerebros() {
           searchQuery={searchQuery} 
           filterType={filterType} 
           filterArea={filterArea}
-          showMiniMap={showMiniMap}
         />
-      </motion.div>
-
-      {/* Mini Map Toggle Button */}
-      <motion.div
-        initial={{ opacity: 0, scale: 0.8 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ delay: 0.8 }}
-        className="absolute bottom-6 right-6 z-20"
-      >
-        <Button
-          variant="outline"
-          size="sm"
-          className="rounded-full w-10 h-10 p-0 bg-background/30 backdrop-blur-md border-card"
-          onClick={toggleMiniMap}
-          title={showMiniMap ? "Desativar mini mapa" : "Ativar mini mapa"}
-        >
-          <LayoutGrid size={18} />
-        </Button>
       </motion.div>
 
       {/* Node Details Side Panel */}

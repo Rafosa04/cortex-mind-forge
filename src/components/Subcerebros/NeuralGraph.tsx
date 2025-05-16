@@ -8,15 +8,13 @@ interface NeuralGraphProps {
   searchQuery?: string;
   filterType?: string;
   filterArea?: string;
-  showMiniMap?: boolean; // We'll keep the prop but ignore it in SubbrainGraph
 }
 
 export function NeuralGraph({ 
   onNodeClick, 
   searchQuery = '', 
   filterType = 'all',
-  filterArea = 'all',
-  showMiniMap = true 
+  filterArea = 'all'
 }: NeuralGraphProps) {
   const graphRef = useRef<HTMLDivElement>(null);
   const [mockNodes, setMockNodes] = useState<any[]>([]);
@@ -224,13 +222,13 @@ export function NeuralGraph({
         ...thoughtNodes
       ];
       
-      // Create links between nodes
+      // Create links between nodes, ensuring all are connected to Athena
       const links = [
-        // Athena to subcerebroa
-        { source: 'athena', target: 'sub1' },
-        { source: 'athena', target: 'sub2' },
-        { source: 'athena', target: 'sub3' },
-        { source: 'athena', target: 'sub4' },
+        // All nodes to Athena
+        ...allNodes.filter(node => node.id !== 'athena').map(node => ({
+          source: 'athena',
+          target: node.id
+        })),
         
         // Subcerebroa to projects
         { source: 'sub1', target: 'proj3' },
@@ -312,8 +310,8 @@ export function NeuralGraph({
       link => nodeIds.has(link.source.id || link.source) && nodeIds.has(link.target.id || link.target)
     );
     
-    // Always include Athena node if it's not already included and if not specifically filtering by area
-    if (!nodeIds.has('athena') && filterArea === 'all') {
+    // Always include Athena node if it's not already included
+    if (!nodeIds.has('athena')) {
       filteredNodes.push(mockNodes.find(node => node.id === 'athena'));
     }
     
@@ -355,7 +353,6 @@ export function NeuralGraph({
       <SubbrainGraph 
         graphData={graphData}
         onNodeClick={onNodeClick}
-        showMiniMap={false} // Always pass false to remove the minimap
       />
     </div>
   );
