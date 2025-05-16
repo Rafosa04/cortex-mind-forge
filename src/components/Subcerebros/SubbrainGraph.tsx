@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import ForceGraph2D from 'react-force-graph-2d';
 import { motion } from 'framer-motion';
@@ -31,10 +30,10 @@ export interface SubbrainGraphProps {
     links: GraphLink[];
   };
   onNodeClick: (node: any) => void;
-  showMiniMap?: boolean;
+  showMiniMap?: boolean; // We'll keep this prop but ignore it since we're removing the minimap
 }
 
-export function SubbrainGraph({ graphData, onNodeClick, showMiniMap = true }: SubbrainGraphProps) {
+export function SubbrainGraph({ graphData, onNodeClick }: SubbrainGraphProps) {
   const fgRef = useRef<any>(null);
   const [dimensions, setDimensions] = useState({ width: 800, height: 600 });
   const [nodePositions, setNodePositions] = useState<Map<string, {x: number, y: number}>>(new Map());
@@ -62,33 +61,60 @@ export function SubbrainGraph({ graphData, onNodeClick, showMiniMap = true }: Su
     }
   };
   
-  // Generate random impulses along links
+  // Generate more frequent impulses along links
   useEffect(() => {
+    if (graphData.links.length === 0) return;
+    
+    // Create impulses more frequently
     const interval = setInterval(() => {
-      if (graphData.links.length === 0) return;
+      // Select up to 3 random links to activate simultaneously
+      const numberOfImpulses = Math.min(3, graphData.links.length);
+      const selectedLinks = new Set<number>();
       
-      // Randomly select a link to activate
-      const randomIndex = Math.floor(Math.random() * graphData.links.length);
-      const randomLink = graphData.links[randomIndex];
-      const linkId = `${randomLink.source}-${randomLink.target}`;
+      while (selectedLinks.size < numberOfImpulses) {
+        const randomIndex = Math.floor(Math.random() * graphData.links.length);
+        selectedLinks.add(randomIndex);
+      }
       
-      setImpulses(prev => {
-        const newImpulses = new Map(prev);
-        newImpulses.set(linkId, 1); // Start impulse at full strength
-        return newImpulses;
-      });
-      
-      // Fade out impulse over time
-      setTimeout(() => {
+      // Add impulses for selected links
+      selectedLinks.forEach(index => {
+        const randomLink = graphData.links[index];
+        const source = typeof randomLink.source === 'object' ? randomLink.source.id : randomLink.source;
+        const target = typeof randomLink.target === 'object' ? randomLink.target.id : randomLink.target;
+        const linkId = `${source}-${target}`;
+        
         setImpulses(prev => {
           const newImpulses = new Map(prev);
-          newImpulses.delete(linkId);
+          newImpulses.set(linkId, 0); // Start impulse at beginning of path
           return newImpulses;
         });
-      }, 2000); // 2 seconds to complete animation
-    }, 800); // Create new impulse every 800ms
+      });
+    }, 600); // Create new impulses every 600ms
     
-    return () => clearInterval(interval);
+    // Animation loop for impulse movement
+    const animationInterval = setInterval(() => {
+      setImpulses(prev => {
+        const newImpulses = new Map(prev);
+        
+        // Update all existing impulses
+        for (const [linkId, progress] of prev.entries()) {
+          if (progress >= 1) {
+            // Remove completed impulses
+            newImpulses.delete(linkId);
+          } else {
+            // Move impulses along their paths
+            newImpulses.set(linkId, progress + 0.04); // Speed of impulse movement
+          }
+        }
+        
+        return newImpulses;
+      });
+    }, 30); // Update animation frames every 30ms for smooth movement
+    
+    return () => {
+      clearInterval(interval);
+      clearInterval(animationInterval);
+    };
   }, [graphData.links]);
   
   // Initialize dimensions
@@ -127,7 +153,7 @@ export function SubbrainGraph({ graphData, onNodeClick, showMiniMap = true }: Su
     setHoveredNode(node);
   };
   
-  // Custom node paint function for pulsating effect
+  // Custom node paint function for improved pulsating effect
   const paintNode = useCallback((node: GraphNode, ctx: CanvasRenderingContext2D, globalScale: number) => {
     const isHovered = hoveredNode && hoveredNode.id === node.id;
     const label = node.label;
@@ -141,28 +167,42 @@ export function SubbrainGraph({ graphData, onNodeClick, showMiniMap = true }: Su
     // Additional size increase when hovered
     if (isHovered) nodeSize *= 1.3;
     
-    // Pulsating effect
+    // Smoother pulsating effect with combination of sine waves
     const now = Date.now();
+    const nodeNum = parseInt(node.id.substring(node.id.length - 1)) || 1;
+    const primaryFrequency = node.id === 'athena' ? 600 : 1000 + (nodeNum * 100);
+    const secondaryFrequency = primaryFrequency * 2.5;
+    
+    // Combine two sine waves for a more organic pulsing effect
+    const primaryWave = Math.sin(now / primaryFrequency);
+    const secondaryWave = Math.sin(now / secondaryFrequency) * 0.5;
+    const combinedWave = (primaryWave + secondaryWave) / 1.5;
+    
+    // Apply a more subtle pulse (keeping node size more consistent)
     const pulseFactor = node.id === 'athena' ? 
-      1 + 0.15 * Math.sin(now / 400) : 
-      1 + 0.1 * Math.sin(now / (800 + parseInt(node.id.substring(0, 1).charCodeAt(0).toString()) * 100));
+      1 + 0.08 * combinedWave : 
+      1 + 0.06 * combinedWave;
     
     nodeSize *= pulseFactor;
     
-    // Draw glow effect
-    const glowSize = nodeSize * 1.4;
-    const glowOpacity = isHovered ? 0.4 : 0.2;
+    // Enhanced glow effect
+    const glowSize = nodeSize * 1.5;
+    const baseGlowOpacity = isHovered ? 0.45 : 0.25;
+    const glowOpacity = baseGlowOpacity + (0.05 * combinedWave);
     
     ctx.beginPath();
     ctx.arc(node.x || 0, node.y || 0, glowSize, 0, 2 * Math.PI);
     ctx.fillStyle = `${color}${Math.round(glowOpacity * 255).toString(16).padStart(2, '0')}`;
     ctx.fill();
     
-    // Draw main node
+    // Draw main node with subtle shadow
     ctx.beginPath();
+    ctx.shadowColor = color;
+    ctx.shadowBlur = 10 * pulseFactor;
     ctx.arc(node.x || 0, node.y || 0, nodeSize, 0, 2 * Math.PI);
     ctx.fillStyle = color;
     ctx.fill();
+    ctx.shadowBlur = 0; // Reset shadow after drawing node
     
     // Edge outline for contrast
     ctx.strokeStyle = '#000810';
@@ -200,7 +240,7 @@ export function SubbrainGraph({ graphData, onNodeClick, showMiniMap = true }: Su
     }
   }, [hoveredNode]);
   
-  // Custom link paint function for gradient links
+  // Custom link paint function for enhanced animated links
   const paintLink = useCallback((link: any, ctx: CanvasRenderingContext2D) => {
     const source = typeof link.source === 'object' ? link.source : graphData.nodes.find(n => n.id === link.source);
     const target = typeof link.target === 'object' ? link.target : graphData.nodes.find(n => n.id === link.target);
@@ -211,14 +251,17 @@ export function SubbrainGraph({ graphData, onNodeClick, showMiniMap = true }: Su
     const sourceColor = getNodeColor(source);
     const targetColor = getNodeColor(target);
     
-    // Set line width based on impulse
+    // Get link ID
     const linkId = `${source.id}-${target.id}`;
-    const hasImpulse = impulses.has(linkId);
+    const reverseLinkId = `${target.id}-${source.id}`;
+    const hasImpulse = impulses.has(linkId) || impulses.has(reverseLinkId);
+    const impulseValue = impulses.get(linkId) || impulses.get(reverseLinkId) || 0;
     
-    const lineWidth = hasImpulse ? 1.8 : 0.8;
+    // Set line width based on link state
     const sourceIsHovered = hoveredNode && hoveredNode.id === source.id;
     const targetIsHovered = hoveredNode && hoveredNode.id === target.id;
     const isRelatedToHoveredNode = sourceIsHovered || targetIsHovered;
+    const lineWidth = isRelatedToHoveredNode ? 1.8 : 1.0;
     
     // Create gradient
     const gradient = ctx.createLinearGradient(
@@ -228,7 +271,7 @@ export function SubbrainGraph({ graphData, onNodeClick, showMiniMap = true }: Su
     gradient.addColorStop(1, targetColor);
     
     // Set line opacity based on hover state
-    const opacity = isRelatedToHoveredNode ? 0.9 : hasImpulse ? 0.7 : 0.3;
+    const opacity = isRelatedToHoveredNode ? 0.9 : 0.4;
     
     // Draw link with gradient
     ctx.beginPath();
@@ -238,21 +281,47 @@ export function SubbrainGraph({ graphData, onNodeClick, showMiniMap = true }: Su
     ctx.globalAlpha = opacity;
     ctx.lineWidth = lineWidth;
     ctx.stroke();
-    ctx.globalAlpha = 1;
     
     // If there's an impulse, draw animated dot
     if (hasImpulse) {
-      // Calculate position along the line
-      const impulseValue = impulses.get(linkId) || 0;
+      // Calculate position along the line from source to target
       const dotX = source.x + (target.x - source.x) * impulseValue;
       const dotY = source.y + (target.y - source.y) * impulseValue;
       
-      // Draw the pulse dot
-      ctx.beginPath();
-      ctx.arc(dotX, dotY, 2, 0, Math.PI * 2);
-      ctx.fillStyle = 'white';
-      ctx.fill();
+      // Draw multiple pulse dots to create a comet-like effect
+      const dotSizes = [2.5, 2.0, 1.6, 1.2];
+      const tailPositions = [0, 0.03, 0.06, 0.09]; // Offset for tail dots
+      
+      for (let i = 0; i < dotSizes.length; i++) {
+        const tailOffset = tailPositions[i];
+        const tailPosition = Math.max(0, impulseValue - tailOffset);
+        
+        if (tailPosition > 0) {
+          const tailX = source.x + (target.x - source.x) * tailPosition;
+          const tailY = source.y + (target.y - source.y) * tailPosition;
+          
+          // Draw the pulse dot with glowing effect
+          ctx.beginPath();
+          ctx.arc(tailX, tailY, dotSizes[i], 0, Math.PI * 2);
+          
+          // Gradient for the dot to create glow effect
+          const dotGlow = ctx.createRadialGradient(
+            tailX, tailY, 0, 
+            tailX, tailY, dotSizes[i] * 2
+          );
+          
+          dotGlow.addColorStop(0, 'rgba(255, 255, 255, 1)');
+          dotGlow.addColorStop(0.4, `${sourceColor}Ec`);
+          dotGlow.addColorStop(1, 'rgba(255, 255, 255, 0)');
+          
+          ctx.fillStyle = dotGlow;
+          ctx.globalAlpha = 0.9 - (i * 0.2); // Fade for tail
+          ctx.fill();
+        }
+      }
     }
+    
+    ctx.globalAlpha = 1; // Reset alpha
   }, [graphData.nodes, hoveredNode, impulses]);
   
   return (
@@ -311,32 +380,7 @@ export function SubbrainGraph({ graphData, onNodeClick, showMiniMap = true }: Su
         </motion.div>
       )}
       
-      {/* Mini map (bottom right) */}
-      {showMiniMap && (
-        <div 
-          className="absolute bottom-4 right-4 w-48 h-48 border border-card/50 rounded-lg overflow-hidden shadow-lg bg-[#090914]/90 backdrop-blur-sm"
-          style={{ zIndex: 1000 }}
-        >
-          {graphData.nodes.length > 0 && fgRef.current && (
-            <ForceGraph2D
-              graphData={graphData}
-              nodeRelSize={4}
-              nodeColor={(node) => getNodeColor(node as GraphNode)}
-              linkColor={() => 'rgba(155, 135, 245, 0.3)'}
-              nodeLabel={null}
-              linkDirectionalParticles={0}
-              backgroundColor="#090914"
-              width={192}
-              height={192}
-              onNodeClick={null}
-              onLinkClick={null}
-              enableZoomInteraction={false}
-              enablePanInteraction={false}
-              enableNodeDrag={false}
-            />
-          )}
-        </div>
-      )}
+      {/* Minimap removed as requested */}
     </div>
   );
 }

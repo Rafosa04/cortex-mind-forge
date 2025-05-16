@@ -8,7 +8,7 @@ interface NeuralGraphProps {
   searchQuery?: string;
   filterType?: string;
   filterArea?: string;
-  showMiniMap?: boolean;
+  showMiniMap?: boolean; // We'll keep the prop but ignore it in SubbrainGraph
 }
 
 export function NeuralGraph({ 
@@ -16,7 +16,7 @@ export function NeuralGraph({
   searchQuery = '', 
   filterType = 'all',
   filterArea = 'all',
-  showMiniMap = true
+  showMiniMap = true 
 }: NeuralGraphProps) {
   const graphRef = useRef<HTMLDivElement>(null);
   const [mockNodes, setMockNodes] = useState<any[]>([]);
@@ -355,7 +355,7 @@ export function NeuralGraph({
       <SubbrainGraph 
         graphData={graphData}
         onNodeClick={onNodeClick}
-        showMiniMap={showMiniMap}
+        showMiniMap={false} // Always pass false to remove the minimap
       />
     </div>
   );
