@@ -13,6 +13,7 @@ import Habitos from "./pages/Habitos";
 import Subcerebros from "./pages/Subcerebros";
 import Mensagens from "./pages/Mensagens";
 import Favoritos from "./pages/Favoritos";
+import Salvos from "./pages/Salvos";
 import Diario from "./pages/Diario";
 import Agenda from "./pages/Agenda";
 import Notificacoes from "./pages/Notificacoes";
@@ -42,6 +43,7 @@ const App = () => (
             <Route path="/subcerebros" element={<Subcerebros />} />
             <Route path="/mensagens" element={<Mensagens />} />
             <Route path="/favoritos" element={<Favoritos />} />
+            <Route path="/salvos" element={<Salvos />} />
             <Route path="/diario" element={<Diario />} />
             <Route path="/agenda" element={<Agenda />} />
             <Route path="/notificacoes" element={<Notificacoes />} />
