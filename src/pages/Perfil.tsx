@@ -1,28 +1,145 @@
 
 import { motion } from "framer-motion";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { 
+  User, Edit, Activity, Layers, Check, 
+  Repeat, Star, Brain, MessageSquare, Share2,
+  Link, MessageCircle, TrendingUp
+} from "lucide-react";
+import { useState } from "react";
+import { ProfileHeader } from "@/components/Perfil/ProfileHeader";
+import { CognitiveStats } from "@/components/Perfil/CognitiveStats";
+import { CorTexHighlights } from "@/components/Perfil/CorTexHighlights";
+import { PersonalFeed } from "@/components/Perfil/PersonalFeed";
+import { MentalMirror } from "@/components/Perfil/MentalMirror";
 
 export default function Perfil() {
+  const [activeTab, setActiveTab] = useState("highlights");
+
   return (
-    <div className="w-full max-w-2xl mx-auto bg-card rounded-2xl p-7 shadow-lg">
-      <motion.h2
-        initial={{ opacity: 0, scale: 0.9 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.4 }}
-        className="text-2xl font-bold mb-6 text-primary"
+    <div className="w-full max-w-5xl mx-auto space-y-8">
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        className="space-y-8"
       >
-        Meu Perfil Mental
-      </motion.h2>
-      <div className="flex flex-col md:flex-row gap-6 items-start">
-        <div className="w-24 h-24 rounded-full bg-gradient-to-tr from-primary via-secondary to-accent flex items-center justify-center text-5xl font-bold">{'🤖'}</div>
-        <div>
-          <div className="text-lg font-semibold">Athena User</div>
-          <div className="text-xs text-accent">Plano: Fundador</div>
-          <div className="mt-3 flex gap-3">
-            <div className="bg-primary/15 text-primary px-3 py-1 rounded text-xs">Conquistas</div>
-            <div className="bg-secondary/15 text-secondary px-3 py-1 rounded text-xs">Selos: 🏆 Fundador</div>
-          </div>
-        </div>
-      </div>
+        {/* Frase de identidade */}
+        <motion.p 
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.3, duration: 0.8 }}
+          className="text-center text-lg font-light italic text-primary/80"
+        >
+          "Esse sou eu. Não apenas quem fui, mas o que estou me tornando."
+        </motion.p>
+
+        {/* Seção 1: Cabeçalho do Perfil */}
+        <ProfileHeader />
+
+        {/* Seção 2: Estatísticas Cognitivas */}
+        <CognitiveStats />
+
+        {/* Abas para outras seções */}
+        <Tabs 
+          defaultValue="highlights" 
+          className="w-full"
+          value={activeTab}
+          onValueChange={setActiveTab}
+        >
+          <TabsList className="grid grid-cols-4 mb-6">
+            <TabsTrigger value="highlights">Destaques</TabsTrigger>
+            <TabsTrigger value="feed">Feed Pessoal</TabsTrigger>
+            <TabsTrigger value="mirror">Espelho Mental</TabsTrigger>
+            <TabsTrigger value="social">Rede</TabsTrigger>
+          </TabsList>
+
+          {/* Seção 3: Destaques do CÓRTEX */}
+          <TabsContent value="highlights" className="mt-0">
+            <CorTexHighlights />
+          </TabsContent>
+
+          {/* Seção 4: Feed Pessoal */}
+          <TabsContent value="feed" className="mt-0">
+            <PersonalFeed />
+          </TabsContent>
+
+          {/* Seção 5: Espelho Mental Dinâmico */}
+          <TabsContent value="mirror" className="mt-0">
+            <MentalMirror />
+          </TabsContent>
+
+          {/* Seção 6: Ações sociais rápidas */}
+          <TabsContent value="social" className="mt-0">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <Card className="bg-card/60 backdrop-blur-sm border-primary/20">
+                <CardContent className="pt-6">
+                  <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                    <User className="h-5 w-5 text-primary" />
+                    Conexões
+                  </h3>
+                  <div className="flex flex-col gap-4">
+                    <div className="flex items-center gap-3">
+                      <Avatar>
+                        <AvatarImage src="" />
+                        <AvatarFallback className="bg-accent/20">MD</AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1">
+                        <div className="font-medium">Maria Dias</div>
+                        <div className="text-xs text-muted-foreground">UX Designer</div>
+                      </div>
+                      <Button size="sm" variant="outline" className="text-xs">Conectar</Button>
+                    </div>
+                    
+                    <div className="flex items-center gap-3">
+                      <Avatar>
+                        <AvatarImage src="" />
+                        <AvatarFallback className="bg-accent/20">JP</AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1">
+                        <div className="font-medium">João Paulo</div>
+                        <div className="text-xs text-muted-foreground">Developer</div>
+                      </div>
+                      <Button size="sm" variant="outline" className="text-xs">Conectar</Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              
+              <Card className="bg-card/60 backdrop-blur-sm border-primary/20">
+                <CardContent className="pt-6">
+                  <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                    <Link className="h-5 w-5 text-primary" />
+                    Ações Rápidas
+                  </h3>
+                  <div className="grid grid-cols-2 gap-3">
+                    <Button size="sm" variant="outline" className="flex items-center gap-2">
+                      <MessageCircle className="h-4 w-4" />
+                      <span>Mensagem</span>
+                    </Button>
+                    <Button size="sm" variant="outline" className="flex items-center gap-2">
+                      <Brain className="h-4 w-4" />
+                      <span>Seguir</span>
+                    </Button>
+                    <Button size="sm" variant="outline" className="flex items-center gap-2">
+                      <Layers className="h-4 w-4" />
+                      <span>Clonar Subcérebros</span>
+                    </Button>
+                    <Button size="sm" variant="outline" className="flex items-center gap-2">
+                      <Share2 className="h-4 w-4" />
+                      <span>Compartilhar</span>
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+        </Tabs>
+      </motion.div>
     </div>
   );
 }
