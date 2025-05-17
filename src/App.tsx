@@ -24,6 +24,7 @@ import Landing from "./pages/Landing";
 import ChatAthena from "./pages/ChatAthena";
 import Connecta from "./pages/Connecta";
 import Insights from "./pages/Insights";
+import AdminDashboard from "./pages/AdminDashboard";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -55,6 +56,7 @@ const App = () => (
             <Route path="/athena" element={<ChatAthena />} />
             <Route path="/connecta" element={<Connecta />} />
             <Route path="/insights" element={<Insights />} />
+            <Route path="/admin/dashboard" element={<AdminDashboard />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
