@@ -374,7 +374,7 @@ export default function Planos() {
             </DialogContent>
           </Dialog>
         </div>
-      </section>
+      </motion.section>
 
       {/* FAQ Section */}
       <section className="pt-10 space-y-6">
