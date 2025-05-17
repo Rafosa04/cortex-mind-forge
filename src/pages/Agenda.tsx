@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { Calendar, Plus, Clock } from "lucide-react";
@@ -263,6 +262,7 @@ export default function Agenda() {
           <motion.div
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.3 }}
             className="rounded-lg bg-card border border-border p-4"
           >
             <h3 className="text-lg font-medium mb-4">Blocos do Dia</h3>
@@ -312,8 +312,9 @@ export default function Agenda() {
           
           {/* Estatísticas do dia */}
           <motion.div
-            initial={{ opacity: 0, x: 20, delay: 0.2 }}
+            initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.3, delay: 0.2 }}
             className="rounded-lg bg-card border border-border p-4"
           >
             <h3 className="text-lg font-medium mb-3">Distribuição Mental</h3>
