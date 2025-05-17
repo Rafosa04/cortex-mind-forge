@@ -1,9 +1,8 @@
-
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
-import { Check, Star, TrendingUp, Activity } from "lucide-react";
+import { Check, Star, TrendingUp, Activity, Brain } from "lucide-react";
 
 const container = {
   hidden: { opacity: 0 },

@@ -1,7 +1,7 @@
 
 import { Card, CardContent } from "@/components/ui/card";
 import { motion } from "framer-motion";
-import { Layers, Check, Repeat, Star, Brain, MessageSquare } from "lucide-react";
+import { Layers, Check, Repeat, Star, Brain, MessageSquare, TrendingUp } from "lucide-react";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { AreaChart, Area, CartesianGrid, XAxis, YAxis, ResponsiveContainer } from "recharts";
 
