@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { motion } from "framer-motion";
 import { Bell, Archive, CheckCircle, Eye, Settings, BellOff, X } from "lucide-react";
@@ -553,7 +552,11 @@ export default function Notificacoes() {
                             <Button variant="outline">Fechar</Button>
                           </DrawerClose>
                           {notification.acao && (
-                            <Button as="a" href={notification.acao.url}>{notification.acao.texto}</Button>
+                            <Button 
+                              onClick={() => window.location.href = notification.acao.url}
+                            >
+                              {notification.acao.texto}
+                            </Button>
                           )}
                         </DrawerFooter>
                       </DrawerContent>
@@ -610,7 +613,11 @@ export default function Notificacoes() {
                             <Button variant="outline">Fechar</Button>
                           </DialogClose>
                           {notification.acao && (
-                            <Button as="a" href={notification.acao.url}>{notification.acao.texto}</Button>
+                            <Button 
+                              onClick={() => window.location.href = notification.acao.url}
+                            >
+                              {notification.acao.texto}
+                            </Button>
                           )}
                         </div>
                       </DialogContent>
@@ -622,8 +629,7 @@ export default function Notificacoes() {
                       variant="default" 
                       size="sm"
                       className="h-8 px-2 text-xs"
-                      as="a"
-                      href={notification.acao.url}
+                      onClick={() => window.location.href = notification.acao.url}
                     >
                       {notification.acao.texto}
                     </Button>
