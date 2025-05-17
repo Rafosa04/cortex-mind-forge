@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
-import { Eye, EyeOff, Lock, Mail, User, Check } from "lucide-react";
+import { Eye, EyeOff, Lock, Mail, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -50,6 +50,15 @@ export default function Login() {
     setIsLogin(!isLogin);
     // Change Athena quote when switching views
     setAthenaQuote(quotes[Math.floor(Math.random() * quotes.length)]);
+  };
+
+  // Handler functions for checkboxes to properly handle CheckedState
+  const handleRememberMeChange = (checked) => {
+    setRememberMe(checked === true);
+  };
+
+  const handleAcceptTermsChange = (checked) => {
+    setAcceptTerms(checked === true);
   };
   
   return (
@@ -175,7 +184,7 @@ export default function Login() {
                       <Checkbox 
                         id="remember" 
                         checked={rememberMe}
-                        onCheckedChange={setRememberMe}
+                        onCheckedChange={handleRememberMeChange}
                       />
                       <label
                         htmlFor="remember"
@@ -326,7 +335,7 @@ export default function Login() {
                       id="terms" 
                       required
                       checked={acceptTerms}
-                      onCheckedChange={setAcceptTerms}
+                      onCheckedChange={handleAcceptTermsChange}
                     />
                     <label
                       htmlFor="terms"
