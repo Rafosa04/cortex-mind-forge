@@ -4,6 +4,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { ThemeProvider } from "./components/ThemeProvider";
 import MainLayout from "./layouts/MainLayout";
 import Home from "./pages/Home";
 import Login from "./pages/Login";
@@ -31,38 +32,40 @@ const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <MainLayout>
-          <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/onboarding" element={<Onboarding />} />
-            <Route path="/projetos" element={<Projetos />} />
-            <Route path="/habitos" element={<Habitos />} />
-            <Route path="/subcerebros" element={<Subcerebros />} />
-            <Route path="/mensagens" element={<Mensagens />} />
-            <Route path="/favoritos" element={<Favoritos />} />
-            <Route path="/salvos" element={<Salvos />} />
-            <Route path="/diario" element={<Diario />} />
-            <Route path="/agenda" element={<Agenda />} />
-            <Route path="/notificacoes" element={<Notificacoes />} />
-            <Route path="/perfil" element={<Perfil />} />
-            <Route path="/configuracoes" element={<Configuracoes />} />
-            <Route path="/planos" element={<Planos />} />
-            <Route path="/landing" element={<Landing />} />
-            <Route path="/athena" element={<ChatAthena />} />
-            <Route path="/connecta" element={<Connecta />} />
-            <Route path="/insights" element={<Insights />} />
-            <Route path="/admin/dashboard" element={<AdminDashboard />} />
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </MainLayout>
-      </BrowserRouter>
-    </TooltipProvider>
+    <ThemeProvider defaultTheme="dark">
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <MainLayout>
+            <Routes>
+              <Route path="/" element={<Home />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/onboarding" element={<Onboarding />} />
+              <Route path="/projetos" element={<Projetos />} />
+              <Route path="/habitos" element={<Habitos />} />
+              <Route path="/subcerebros" element={<Subcerebros />} />
+              <Route path="/mensagens" element={<Mensagens />} />
+              <Route path="/favoritos" element={<Favoritos />} />
+              <Route path="/salvos" element={<Salvos />} />
+              <Route path="/diario" element={<Diario />} />
+              <Route path="/agenda" element={<Agenda />} />
+              <Route path="/notificacoes" element={<Notificacoes />} />
+              <Route path="/perfil" element={<Perfil />} />
+              <Route path="/configuracoes" element={<Configuracoes />} />
+              <Route path="/planos" element={<Planos />} />
+              <Route path="/landing" element={<Landing />} />
+              <Route path="/athena" element={<ChatAthena />} />
+              <Route path="/connecta" element={<Connecta />} />
+              <Route path="/insights" element={<Insights />} />
+              <Route path="/admin/dashboard" element={<AdminDashboard />} />
+              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </MainLayout>
+        </BrowserRouter>
+      </TooltipProvider>
+    </ThemeProvider>
   </QueryClientProvider>
 );
 

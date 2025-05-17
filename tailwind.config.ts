@@ -1,3 +1,4 @@
+
 import type { Config } from "tailwindcss";
 
 export default {
@@ -19,26 +20,64 @@ export default {
     },
     extend: {
       colors: {
-        border: "#191933",
-        input: "#191933",
-        ring: "#60B5B5",
-        background: "#0C0C1C",
-        foreground: "#E6E6F0",
-        primary: {
+        // Dark Mode Colors (Default)
+        border: {
+          DEFAULT: "#1F2937",
+          light: "#CBD5E0",
+        },
+        input: {
+          DEFAULT: "#191933",
+          light: "#EDF2F7",
+        },
+        ring: {
           DEFAULT: "#60B5B5",
-          foreground: "#0C0C1C"
+          light: "#60B5B5",
+        },
+        background: {
+          DEFAULT: "#0C0C1C",
+          light: "#F7FAFC",
+        },
+        foreground: {
+          DEFAULT: "#E6E6F0",
+          light: "#1A202C",
         },
         secondary: {
           DEFAULT: "#993887",
-          foreground: "#E6E6F0"
+          foreground: "#E6E6F0",
+          light: "#993887",
+          "light-foreground": "#1A202C",
+        },
+        primary: {
+          DEFAULT: "#60B5B5",
+          foreground: "#0C0C1C",
+          light: "#60B5B5",
+          "light-foreground": "#1A202C",
         },
         accent: {
           DEFAULT: "#E6E6F0",
-          foreground: "#0C0C1C"
+          foreground: "#0C0C1C",
+          light: "#3182CE",
+          "light-foreground": "#F7FAFC",
         },
         card: {
           DEFAULT: "#191933",
-          foreground: "#E6E6F0"
+          foreground: "#E6E6F0",
+          light: "#EDF2F7",
+          "light-foreground": "#1A202C",
+        },
+        muted: {
+          DEFAULT: "#121826",
+          foreground: "#A3A3B3",
+          light: "#EDF2F7",
+          "light-foreground": "#4A5568",
+        },
+        success: {
+          DEFAULT: "#5EF2B1",
+          light: "#38B2AC",
+        },
+        error: {
+          DEFAULT: "#F87171",
+          light: "#E53E3E",
         },
       },
       fontFamily: {

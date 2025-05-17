@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
@@ -26,8 +26,10 @@ import {
 } from "lucide-react";
 import { useSidebar } from "@/components/ui/sidebar";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useTheme } from "@/components/ThemeProvider";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
 
 const menuItems = [
   { name: 'Home', icon: Home, path: '/' },
@@ -51,15 +53,11 @@ const menuItems = [
 
 export default function Sidebar() {
   const location = useLocation();
-  const [theme, setTheme] = useState<'dark' | 'light'>('dark');
   const { state, toggleSidebar } = useSidebar();
   const isMobile = useIsMobile();
   const isCollapsed = state === "collapsed";
-
-  // Function to toggle theme (demo only, not implemented fully)
-  const toggleTheme = () => {
-    setTheme(theme === 'dark' ? 'light' : 'dark');
-  };
+  const { theme, toggleTheme } = useTheme();
+  const isDark = theme === "dark";
 
   return (
     <>
@@ -135,24 +133,25 @@ export default function Sidebar() {
           "mt-auto border-t border-border p-4",
           isCollapsed ? "flex justify-center" : ""
         )}>
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            onClick={toggleTheme} 
-            className="w-full flex items-center gap-2"
-          >
-            {theme === 'dark' ? (
-              <>
-                <Moon size={16} />
-                {!isCollapsed && <span>Modo Escuro</span>}
-              </>
-            ) : (
-              <>
-                <Sun size={16} />
-                {!isCollapsed && <span>Modo Claro</span>}
-              </>
+          <div className={cn(
+            "flex items-center gap-3",
+            isCollapsed ? "justify-center" : "justify-between"
+          )}>
+            {!isCollapsed && (
+              <span className="text-sm text-muted-foreground">
+                {isDark ? 'Modo Escuro' : 'Modo Claro'}
+              </span>
             )}
-          </Button>
+            <div className="flex items-center gap-2">
+              {isDark ? <Moon size={16} /> : <Sun size={16} />}
+              <Switch 
+                checked={!isDark}
+                onCheckedChange={toggleTheme}
+                className="data-[state=checked]:bg-primary"
+                aria-label="Toggle theme"
+              />
+            </div>
+          </div>
         </div>
       </div>
     </>
