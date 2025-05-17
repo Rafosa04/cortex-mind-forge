@@ -9,6 +9,20 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel } from "@/components/ui/form";
 import { Check, Rocket, Diamond, CircleDot } from "lucide-react";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
+
+// Form schema
+const formSchema = z.object({
+  name: z.string().min(2, { message: "Nome é obrigatório" }),
+  email: z.string().email({ message: "Email inválido" }),
+  amount: z.string().min(1, { message: "Valor é obrigatório" }),
+  expectations: z.string(),
+  contact: z.boolean().default(true)
+});
+
+type FormValues = z.infer<typeof formSchema>;
 
 // Plan data structure
 const monthlyPlans = [
@@ -112,6 +126,21 @@ const faqItems = [
 
 export default function Planos() {
   const [showInvestForm, setShowInvestForm] = useState(false);
+  const form = useForm<FormValues>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      name: "",
+      email: "",
+      amount: "",
+      expectations: "",
+      contact: true
+    }
+  });
+
+  const onSubmit = (data: FormValues) => {
+    console.log("Proposta enviada:", data);
+    // Aqui você implementaria a lógica para enviar os dados
+  };
 
   return (
     <div className="w-full max-w-6xl mx-auto space-y-16 pb-16">
@@ -266,60 +295,86 @@ export default function Planos() {
                   Preencha o formulário abaixo para iniciar uma conversa sobre investimento no CÓRTEX.
                 </DialogDescription>
               </DialogHeader>
-              <Form>
-                <div className="grid gap-4 py-4">
-                  <FormField name="name">
-                    <FormItem>
-                      <FormLabel>Nome completo</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Seu nome completo" />
-                      </FormControl>
-                    </FormItem>
-                  </FormField>
+              <Form {...form}>
+                <form onSubmit={form.handleSubmit(onSubmit)} className="grid gap-4 py-4">
+                  <FormField
+                    control={form.control}
+                    name="name"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Nome completo</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Seu nome completo" {...field} />
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
                   
-                  <FormField name="email">
-                    <FormItem>
-                      <FormLabel>E-mail</FormLabel>
-                      <FormControl>
-                        <Input type="email" placeholder="seu@email.com" />
-                      </FormControl>
-                    </FormItem>
-                  </FormField>
+                  <FormField
+                    control={form.control}
+                    name="email"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>E-mail</FormLabel>
+                        <FormControl>
+                          <Input type="email" placeholder="seu@email.com" {...field} />
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
                   
-                  <FormField name="amount">
-                    <FormItem>
-                      <FormLabel>Valor pretendido (R$)</FormLabel>
-                      <FormControl>
-                        <Input type="number" placeholder="1000" min="1000" />
-                      </FormControl>
-                    </FormItem>
-                  </FormField>
+                  <FormField
+                    control={form.control}
+                    name="amount"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Valor pretendido (R$)</FormLabel>
+                        <FormControl>
+                          <Input placeholder="1000" min="1000" {...field} />
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
                   
-                  <FormField name="expectations">
-                    <FormItem>
-                      <FormLabel>O que espera em retorno?</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Suas expectativas como investidor" />
-                      </FormControl>
-                    </FormItem>
-                  </FormField>
+                  <FormField
+                    control={form.control}
+                    name="expectations"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>O que espera em retorno?</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Suas expectativas como investidor" {...field} />
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
                   
-                  <FormField name="contact">
-                    <FormItem className="flex flex-row items-center space-x-2 space-y-0">
-                      <FormControl>
-                        <input type="checkbox" id="contact" defaultChecked className="rounded border-gray-300" />
-                      </FormControl>
-                      <FormLabel htmlFor="contact" className="text-sm">Aceito ser contatado pela equipe</FormLabel>
-                    </FormItem>
-                  </FormField>
-                </div>
-                
-                <Button type="submit" className="w-full">Enviar proposta</Button>
+                  <FormField
+                    control={form.control}
+                    name="contact"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-row items-center space-x-2 space-y-0">
+                        <FormControl>
+                          <input 
+                            type="checkbox" 
+                            id="contact" 
+                            checked={field.value}
+                            onChange={field.onChange}
+                            className="rounded border-gray-300" 
+                          />
+                        </FormControl>
+                        <FormLabel htmlFor="contact" className="text-sm">Aceito ser contatado pela equipe</FormLabel>
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <Button type="submit" className="w-full mt-4">Enviar proposta</Button>
+                </form>
               </Form>
             </DialogContent>
           </Dialog>
         </div>
-      </motion.section>
+      </section>
 
       {/* FAQ Section */}
       <section className="pt-10 space-y-6">
