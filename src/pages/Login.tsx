@@ -94,13 +94,13 @@ export default function Login() {
           <div className="w-full flex gap-6 text-center mb-8">
             <span 
               onClick={() => setIsLogin(true)} 
-              className={grow py-2 cursor-pointer transition-all ${isLogin ? 'border-b-2 border-primary font-medium text-primary' : 'text-foreground/60 hover:text-foreground'}}
+              className={`grow py-2 cursor-pointer transition-all ${isLogin ? 'border-b-2 border-primary font-medium text-primary' : 'text-foreground/60 hover:text-foreground'}`}
             >
               Login
             </span>
             <span 
               onClick={() => setIsLogin(false)} 
-              className={grow py-2 cursor-pointer transition-all ${!isLogin ? 'border-b-2 border-primary font-medium text-primary' : 'text-foreground/60 hover:text-foreground'}}
+              className={`grow py-2 cursor-pointer transition-all ${!isLogin ? 'border-b-2 border-primary font-medium text-primary' : 'text-foreground/60 hover:text-foreground'}`}
             >
               Cadastro
             </span>
