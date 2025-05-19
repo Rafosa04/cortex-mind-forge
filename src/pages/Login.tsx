@@ -62,7 +62,8 @@ export default function Login() {
   };
   
   return (
-    <div className="w-full min-h-screen md:min-h-[85vh] grid md:grid-cols-2 gap-6 p-4 md:p-8 bg-background">
+    <div className="w-full min-h-screen flex items-center justify-center bg-background px-4 py-10">
+  <div className="w-full max-w-6xl grid md:grid-cols-2 gap-6">
       {/* Background animated elements */}
       <div className="fixed inset-0 z-0 pointer-events-none">
         <div className="absolute inset-0 bg-[#0C0C1C]/50"></div>
@@ -88,6 +89,7 @@ export default function Login() {
           </h1>
           <p className="text-foreground/70 mt-2">Seu segundo cérebro digital</p>
         </motion.div>
+        </div>
         
         {/* Login/Register container */}
         <div className="w-full bg-[#111122]/80 rounded-2xl shadow-xl relative overflow-hidden p-8">
