@@ -82,13 +82,14 @@ export default function Projetos() {
   };
 
   return (
-    <div className="w-full max-w-6xl mx-auto flex flex-row fade-in">
+    <div className="w-full flex flex-col md:flex-row fade-in">
       {/* Filtro lateral (aparece só em md+) */}
       <FiltroLateralProjetos modo={modoVisao} setModo={setModoVisao} />
-      <div className="flex-1 min-w-0">
-        <header className="flex items-center justify-between py-2 mb-2 gap-4">
+      
+      <div className="flex-1 min-w-0 mt-4 md:mt-0">
+        <header className="flex items-center justify-between py-2 mb-2 gap-2 sm:gap-4 flex-wrap">
           <motion.h2
-            className="text-2xl md:text-3xl font-bold text-primary drop-shadow"
+            className="text-xl sm:text-2xl md:text-3xl font-bold text-primary drop-shadow"
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4 }}
@@ -97,18 +98,20 @@ export default function Projetos() {
           </motion.h2>
           <Button
             variant="default"
-            className="flex items-center gap-2 px-5 py-2 bg-primary hover:bg-secondary text-background rounded-lg font-bold shadow animate-card-pop neon-anim"
+            className="flex items-center gap-2 px-3 sm:px-5 py-1 sm:py-2 bg-primary hover:bg-secondary text-background rounded-lg font-bold shadow animate-card-pop neon-anim"
             onClick={() => setModalAberto(true)}
           >
-            <Plus className="w-5 h-5" /> Nova Célula
+            <Plus className="w-4 h-4 sm:w-5 sm:h-5" /> Nova Célula
           </Button>
           <NovaCelulaModal open={modalAberto} onOpenChange={setModalAberto} />
         </header>
+        
         <FiltroProjetos />
+        
         {/* Grid/List view simulada */}
         <div className="relative">
           {modoVisao === "Lista" && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-7 fade-in mt-1">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-7 fade-in mt-1">
               {projetos.map((projeto, i) => (
                 <ProjetoCard
                   key={i}
@@ -118,61 +121,70 @@ export default function Projetos() {
               ))}
             </div>
           )}
+          
           {modoVisao === "Kanban" && (
-            <div className="flex gap-6 mt-1 fade-in min-h-[350px]">
+            <div className="flex flex-col md:flex-row gap-4 md:gap-6 mt-1 fade-in min-h-[350px] overflow-x-auto pb-4">
               {["ativo", "pausado", "concluído"].map((status) => (
-                <div key={status} className="flex-1 bg-[#191933]/70 rounded-xl p-4">
+                <div key={status} className="flex-1 min-w-[250px] bg-[#191933]/70 rounded-xl p-4">
                   <div className="font-bold text-secondary mb-3 capitalize">{status}</div>
                   {projetos.filter(p => p.status === status).length === 0 && (
                     <div className="text-secondary/60 italic">Sem projetos neste status.</div>
                   )}
-                  {projetos.filter(p => p.status === status).map((projeto, i) => (
-                    <ProjetoCard
-                      key={i}
-                      projeto={projeto}
-                      onVerDetalhes={() => handleVerDetalhes(projeto)}
-                    />
-                  ))}
+                  <div className="flex flex-col gap-4">
+                    {projetos.filter(p => p.status === status).map((projeto, i) => (
+                      <ProjetoCard
+                        key={i}
+                        projeto={projeto}
+                        onVerDetalhes={() => handleVerDetalhes(projeto)}
+                      />
+                    ))}
+                  </div>
                 </div>
               ))}
             </div>
           )}
+          
           {modoVisao === "Linha do tempo" && (
-            <div className="rounded-xl bg-[#191933]/60 p-10 text-secondary/70 flex flex-col items-center justify-center h-[320px] fade-in">
+            <div className="rounded-xl bg-[#191933]/60 p-6 sm:p-10 text-secondary/70 flex flex-col items-center justify-center h-[320px] fade-in">
               <span className="text-xl">[Linha do tempo - mock visual]</span>
               <div className="mt-4 text-base">Visualização cronológica dos projetos (em breve).</div>
             </div>
           )}
+          
           {modoVisao === "Galeria" && (
-            <div className="rounded-xl bg-[#191933]/60 p-10 text-secondary/70 flex flex-col items-center justify-center h-[320px] fade-in">
+            <div className="rounded-xl bg-[#191933]/60 p-6 sm:p-10 text-secondary/70 flex flex-col items-center justify-center h-[320px] fade-in">
               <span className="text-xl">[Galeria de células - mock visual]</span>
               <div className="mt-4 text-base">Cards em grid de galeria (em breve).</div>
             </div>
           )}
         </div>
+        
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.1 }}
-          className="text-secondary text-center text-sm italic mt-12 select-none"
+          className="text-secondary text-center text-xs sm:text-sm italic mt-8 sm:mt-12 select-none"
         >
-          “O CÓRTEX não exibe projetos. Ele manifesta células vivas que evoluem com você.”
+          "O CÓRTEX não exibe projetos. Ele manifesta células vivas que evoluem com você."
         </motion.div>
       </div>
+      
       {/* Drawer lateral de detalhes */}
       <DrawerDetalheProjeto
         projeto={projetoSelecionado}
         open={detalheAberto}
         onOpenChange={setDetalheAberto}
       />
-      {/* Botão flutuante “Falar com a Athena” */}
+      
+      {/* Botão flutuante "Falar com a Athena" */}
       <FloatingAthenaButton onClick={() => setAbrirAthena(true)} />
+      
       {/* Chat lateral da Athena (mock visual) */}
       {abrirAthena && (
-        <div className="fixed bottom-24 right-8 w-full max-w-xs rounded-2xl glass-morphism p-4 shadow-xl border-[#993887] z-50 animate-fade-in ">
+        <div className="fixed bottom-20 sm:bottom-24 right-4 sm:right-8 w-full max-w-[280px] sm:max-w-xs rounded-2xl glass-morphism p-3 sm:p-4 shadow-xl border-[#993887] z-50 animate-fade-in">
           <div className="flex justify-between items-center mb-2">
             <div className="flex items-center gap-2">
-              <span className="bg-[#993887] text-[#E6E6F0] px-3 py-1 rounded-full font-bold text-sm">Athena</span>
+              <span className="bg-[#993887] text-[#E6E6F0] px-2 sm:px-3 py-1 rounded-full font-bold text-sm">Athena</span>
               <span className="text-xs text-secondary/80">IA Contextual</span>
             </div>
             <Button size="icon" variant="ghost" onClick={() => setAbrirAthena(false)}>x</Button>

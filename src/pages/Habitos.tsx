@@ -60,41 +60,51 @@ export default function Habitos() {
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
-        className="flex flex-col sm:flex-row sm:items-center gap-4 justify-between mb-8"
+        className="flex flex-col sm:flex-row sm:items-center gap-4 justify-between mb-6"
       >
         <div>
-          <h2 className="text-3xl md:text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-br from-[#60B5F5] to-[#993887] leading-tight mb-1">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-br from-[#60B5F5] to-[#993887] leading-tight mb-1">
             Hábitos em Evolução
           </h2>
-          <div className="text-sm text-foreground/60">“Cada hábito é uma célula viva. Ao cuidar dela, você fortalece sua mente.”</div>
+          <div className="text-sm text-foreground/60">"Cada hábito é uma célula viva. Ao cuidar dela, você fortalece sua mente."</div>
         </div>
         <div className="flex gap-2">
           <Button variant="default" size="sm" onClick={() => setModalOpen(true)} className="gap-2">
-            <Plus className="w-4" /> Novo Hábito
+            <Plus className="w-4" /> <span className="hidden xs:inline">Novo Hábito</span>
           </Button>
           <HabitosViewSwitcher active={view} setActive={setView} />
         </div>
       </motion.div>
 
-      {/* TOOLBAR FILTROS */}
+      {/* TOOLBAR FILTROS - improved for mobile */}
       <div className="flex flex-wrap gap-2 mb-6">
         <div className="flex gap-1 bg-card border rounded-lg px-2 items-center">
           <Search className="w-4 text-muted-foreground" />
           <Input
-            className="w-[140px] bg-transparent border-none text-foreground focus:ring-0 focus:border-b focus:border-primary/80"
-            placeholder="Buscar hábito..."
+            className="w-[100px] xs:w-[140px] bg-transparent border-none text-foreground focus:ring-0 focus:border-b focus:border-primary/80"
+            placeholder="Buscar..."
             value={busca}
             onChange={(e) => setBusca(e.target.value)}
           />
         </div>
-        <select value={freqFiltro} onChange={e => setFreqFiltro(e.target.value)} className="rounded bg-card px-2 border text-foreground">
+        <select 
+          value={freqFiltro} 
+          onChange={e => setFreqFiltro(e.target.value)} 
+          className="rounded bg-card px-2 border text-foreground text-sm"
+        >
           <option value="todos">Todas frequências</option>
           <option value="Diário">Diário</option>
           <option value="3x semana">3x semana</option>
           <option value="Semanal">Semanal</option>
         </select>
-        <Button size="sm" variant="ghost" className="gap-1"><Filter className="w-4" /> Tags</Button>
-        <Button size="sm" variant="ghost" className="gap-1"><Filter className="w-4" /> Intenção</Button>
+        <Button size="sm" variant="ghost" className="gap-1">
+          <Filter className="w-4" /> 
+          <span className="hidden xs:inline">Tags</span>
+        </Button>
+        <Button size="sm" variant="ghost" className="gap-1">
+          <Filter className="w-4" /> 
+          <span className="hidden xs:inline">Intenção</span>
+        </Button>
       </div>
 
       {/* GRADE / OUTRAS VIEWS */}
@@ -105,7 +115,7 @@ export default function Habitos() {
             hidden: {},
             visible: { transition: { staggerChildren: 0.05 } }
           }}
-          className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6"
+          className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6"
         >
           {habitos.map((habito, i) => (
             <HabitoCard key={habito.nome} habito={habito} onCheckIn={() => {}} />
@@ -114,7 +124,7 @@ export default function Habitos() {
       )}
 
       {view !== "grid" && (
-        <div className="rounded-xl border border-primary/40 bg-card/80 p-10 flex flex-col items-center justify-center min-h-[260px] text-lg text-primary/70 font-bold shadow-inner">
+        <div className="rounded-xl border border-primary/40 bg-card/80 p-4 sm:p-10 flex flex-col items-center justify-center min-h-[260px] text-lg text-primary/70 font-bold shadow-inner">
           {view === "calendar" && <span>Visualização de calendário de hábitos (mock)</span>}
           {view === "relatorio" && <span>Relatório de hábitos com gráficos (mock)</span>}
         </div>

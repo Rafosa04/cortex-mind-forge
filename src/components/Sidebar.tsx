@@ -82,13 +82,13 @@ export default function Sidebar() {
       )}>
         {/* Logo and Collapse Button */}
         <div className={cn(
-          "flex items-center p-4",
+          "flex items-center py-3 px-2 sm:p-4",
           isCollapsed ? "justify-center" : "justify-between"
         )}>
           {!isCollapsed && (
-            <div className="flex items-center gap-2">
-              <span className="text-xl font-bold text-primary">CÓRTEX</span>
-              <span className="text-xs bg-secondary text-secondary-foreground px-1.5 py-0.5 rounded">IA</span>
+            <div className="flex items-center gap-1 sm:gap-2">
+              <span className="text-lg sm:text-xl font-bold text-primary">CÓRTEX</span>
+              <span className="text-xs bg-secondary text-secondary-foreground px-1 py-0.5 rounded">IA</span>
             </div>
           )}
           
@@ -97,14 +97,15 @@ export default function Sidebar() {
             size="sm"
             onClick={toggleSidebar}
             className="w-7 h-7 p-0"
+            aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
           >
             {isCollapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
           </Button>
         </div>
 
-        {/* Menu Items */}
-        <nav className="flex-1 overflow-y-auto py-2">
-          <div className="px-3 space-y-1">
+        {/* Menu Items - with improved scrolling for smaller screens */}
+        <nav className="flex-1 overflow-y-auto py-2 scrollbar-thin">
+          <div className="px-2 sm:px-3 space-y-1">
             {menuItems.map((item) => {
               const isActive = location.pathname === item.path;
               
@@ -113,15 +114,15 @@ export default function Sidebar() {
                   key={item.path}
                   to={item.path}
                   className={cn(
-                    "flex items-center gap-3 px-3 py-2 rounded-md transition-all",
+                    "flex items-center gap-2 sm:gap-3 px-2 sm:px-3 py-2 rounded-md transition-all text-sm",
                     isCollapsed ? "justify-center" : "",
                     isActive 
                       ? "bg-primary/10 text-primary" 
                       : "text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
                   )}
                 >
-                  <item.icon size={20} />
-                  {!isCollapsed && <span>{item.name}</span>}
+                  <item.icon size={isCollapsed ? 18 : 20} className="flex-shrink-0" />
+                  {!isCollapsed && <span className="truncate">{item.name}</span>}
                 </Link>
               );
             })}
@@ -130,15 +131,15 @@ export default function Sidebar() {
         
         {/* Footer with theme toggle */}
         <div className={cn(
-          "mt-auto border-t border-border p-4",
+          "mt-auto border-t border-border py-3 px-2 sm:p-4",
           isCollapsed ? "flex justify-center" : ""
         )}>
           <div className={cn(
-            "flex items-center gap-3",
+            "flex items-center gap-2 sm:gap-3",
             isCollapsed ? "justify-center" : "justify-between"
           )}>
             {!isCollapsed && (
-              <span className="text-sm text-muted-foreground">
+              <span className="text-xs sm:text-sm text-muted-foreground">
                 {isDark ? 'Modo Escuro' : 'Modo Claro'}
               </span>
             )}

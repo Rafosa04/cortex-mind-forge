@@ -19,6 +19,9 @@ export default {
       }
     },
     extend: {
+      screens: {
+        'xs': '480px',
+      },
       colors: {
         // Dark Mode Colors (Default)
         border: {
@@ -93,29 +96,86 @@ export default {
           "0%": { transform: "scale(0.95)", opacity: "0" },
           "100%": { transform: "scale(1)", opacity: "1" }
         },
-				'accordion-down': {
-					from: {
-						height: '0'
-					},
-					to: {
-						height: 'var(--radix-accordion-content-height)'
-					}
-				},
-				'accordion-up': {
-					from: {
-						height: 'var(--radix-accordion-content-height)'
-					},
-					to: {
-						height: '0'
-					}
-				}
+        "floating-dots": {
+          "0%, 100%": { 
+            backgroundPosition: "0% 0%",
+            opacity: "0.3"
+          },
+          "50%": { 
+            backgroundPosition: "100% 100%",
+            opacity: "0.5" 
+          }
+        },
+        "fade-in": {
+          "0%": { opacity: "0", transform: "translateY(10px)" },
+          "100%": { opacity: "1", transform: "translateY(0)" }
+        },
+        'accordion-down': {
+          from: { height: '0' },
+          to: { height: 'var(--radix-accordion-content-height)' }
+        },
+        'accordion-up': {
+          from: { height: 'var(--radix-accordion-content-height)' },
+          to: { height: '0' }
+        },
       },
       animation: {
         "card-pop": "card-pop 0.5s cubic-bezier(0.22,1,0.36,1)",
-				'accordion-down': 'accordion-down 0.2s ease-out',
-				'accordion-up': 'accordion-up 0.2s ease-out'
+        "floating-dots": "floating-dots 15s ease infinite",
+        "fade-in": "fade-in 0.5s ease-out forwards",
+        'accordion-down': 'accordion-down 0.2s ease-out',
+        'accordion-up': 'accordion-up 0.2s ease-out'
       }
     }
   },
-  plugins: [require("tailwindcss-animate")],
+  plugins: [
+    require("tailwindcss-animate"),
+    function({ addUtilities }) {
+      const newUtilities = {
+        '.scrollbar-thin': {
+          scrollbarWidth: 'thin',
+          '&::-webkit-scrollbar': {
+            width: '6px',
+            height: '6px',
+          },
+          '&::-webkit-scrollbar-track': {
+            background: 'rgba(0, 0, 0, 0.1)',
+          },
+          '&::-webkit-scrollbar-thumb': {
+            background: 'rgba(96, 181, 181, 0.5)',
+            borderRadius: '20px',
+          },
+        },
+        '.animate-floating-dots': {
+          position: 'absolute',
+          inset: '0',
+          background: 'radial-gradient(circle, rgba(96, 181, 181, 0.05) 1px, transparent 5px), radial-gradient(circle, rgba(153, 56, 135, 0.05) 1px, transparent 5px)',
+          backgroundSize: '40px 40px, 30px 30px',
+          animation: 'floating-dots 15s ease infinite',
+          zIndex: '0',
+        },
+        '.glass-morphism': {
+          backdropFilter: 'blur(12px)',
+          backgroundColor: 'rgba(25, 25, 51, 0.5)',
+          border: '1px solid rgba(255, 255, 255, 0.1)',
+          borderRadius: '0.75rem',
+        },
+        '.neon-anim': {
+          transition: 'all 0.3s ease',
+          '&:hover': {
+            textShadow: '0 0 5px rgba(96, 181, 181, 0.7), 0 0 10px rgba(96, 181, 181, 0.5)',
+            boxShadow: '0 0 5px rgba(96, 181, 181, 0.7), 0 0 10px rgba(96, 181, 181, 0.5)',
+          },
+        },
+        '.text-gradient': {
+          backgroundImage: 'linear-gradient(to right, #60B5B5, #993887)',
+          WebkitBackgroundClip: 'text',
+          WebkitTextFillColor: 'transparent',
+          backgroundClip: 'text',
+          color: 'transparent',
+        }
+      };
+      addUtilities(newUtilities);
+    }
+  ],
 } satisfies Config;
