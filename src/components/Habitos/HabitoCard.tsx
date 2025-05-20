@@ -1,4 +1,3 @@
-
 import { motion } from "framer-motion";
 import { Brain, Check, Pen, Link } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -6,6 +5,7 @@ import { Progress } from "@/components/ui/progress";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
 export type Habito = {
+  id?: string;
   nome: string;
   proposito: string;
   frequencia: string;

@@ -9,7 +9,138 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      athena_logs: {
+        Row: {
+          context_id: string | null
+          context_type: string | null
+          created_at: string | null
+          id: string
+          prompt: string
+          response: string | null
+          user_id: string
+        }
+        Insert: {
+          context_id?: string | null
+          context_type?: string | null
+          created_at?: string | null
+          id?: string
+          prompt: string
+          response?: string | null
+          user_id: string
+        }
+        Update: {
+          context_id?: string | null
+          context_type?: string | null
+          created_at?: string | null
+          id?: string
+          prompt?: string
+          response?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      favorites: {
+        Row: {
+          created_at: string | null
+          id: string
+          platform: string | null
+          tags: string[] | null
+          title: string
+          type: string | null
+          url: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          platform?: string | null
+          tags?: string[] | null
+          title: string
+          type?: string | null
+          url?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          platform?: string | null
+          tags?: string[] | null
+          title?: string
+          type?: string | null
+          url?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      habits: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          frequency: string | null
+          goal: number | null
+          id: string
+          name: string
+          progress: number | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          frequency?: string | null
+          goal?: number | null
+          id?: string
+          name: string
+          progress?: number | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          frequency?: string | null
+          goal?: number | null
+          id?: string
+          name?: string
+          progress?: number | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      projects: {
+        Row: {
+          category: string | null
+          created_at: string | null
+          deadline: string | null
+          description: string | null
+          id: string
+          name: string
+          progress: number | null
+          status: string | null
+          user_id: string
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string | null
+          deadline?: string | null
+          description?: string | null
+          id?: string
+          name: string
+          progress?: number | null
+          status?: string | null
+          user_id: string
+        }
+        Update: {
+          category?: string | null
+          created_at?: string | null
+          deadline?: string | null
+          description?: string | null
+          id?: string
+          name?: string
+          progress?: number | null
+          status?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
