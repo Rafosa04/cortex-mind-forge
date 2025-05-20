@@ -2,6 +2,7 @@
 import React from "react";
 import { SidebarProvider, Sidebar as UISidebar, SidebarContent, SidebarRail, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
 import Sidebar from "@/components/Sidebar";
+import AthenaChatBox from "@/components/AthenaChatBox";
 
 export default function MainLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -29,6 +30,9 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
             </div>
           </main>
         </SidebarInset>
+        
+        {/* Componente Athena ChatBox */}
+        <AthenaChatBox />
       </div>
     </SidebarProvider>
   );
