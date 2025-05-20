@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
@@ -7,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
+import { useAuth } from "@/hooks/useAuth";
+import { toast } from "@/hooks/use-toast";
 
 export default function Login() {
   const [isLogin, setIsLogin] = useState(true);
@@ -14,6 +15,7 @@ export default function Login() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [athenaQuote, setAthenaQuote] = useState("A mente que busca conhecer a si mesma expande todo o universo.");
   const navigate = useNavigate();
+  const { signIn, signUp, user } = useAuth();
   
   // Form states
   const [email, setEmail] = useState("");
@@ -22,6 +24,7 @@ export default function Login() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [acceptTerms, setAcceptTerms] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   
   const quotes = [
     "Tudo que você pensa, sente e deseja… organizado.",
@@ -31,19 +34,45 @@ export default function Login() {
     "A mente que busca conhecer a si mesma expande todo o universo."
   ];
   
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsSubmitting(true);
+    
     if (isLogin) {
-      // Handle login logic here
-      console.log("Login attempt:", { email, password, rememberMe });
-      // Simulate successful login and redirect
-      navigate("/");
+      // Login
+      const { error } = await signIn(email, password);
+      if (!error) {
+        navigate("/");
+      }
     } else {
-      // Handle registration logic here
-      console.log("Registration attempt:", { name, email, password, confirmPassword, acceptTerms });
-      // Simulate successful registration and redirect to onboarding
-      navigate("/onboarding");
+      // Cadastro
+      if (password !== confirmPassword) {
+        toast({
+          title: "Senhas não correspondem",
+          description: "As senhas informadas não são iguais",
+          variant: "destructive"
+        });
+        setIsSubmitting(false);
+        return;
+      }
+      
+      if (!acceptTerms) {
+        toast({
+          title: "Termos não aceitos",
+          description: "Você precisa aceitar os termos de uso para criar uma conta",
+          variant: "destructive"
+        });
+        setIsSubmitting(false);
+        return;
+      }
+      
+      const { error, user } = await signUp(email, password, name);
+      if (!error && user) {
+        navigate("/onboarding");
+      }
     }
+    
+    setIsSubmitting(false);
   };
   
   const toggleView = () => {
@@ -53,13 +82,19 @@ export default function Login() {
   };
 
   // Handler functions for checkboxes to properly handle CheckedState
-  const handleRememberMeChange = (checked) => {
+  const handleRememberMeChange = (checked: boolean | "indeterminate") => {
     setRememberMe(checked === true);
   };
 
-  const handleAcceptTermsChange = (checked) => {
+  const handleAcceptTermsChange = (checked: boolean | "indeterminate") => {
     setAcceptTerms(checked === true);
   };
+
+  // Redirecionar se já estiver autenticado
+  if (user) {
+    navigate("/");
+    return null;
+  }
   
   return (
     <div className="w-full min-h-[100vh] md:min-h-[85vh] flex items-center justify-center p-4 md:p-8 bg-background">

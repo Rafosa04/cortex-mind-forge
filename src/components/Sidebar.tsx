@@ -1,160 +1,125 @@
-
-import { useState } from "react";
-import { Link, useLocation } from "react-router-dom";
-import { motion, AnimatePresence } from "framer-motion";
-import { 
-  LayoutDashboard, 
-  FileText, 
-  Calendar, 
-  CheckCircle, 
-  MessageSquare, 
-  Bookmark, 
-  Heart, 
-  Bell, 
-  Settings, 
-  User, 
-  CreditCard, 
-  Home, 
-  Brain, 
-  MessagesSquare, 
-  LineChart, 
-  Users, 
-  ChevronLeft, 
-  ChevronRight, 
-  Moon, 
-  Sun
+import {
+  LayoutDashboard,
+  Settings,
+  ListChecks,
+  Brain,
+  Book,
+  Calendar,
+  Bell,
+  User,
+  LogOut,
+  LucideIcon,
+  Inbox,
+  Link as LucideLink,
 } from "lucide-react";
-import { useSidebar } from "@/components/ui/sidebar";
-import { useIsMobile } from "@/hooks/use-mobile";
-import { useTheme } from "@/components/ThemeProvider";
-import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
-import { Switch } from "@/components/ui/switch";
+import { Link, useLocation } from "react-router-dom";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { useAuth } from "@/hooks/useAuth";
 
-const menuItems = [
-  { name: 'Home', icon: Home, path: '/' },
-  { name: 'Projetos', icon: FileText, path: '/projetos' },
-  { name: 'Habitos', icon: CheckCircle, path: '/habitos' },
-  { name: 'Subcerebros', icon: Brain, path: '/subcerebros' },
-  { name: 'Mensagens', icon: MessageSquare, path: '/mensagens' },
-  { name: 'Favoritos', icon: Heart, path: '/favoritos' },
-  { name: 'Salvos', icon: Bookmark, path: '/salvos' },
-  { name: 'Diario', icon: FileText, path: '/diario' },
-  { name: 'Agenda', icon: Calendar, path: '/agenda' },
-  { name: 'Notificacoes', icon: Bell, path: '/notificacoes' },
-  { name: 'Athena IA', icon: MessagesSquare, path: '/athena' },
-  { name: 'Connecta', icon: Users, path: '/connecta' },
-  { name: 'Insights', icon: LineChart, path: '/insights' },
-  { name: 'Perfil', icon: User, path: '/perfil' },
-  { name: 'Configuracoes', icon: Settings, path: '/configuracoes' },
-  { name: 'Planos', icon: CreditCard, path: '/planos' },
-  { name: 'Admin', icon: LayoutDashboard, path: '/admin/dashboard' }
-];
+interface NavLink {
+  to: string;
+  icon: LucideIcon;
+  label: string;
+}
 
 export default function Sidebar() {
+  const { user, profile, signOut } = useAuth();
   const location = useLocation();
-  const { state, toggleSidebar } = useSidebar();
-  const isMobile = useIsMobile();
-  const isCollapsed = state === "collapsed";
-  const { theme, toggleTheme } = useTheme();
-  const isDark = theme === "dark";
+
+  const linkClasses = (path: string) =>
+    `flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-colors hover:bg-secondary/5 focus:bg-secondary/5 ${
+      location.pathname === path
+        ? "bg-secondary/10 text-secondary font-semibold"
+        : "text-foreground/80"
+    }`;
 
   return (
-    <>
-      {/* Mobile overlay when sidebar is open */}
-      {isMobile && (
-        <AnimatePresence>
-          {state === "expanded" && (
-            <motion.div 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 0.5 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-background/80 backdrop-blur-sm z-30"
-              onClick={toggleSidebar}
-            />
-          )}
-        </AnimatePresence>
-      )}
-      
-      <div className={cn(
-        "flex flex-col h-full",
-        isCollapsed ? "items-center" : "items-stretch",
-      )}>
-        {/* Logo and Collapse Button */}
-        <div className={cn(
-          "flex items-center py-3 px-2 sm:p-4",
-          isCollapsed ? "justify-center" : "justify-between"
-        )}>
-          {!isCollapsed && (
-            <div className="flex items-center gap-1 sm:gap-2">
-              <span className="text-lg sm:text-xl font-bold text-primary">CÓRTEX</span>
-              <span className="text-xs bg-secondary text-secondary-foreground px-1 py-0.5 rounded">IA</span>
-            </div>
-          )}
-          
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={toggleSidebar}
-            className="w-7 h-7 p-0"
-            aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
-          >
-            {isCollapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
-          </Button>
-        </div>
-
-        {/* Menu Items - with improved scrolling for smaller screens */}
-        <nav className="flex-1 overflow-y-auto py-2 scrollbar-thin">
-          <div className="px-2 sm:px-3 space-y-1">
-            {menuItems.map((item) => {
-              const isActive = location.pathname === item.path;
-              
-              return (
-                <Link
-                  key={item.path}
-                  to={item.path}
-                  className={cn(
-                    "flex items-center gap-2 sm:gap-3 px-2 sm:px-3 py-2 rounded-md transition-all text-sm",
-                    isCollapsed ? "justify-center" : "",
-                    isActive 
-                      ? "bg-primary/10 text-primary" 
-                      : "text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-                  )}
-                >
-                  <item.icon size={isCollapsed ? 18 : 20} className="flex-shrink-0" />
-                  {!isCollapsed && <span className="truncate">{item.name}</span>}
-                </Link>
-              );
-            })}
-          </div>
-        </nav>
-        
-        {/* Footer with theme toggle */}
-        <div className={cn(
-          "mt-auto border-t border-border py-3 px-2 sm:p-4",
-          isCollapsed ? "flex justify-center" : ""
-        )}>
-          <div className={cn(
-            "flex items-center gap-2 sm:gap-3",
-            isCollapsed ? "justify-center" : "justify-between"
-          )}>
-            {!isCollapsed && (
-              <span className="text-xs sm:text-sm text-muted-foreground">
-                {isDark ? 'Modo Escuro' : 'Modo Claro'}
-              </span>
-            )}
-            <div className="flex items-center gap-2">
-              {isDark ? <Moon size={16} /> : <Sun size={16} />}
-              <Switch 
-                checked={!isDark}
-                onCheckedChange={toggleTheme}
-                className="data-[state=checked]:bg-primary"
-                aria-label="Toggle theme"
-              />
-            </div>
-          </div>
-        </div>
+    <div className="h-full flex flex-col gap-4 p-4">
+      <div className="flex items-center gap-2 px-3 py-2">
+        {user ? (
+          <Avatar className="w-8 h-8">
+            <AvatarFallback>{profile?.name?.[0]?.toUpperCase() || 'U'}</AvatarFallback>
+          </Avatar>
+        ) : (
+          <Avatar className="w-8 h-8">
+            <AvatarFallback>IA</AvatarFallback>
+          </Avatar>
+        )}
+        <span className="font-bold text-lg">{profile?.name || "CÓRTEX"}</span>
       </div>
-    </>
+
+      <nav className="flex-1 space-y-1.5">
+        <Link to="/" className={linkClasses("/")}>
+          <LayoutDashboard className="h-4 w-4" />
+          <span>Dashboard</span>
+        </Link>
+        <Link to="/projetos" className={linkClasses("/projetos")}>
+          <Inbox className="h-4 w-4" />
+          <span>Projetos</span>
+        </Link>
+        <Link to="/habitos" className={linkClasses("/habitos")}>
+          <ListChecks className="h-4 w-4" />
+          <span>Hábitos</span>
+        </Link>
+        <Link to="/subcerebros" className={linkClasses("/subcerebros")}>
+          <Brain className="h-4 w-4" />
+          <span>Subcérebros</span>
+        </Link>
+        <Link to="/mensagens" className={linkClasses("/mensagens")}>
+          <LucideLink className="h-4 w-4" />
+          <span>Mensagens</span>
+        </Link>
+        <Link to="/favoritos" className={linkClasses("/favoritos")}>
+          <Book className="h-4 w-4" />
+          <span>Favoritos</span>
+        </Link>
+        <Link to="/salvos" className={linkClasses("/salvos")}>
+          <LayoutDashboard className="h-4 w-4" />
+          <span>Salvos</span>
+        </Link>
+        <Link to="/diario" className={linkClasses("/diario")}>
+          <Calendar className="h-4 w-4" />
+          <span>Diário</span>
+        </Link>
+        <Link to="/agenda" className={linkClasses("/agenda")}>
+          <LayoutDashboard className="h-4 w-4" />
+          <span>Agenda</span>
+        </Link>
+        <Link to="/notificacoes" className={linkClasses("/notificacoes")}>
+          <Bell className="h-4 w-4" />
+          <span>Notificações</span>
+        </Link>
+        <Link to="/perfil" className={linkClasses("/perfil")}>
+          <User className="h-4 w-4" />
+          <span>Perfil</span>
+        </Link>
+
+        {/* Admin Dashboard - visível apenas para admin ou master */}
+        {profile?.role === 'admin' || profile?.role === 'master' ? (
+          <Link 
+            to="/admin/dashboard" 
+            className={linkClasses('/admin/dashboard')}
+          >
+            <Settings className="h-4 w-4" />
+            <span>Admin Dashboard</span>
+          </Link>
+        ) : null}
+      </nav>
+
+      {/* Botão de logout */}
+      {user && (
+        <button
+          onClick={() => signOut()}
+          className="w-full flex items-center gap-2 rounded-md px-3 py-2 text-sm text-red-500 hover:bg-red-500/10 transition-colors"
+        >
+          <LogOut className="h-4 w-4" />
+          <span>Sair</span>
+        </button>
+      )}
+
+      <div className="text-xs text-muted-foreground px-3 py-2">
+        CÓRTEX &copy; {new Date().getFullYear()}
+      </div>
+    </div>
   );
 }
