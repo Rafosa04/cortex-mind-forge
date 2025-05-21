@@ -7,7 +7,7 @@ interface Project {
   status: string;
   progress: number;
   deadline: string | null;
-  updated_at: string | null;
+  created_at: string | null;
 }
 
 interface Habit {
@@ -50,10 +50,11 @@ export const generateAthenaInsights = async (userId: string): Promise<AthenaInsi
     // Generate insights based on projects
     if (projects && projects.length > 0) {
       // Find stalled projects (progress < 50% and no updates in last 7 days)
+      // Since we don't have updated_at, we'll use created_at for demonstration
       const stalledProjects = projects.filter(project => {
-        if (!project.updated_at) return false;
+        if (!project.created_at) return false;
         
-        const lastUpdate = new Date(project.updated_at);
+        const lastUpdate = new Date(project.created_at);
         const sevenDaysAgo = new Date();
         sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
         
@@ -182,8 +183,9 @@ export const saveInsightAsNotification = async (
   insight: AthenaInsight
 ) => {
   try {
+    // Use type assertion to handle table that's not in the TypeScript type definitions
     const { error } = await supabase
-      .from("notifications")
+      .from("notifications" as any)
       .insert({
         user_id: userId,
         type: insight.type,

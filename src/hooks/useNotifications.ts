@@ -25,8 +25,9 @@ export function useNotifications() {
       if (!user) return;
 
       setLoading(true);
+      // Use a type assertion to handle the missing type in Supabase client
       const { data, error } = await supabase
-        .from("notifications")
+        .from("notifications" as any)
         .select("*")
         .eq("user_id", user.id)
         .order("created_at", { ascending: false });
@@ -36,8 +37,9 @@ export function useNotifications() {
         return;
       }
 
-      setNotifications(data);
-      setUnreadCount(data.filter(n => !n.is_read).length);
+      // Use type assertion to ensure TypeScript recognizes the data as Notification[]
+      setNotifications(data as Notification[]);
+      setUnreadCount((data as Notification[]).filter(n => !n.is_read).length);
     } catch (error) {
       console.error("Error in notifications hook:", error);
     } finally {
@@ -50,8 +52,8 @@ export function useNotifications() {
       if (!user) return;
 
       const { error } = await supabase
-        .from("notifications")
-        .update({ is_read: true })
+        .from("notifications" as any)
+        .update({ is_read: true } as any)
         .eq("id", id)
         .eq("user_id", user.id);
 
@@ -84,8 +86,8 @@ export function useNotifications() {
       if (unreadIds.length === 0) return;
 
       const { error } = await supabase
-        .from("notifications")
-        .update({ is_read: true })
+        .from("notifications" as any)
+        .update({ is_read: true } as any)
         .eq("user_id", user.id)
         .in("id", unreadIds);
 
@@ -114,7 +116,7 @@ export function useNotifications() {
       if (!user) return;
 
       const { error } = await supabase
-        .from("notifications")
+        .from("notifications" as any)
         .delete()
         .eq("id", id)
         .eq("user_id", user.id);
