@@ -1,8 +1,7 @@
-
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
-import { Eye, EyeOff, Lock, Mail, User, Beaker } from "lucide-react";
+import { Eye, EyeOff, Lock, Mail, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -16,8 +15,7 @@ export default function Login() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [athenaQuote, setAthenaQuote] = useState("A mente que busca conhecer a si mesma expande todo o universo.");
   const navigate = useNavigate();
-  const { signIn, signUp, user, createTestUser } = useAuth();
-  const [isCreatingTestUser, setIsCreatingTestUser] = useState(false);
+  const { signIn, signUp, user } = useAuth();
   
   // Form states
   const [email, setEmail] = useState("");
@@ -75,31 +73,6 @@ export default function Login() {
     }
     
     setIsSubmitting(false);
-  };
-  
-  const handleCreateTestUser = async () => {
-    setIsCreatingTestUser(true);
-    
-    try {
-      const { error, email, password, user } = await createTestUser();
-      
-      if (!error && user) {
-        // Preencher os campos com as credenciais geradas
-        setEmail(email);
-        setPassword(password);
-        setIsLogin(true);
-        
-        // Copiar para a área de transferência
-        navigator.clipboard.writeText(`Email: ${email} | Senha: ${password}`).then(() => {
-          toast({
-            title: "Credenciais copiadas!",
-            description: "As credenciais do usuário de teste foram copiadas para a área de transferência.",
-          });
-        });
-      }
-    } finally {
-      setIsCreatingTestUser(false);
-    }
   };
   
   const toggleView = () => {
@@ -168,20 +141,6 @@ export default function Login() {
               >
                 Cadastro
               </span>
-            </div>
-            
-            {/* Test User Button */}
-            <div className="absolute top-4 right-4">
-              <Button 
-                variant="outline" 
-                size="icon" 
-                onClick={handleCreateTestUser} 
-                disabled={isCreatingTestUser}
-                className="h-8 w-8 rounded-full bg-slate-800/50 hover:bg-slate-700/60 border-slate-700"
-                title="Criar usuário de teste com acesso total"
-              >
-                <Beaker className="h-4 w-4 text-yellow-400" />
-              </Button>
             </div>
             
             <AnimatePresence mode="wait">
