@@ -9,8 +9,9 @@ import { ProjectWithSteps } from "@/services/projectsService";
 import { Bot, Trash2, Star } from "lucide-react";
 import { TagProjeto } from "./TagProjeto";
 import { StatusTag } from "./StatusTag";
-import { motion } from "framer-motion";
 import { useDraggable } from "@dnd-kit/core";
+
+type ProjetoStatus = "ativo" | "pausado" | "concluído";
 
 type ProjetoCardProps = {
   projeto: ProjectWithSteps;
@@ -67,6 +68,9 @@ export function ProjetoCard({
     boxShadow: isDragging ? '0 8px 20px rgba(0, 0, 0, 0.3)' : undefined,
   } : undefined;
 
+  // Make sure projeto.status is properly typed
+  const projectStatus = (projeto.status || "ativo") as ProjetoStatus;
+
   return (
     <div
       ref={draggable ? setNodeRef : undefined}
@@ -75,7 +79,6 @@ export function ProjetoCard({
       className={draggable ? "touch-manipulation" : ""}
     >
       <Card 
-        animate={true}
         onClick={() => onVerDetalhes(projeto)}
         className={`cursor-pointer bg-[#141429]/90 border-[#191933] hover:border-[#60B5B5]/40 ${isDragging ? 'scale-105' : ''}`}
       >
@@ -111,7 +114,7 @@ export function ProjetoCard({
           
           {/* Status and Progress */}
           <div className="flex justify-between items-center mb-3">
-            <StatusTag status={projeto.status} />
+            <StatusTag status={projectStatus} />
             
             <div className="text-xs text-secondary/80">
               {totalStepsCount > 0 ? (

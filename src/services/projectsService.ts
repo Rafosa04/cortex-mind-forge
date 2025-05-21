@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { Database } from "@/integrations/supabase/types";
 import { toast } from "@/hooks/use-toast";
@@ -30,7 +29,8 @@ const mapProjectStep = (row: any): ProjectStep => ({
   created_at: row.created_at,
   project_id: row.project_id,
   description: row.description,
-  done: row.done
+  done: row.done,
+  order_index: row.order_index || 0 // Providing a default of 0 for order_index
 });
 
 export const projectsService = {
@@ -64,7 +64,8 @@ export const projectsService = {
             created_at,
             project_id,
             description,
-            done
+            done,
+            order_index
           )
         `)
         .order('created_at', { ascending: false });

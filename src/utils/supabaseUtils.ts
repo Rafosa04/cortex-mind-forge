@@ -2,14 +2,19 @@
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 
+// Define a proper type for the RPC call parameters
+interface EnableRealtimeParams {
+  table_name: string;
+}
+
 // Enable realtime functionality for a table
 export async function enableRealtimeForTable(tableName: string): Promise<boolean> {
   try {
     // Since we can't pass table_name directly as an argument to supabase.rpc, 
     // we need to use the params object to pass the parameter
-    const { error } = await supabase.rpc('enable_realtime', {
-      table_name: tableName
-    } as any); // Use type assertion to bypass the type checking for this RPC call
+    const { error } = await supabase.rpc('enable_realtime', { 
+      table_name: tableName 
+    } as EnableRealtimeParams);
     
     if (error) {
       console.error(`Error enabling realtime for ${tableName}:`, error);
