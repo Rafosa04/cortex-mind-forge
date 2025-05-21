@@ -70,8 +70,10 @@ export const projectsService = {
         return {
           ...project,
           steps: projectSteps,
-          progress: calculatedProgress
-        };
+          progress: calculatedProgress,
+          // Ensure status is one of the allowed values
+          status: (project.status as "ativo" | "pausado" | "concluído") || "ativo"
+        } as ProjectWithSteps;
       });
 
       return projectsWithSteps as ProjectWithSteps[];
@@ -95,6 +97,13 @@ export const projectsService = {
     etapas: { texto: string; feita: boolean }[] = []
   ): Promise<ProjectWithSteps | null> {
     try {
+      // Get the current user's ID
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        throw new Error("Usuário não autenticado");
+      }
+      
       // Create project first
       const { data: project, error: projectError } = await supabase
         .from("projects")
@@ -105,6 +114,7 @@ export const projectsService = {
           status,
           deadline,
           progress: 0, // Will calculate after adding steps
+          user_id: user.id // Add the user_id here
         })
         .select()
         .single();
@@ -153,14 +163,18 @@ export const projectsService = {
           ...project,
           steps: steps || [],
           progress,
-        };
+          // Ensure status is one of the allowed values
+          status: (project.status as "ativo" | "pausado" | "concluído") 
+        } as ProjectWithSteps;
       }
 
       return {
         ...project,
         steps: [],
         progress: 0,
-      };
+        // Ensure status is one of the allowed values
+        status: (project.status as "ativo" | "pausado" | "concluído") 
+      } as ProjectWithSteps;
     } catch (error: any) {
       console.error("Error creating project:", error);
       toast({
