@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { FiltroProjetos } from "@/components/Projetos/FiltroProjetos";
@@ -63,11 +62,11 @@ export default function Projetos() {
         (payload) => {
           // Refresh projects when changes are detected
           // Check if the payload has old and new properties
-          const oldData = payload.old || {};
-          const newData = payload.new || {};
+          const oldData = payload.old as Record<string, any> || {};
+          const newData = payload.new as Record<string, any> || {};
           
           // Only refresh if the user_id is different or not comparing the same project
-          if (oldData.user_id !== newData.user_id) {
+          if (oldData?.user_id !== newData?.user_id) {
             carregarProjetos();
           }
         }

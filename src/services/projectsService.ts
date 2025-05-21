@@ -1,5 +1,7 @@
+
 import { supabase } from "@/integrations/supabase/client";
-import { Database } from "@/types/supabase";
+import { Database } from "@/integrations/supabase/types";
+import { toast } from "@/hooks/use-toast";
 
 export type Project = Database['public']['Tables']['projects']['Row'];
 export type ProjectStep = Database['public']['Tables']['project_steps']['Row'];
@@ -91,10 +93,17 @@ export const projectsService = {
     tags: string[] = []
   ): Promise<Project | null> {
     try {
+      const { data: userData } = await supabase.auth.getUser();
+      const user_id = userData.user?.id;
+      
+      if (!user_id) {
+        throw new Error("User not authenticated");
+      }
+      
       const { data, error } = await supabase
         .from('projects')
         .insert([
-          { name, description, status, category, deadline, tags }
+          { name, description, status, category, deadline, tags, user_id }
         ])
         .select('*')
         .single();
@@ -288,6 +297,11 @@ export const projectsService = {
         throw new Error(projectError.message);
       }
 
+      toast({
+        title: "Projeto removido",
+        description: "O projeto foi removido com sucesso"
+      });
+
       return true;
     } catch (error: any) {
       console.error("Erro inesperado ao remover projeto:", error);
@@ -306,6 +320,11 @@ export const projectsService = {
         console.error("Erro ao atualizar tags do projeto:", error);
         throw new Error(error.message);
       }
+
+      toast({
+        title: "Tags atualizadas",
+        description: "As tags do projeto foram atualizadas"
+      });
 
       return true;
     } catch (error: any) {

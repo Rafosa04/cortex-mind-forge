@@ -9,7 +9,7 @@ export async function enableRealtimeForTable(tableName: string): Promise<boolean
     // we need to use the params object to pass the parameter
     const { error } = await supabase.rpc('enable_realtime', {
       table_name: tableName
-    });
+    } as any); // Use type assertion to bypass the type checking for this RPC call
     
     if (error) {
       console.error(`Error enabling realtime for ${tableName}:`, error);
