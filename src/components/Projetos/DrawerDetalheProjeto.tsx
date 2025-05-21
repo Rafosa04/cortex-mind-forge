@@ -23,6 +23,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { saveAthenaLog } from "@/utils/athenaUtils";
 import { AthenaProjectSuggestion } from "./AthenaProjectSuggestion";
 import { ProjetoModoFoco } from "./ProjetoModoFoco";
+import { supabase } from "@/integrations/supabase/client";
 
 type Props = {
   projeto: ProjectWithSteps | null;
@@ -53,6 +54,7 @@ export function DrawerDetalheProjeto({ projeto, open, onOpenChange, onProjectUpd
   const [projetoTags, setProjetoTags] = useState<string[]>([]);
   const [isAthenaDialogOpen, setIsAthenaDialogOpen] = useState(false);
   const [isModoFocoAtivo, setIsModoFocoAtivo] = useState(false);
+  const [atualizandoEtapaId, setAtualizandoEtapaId] = useState<string | null>(null);
   
   // Update local state when project changes
   useEffect(() => {
@@ -62,6 +64,31 @@ export function DrawerDetalheProjeto({ projeto, open, onOpenChange, onProjectUpd
       setProjetoTags(projeto.tags || []);
     }
   }, [projeto]);
+
+  // Set up real-time subscription to project steps updates
+  useEffect(() => {
+    if (!projeto) return;
+
+    const channel = supabase
+      .channel('step-updates')
+      .on('postgres_changes', 
+        { 
+          event: '*', 
+          schema: 'public', 
+          table: 'project_steps',
+          filter: `project_id=eq.${projeto.id}`
+        }, 
+        () => {
+          // Refresh project data
+          if (onProjectUpdated) onProjectUpdated();
+        }
+      )
+      .subscribe();
+      
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [projeto, onProjectUpdated]);
 
   const formatDate = useCallback((dateString: string | null) => {
     if (!dateString) return "N/A";
@@ -75,7 +102,10 @@ export function DrawerDetalheProjeto({ projeto, open, onOpenChange, onProjectUpd
   if (!projeto) return null;
 
   const handleToggleEtapa = async (etapaId: string, concluida: boolean) => {
+    setAtualizandoEtapaId(etapaId);
     const sucesso = await atualizarEtapa(etapaId, concluida);
+    setAtualizandoEtapaId(null);
+    
     if (sucesso && onProjectUpdated) {
       onProjectUpdated();
     }
@@ -336,9 +366,9 @@ export function DrawerDetalheProjeto({ projeto, open, onOpenChange, onProjectUpd
                   variant="ghost" 
                   title={projeto.is_favorite ? "Remover dos favoritos" : "Adicionar aos favoritos"}
                   onClick={handleToggleFavorite}
-                  className={projeto.is_favorite ? "text-[#993887]" : ""}
+                  className={projeto.is_favorite ? "text-[#993887] transition-all duration-300" : "transition-all duration-300"}
                 >
-                  <Star className={`w-4 h-4 ${projeto.is_favorite ? "fill-[#993887]" : ""}`} />
+                  <Star className={`w-4 h-4 transition-all duration-300 ${projeto.is_favorite ? "fill-[#993887]" : ""}`} />
                 </Button>
                 
                 <Button 
@@ -388,24 +418,42 @@ export function DrawerDetalheProjeto({ projeto, open, onOpenChange, onProjectUpd
               <div className="flex flex-col gap-2">
                 {projeto.steps && projeto.steps.length > 0 ? (
                   projeto.steps.map((etapa) => (
-                    <div key={etapa.id} className={`flex items-center gap-2 p-2 rounded-lg transition ${etapa.done ? "bg-[#60B5B522]" : "bg-[#191933]/40"}`}>
+                    <div 
+                      key={etapa.id} 
+                      className={`flex items-center gap-2 p-2 rounded-lg transition-all duration-300 ${
+                        etapa.done ? "bg-[#60B5B522]" : "bg-[#191933]/40"
+                      }`}
+                    >
                       <label className="flex items-center gap-2 cursor-pointer flex-grow">
                         <input 
                           type="checkbox" 
                           checked={etapa.done} 
                           onChange={() => handleToggleEtapa(etapa.id, !etapa.done)} 
-                          className="accent-[#60B5B5] w-5 h-5" 
+                          className="accent-[#60B5B5] w-5 h-5 transition-all" 
+                          disabled={atualizandoEtapaId === etapa.id}
                         />
-                        <span className={etapa.done ? "line-through text-secondary/70" : ""}>
+                        <span className={`transition-all duration-300 ${etapa.done ? "line-through text-secondary/70" : ""}`}>
                           {etapa.description}
                         </span>
-                        {etapa.done && <CircleCheck className="w-4 h-4 text-[#60B5B5]" />}
+                        {etapa.done && (
+                          <motion.div
+                            initial={{ scale: 0 }}
+                            animate={{ scale: 1 }}
+                            transition={{ type: "spring", duration: 0.3 }}
+                          >
+                            <CircleCheck className="w-4 h-4 text-[#60B5B5]" />
+                          </motion.div>
+                        )}
+                        {atualizandoEtapaId === etapa.id && (
+                          <div className="animate-spin ml-1 w-4 h-4 border-2 border-primary border-t-transparent rounded-full" />
+                        )}
                       </label>
                       <Button 
                         size="icon" 
                         variant="ghost" 
                         className="h-6 w-6 text-red-400 hover:text-red-500 hover:bg-red-500/10"
                         onClick={() => handleRemoveEtapa(etapa.id)}
+                        disabled={atualizandoEtapaId === etapa.id}
                       >
                         <Trash2 className="w-3 h-3" />
                       </Button>
@@ -431,7 +479,12 @@ export function DrawerDetalheProjeto({ projeto, open, onOpenChange, onProjectUpd
                     disabled={adicionandoEtapa || !novaEtapa.trim()}
                   >
                     <CirclePlus className="w-4 h-4 mr-1" />
-                    {adicionandoEtapa ? "Salvando..." : "Adicionar"}
+                    {adicionandoEtapa ? (
+                      <div className="flex items-center gap-1">
+                        <div className="animate-spin w-3 h-3 border-2 border-primary border-t-transparent rounded-full" />
+                        <span>Salvando...</span>
+                      </div>
+                    ) : "Adicionar"}
                   </Button>
                 </div>
               </div>

@@ -206,6 +206,12 @@ export const projectsService = {
 
   async atualizarEtapa(stepId: string, done: boolean): Promise<boolean> {
     try {
+      // Show temporary loading indicator
+      const loadingToastId = toast({
+        title: "Atualizando etapa...",
+        description: "Salvando alterações...",
+      });
+      
       const { data: step, error: stepError } = await supabase
         .from("project_steps")
         .update({ done })
@@ -216,6 +222,13 @@ export const projectsService = {
       if (stepError) {
         throw stepError;
       }
+
+      // Dismiss loading toast
+      toast({
+        id: loadingToastId.id,
+        title: "Etapa atualizada",
+        description: done ? "Etapa concluída!" : "Etapa desmarcada."
+      });
 
       // Get all steps for this project to recalculate progress
       const { data: projectSteps, error: stepsError } = await supabase
@@ -256,6 +269,12 @@ export const projectsService = {
 
   async atualizarStatusProjeto(projectId: string, status: "ativo" | "pausado" | "concluído"): Promise<boolean> {
     try {
+      // Show loading indicator
+      const loadingToastId = toast({
+        title: "Atualizando status...",
+        description: `Alterando para ${status}...`,
+      });
+      
       const { error } = await supabase
         .from("projects")
         .update({ status })
@@ -264,6 +283,13 @@ export const projectsService = {
       if (error) {
         throw error;
       }
+
+      // Dismiss loading toast and show success
+      toast({
+        id: loadingToastId.id,
+        title: "Status atualizado",
+        description: `Projeto agora está ${status}`
+      });
 
       return true;
     } catch (error: any) {
@@ -279,6 +305,12 @@ export const projectsService = {
 
   async toggleFavoritoProjeto(projectId: string, isFavorite: boolean): Promise<boolean> {
     try {
+      // Show temporary animation
+      const loadingToastId = toast({
+        title: isFavorite ? "Adicionando aos favoritos..." : "Removendo dos favoritos...",
+        description: "Atualizando...",
+      });
+      
       const { error } = await supabase
         .from("projects")
         .update({ is_favorite: isFavorite })
@@ -287,6 +319,13 @@ export const projectsService = {
       if (error) {
         throw error;
       }
+      
+      // Show success toast
+      toast({
+        id: loadingToastId.id,
+        title: isFavorite ? "Adicionado aos favoritos" : "Removido dos favoritos",
+        description: `Projeto ${isFavorite ? "adicionado aos" : "removido dos"} favoritos`
+      });
 
       return true;
     } catch (error: any) {
