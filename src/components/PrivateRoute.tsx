@@ -1,15 +1,18 @@
 
 import { Navigate, Outlet } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
+import { ReactNode } from "react";
 
 type PrivateRouteProps = {
   requiredRole?: 'user' | 'admin' | 'master';
   redirectTo?: string;
+  children?: ReactNode;
 };
 
 export function PrivateRoute({ 
   requiredRole = 'user', 
-  redirectTo = '/login' 
+  redirectTo = '/login',
+  children
 }: PrivateRouteProps) {
   const { user, profile, loading } = useAuth();
   
@@ -31,6 +34,6 @@ export function PrivateRoute({
     }
   }
   
-  // Tudo ok, renderizar as rotas filhas
-  return <Outlet />;
+  // Tudo ok, renderizar as rotas filhas ou o children passado diretamente
+  return children ? <>{children}</> : <Outlet />;
 }

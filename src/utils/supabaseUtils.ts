@@ -10,11 +10,10 @@ interface EnableRealtimeParams {
 // Enable realtime functionality for a table
 export async function enableRealtimeForTable(tableName: string): Promise<boolean> {
   try {
-    // Since we can't pass table_name directly as an argument to supabase.rpc, 
-    // we need to use the params object to pass the parameter
-    const { error } = await supabase.rpc('enable_realtime', { 
-      table_name: tableName 
-    } as EnableRealtimeParams);
+    // We need to explicitly type the parameters object to avoid TypeScript errors
+    const params: EnableRealtimeParams = { table_name: tableName };
+    
+    const { error } = await supabase.rpc('enable_realtime', params);
     
     if (error) {
       console.error(`Error enabling realtime for ${tableName}:`, error);
