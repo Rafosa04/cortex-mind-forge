@@ -7,25 +7,36 @@ const Card = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement> & { animate?: boolean }
 >(({ className, children, animate = false, ...props }, ref) => {
-  const Component = animate ? motion.div : "div";
+  if (animate) {
+    return (
+      <motion.div
+        ref={ref}
+        className={cn(
+          "rounded-2xl border border-white/10 bg-card/80 backdrop-blur-md text-card-foreground shadow-lg transition-all duration-300 hover:shadow-xl hover:border-white/20",
+          className
+        )}
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3 }}
+        whileHover={{ scale: 1.02 }}
+        {...props as any} // Cast to any to avoid type conflicts
+      >
+        {children}
+      </motion.div>
+    );
+  }
   
   return (
-    <Component
+    <div
       ref={ref}
       className={cn(
         "rounded-2xl border border-white/10 bg-card/80 backdrop-blur-md text-card-foreground shadow-lg transition-all duration-300 hover:shadow-xl hover:border-white/20",
         className
       )}
-      {...(animate && {
-        initial: { opacity: 0, y: 10 },
-        animate: { opacity: 1, y: 0 },
-        transition: { duration: 0.3 },
-        whileHover: { scale: 1.02 }
-      })}
       {...props}
     >
       {children}
-    </Component>
+    </div>
   );
 })
 Card.displayName = "Card"
