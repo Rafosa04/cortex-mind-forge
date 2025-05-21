@@ -1,7 +1,7 @@
-
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { ThemeProvider } from '@/components/ThemeProvider';
+import { ReactNode } from 'react';
 import { Toaster } from '@/components/ui/toaster';
+import { ThemeProvider } from '@/components/ThemeProvider';
 import MainLayout from '@/layouts/MainLayout';
 import { PrivateRoute } from '@/components/PrivateRoute';
 import Dashboard from '@/pages/Dashboard';
@@ -9,7 +9,6 @@ import Login from '@/pages/Login';
 import Landing from '@/pages/Landing';
 import Subcerebros from '@/pages/Subcerebros';
 import NotFound from '@/pages/NotFound';
-import './App.css';
 import Projetos from '@/pages/Projetos';
 import Insights from '@/pages/Insights';
 import Habitos from '@/pages/Habitos';
@@ -32,9 +31,17 @@ import Onboarding from '@/pages/Onboarding';
 import AdminDashboard from '@/pages/AdminDashboard';
 import { InitializeRealtime } from '@/components/InitializeRealtime';
 
-function App() {
+function AppWrapper({ children }: { children: ReactNode }) {
   return (
     <ThemeProvider defaultTheme="dark" storageKey="ui-theme">
+      {children}
+    </ThemeProvider>
+  );
+}
+
+function App() {
+  return (
+    <AppWrapper>
       <Router>
         <Routes>
           <Route path="/" element={<Landing />} />
@@ -71,7 +78,7 @@ function App() {
       <Toaster />
       <SonnerToaster />
       <InitializeRealtime />
-    </ThemeProvider>
+    </AppWrapper>
   );
 }
 
