@@ -15,6 +15,7 @@ export type Database = {
           context_type: string | null
           created_at: string | null
           id: string
+          is_favorite: boolean | null
           prompt: string
           response: string | null
           user_id: string
@@ -24,6 +25,7 @@ export type Database = {
           context_type?: string | null
           created_at?: string | null
           id?: string
+          is_favorite?: boolean | null
           prompt: string
           response?: string | null
           user_id: string
@@ -33,8 +35,42 @@ export type Database = {
           context_type?: string | null
           created_at?: string | null
           id?: string
+          is_favorite?: boolean | null
           prompt?: string
           response?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      external_connections: {
+        Row: {
+          created_at: string | null
+          expires_at: string | null
+          id: string
+          platform: string
+          refresh_token: string | null
+          token: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          expires_at?: string | null
+          id?: string
+          platform: string
+          refresh_token?: string | null
+          token: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          expires_at?: string | null
+          id?: string
+          platform?: string
+          refresh_token?: string | null
+          token?: string
+          updated_at?: string | null
           user_id?: string
         }
         Relationships: []

@@ -1,8 +1,8 @@
+
 import React, { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { MessageSquare, Send, X, Trash2 } from "lucide-react";
 import { Button } from "./ui/button";
-import { Input } from "./ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import { Textarea } from "./ui/textarea";
 import { ScrollArea } from "./ui/scroll-area";
@@ -10,9 +10,10 @@ import { Card } from "./ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { saveAthenaLog } from "@/utils/athenaUtils";
+import { processAthenaCommand } from "@/utils/athenaCommandUtils";
 
 interface Message {
-  role: "user" | "assistant";
+  role: "user" | "assistant" | "system";
   content: string;
   timestamp: string;
 }
@@ -104,6 +105,19 @@ const AthenaChatBox: React.FC = () => {
     setInteractionCount(prev => prev + 1);
 
     try {
+      // Processar comandos se o usuário estiver autenticado
+      let commandResult = null;
+      let contextType = "geral";
+      let contextId = null;
+      
+      if (user) {
+        commandResult = await processAthenaCommand(user.id, currentMessage);
+        if (commandResult) {
+          contextType = commandResult.contextType;
+          contextId = commandResult.contextId;
+        }
+      }
+
       const apiKey = "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";
       
       // Preparar histórico de mensagens para a API
@@ -118,6 +132,14 @@ const AthenaChatBox: React.FC = () => {
         })),
         { role: "user", content: currentMessage }
       ];
+      
+      // Se um comando foi processado com sucesso, adicione contexto adicional para a IA
+      if (commandResult?.result.success) {
+        apiMessages.push({
+          role: "system",
+          content: `[SISTEMA: ${commandResult.result.message} Mencione isso na sua resposta.]`
+        });
+      }
       
       const response = await fetch("https://api.openai.com/v1/chat/completions", {
         method: "POST",
@@ -145,6 +167,17 @@ const AthenaChatBox: React.FC = () => {
         timestamp: new Date().toISOString(),
       };
       
+      // Se um comando foi processado com erro, adicione mensagem de sistema
+      if (commandResult && !commandResult.result.success) {
+        const systemMessage: Message = {
+          role: "system",
+          content: `⚠️ ${commandResult.result.message}`,
+          timestamp: new Date().toISOString(),
+        };
+        
+        setMessages((prev) => [...prev, systemMessage]);
+      }
+      
       // Manter apenas as últimas MAX_MESSAGES mensagens
       setMessages((prev) => {
         const allMessages = [...prev, newAssistantMessage];
@@ -153,8 +186,12 @@ const AthenaChatBox: React.FC = () => {
       
       // Salvar log no Supabase se o usuário estiver autenticado
       if (user) {
-        saveAthenaLog(currentMessage, assistantMessage, "geral")
-          .catch(err => console.error("Erro ao salvar log de conversa:", err));
+        saveAthenaLog(
+          currentMessage, 
+          assistantMessage, 
+          contextType, 
+          contextId
+        ).catch(err => console.error("Erro ao salvar log de conversa:", err));
       }
       
     } catch (error) {
@@ -254,6 +291,13 @@ const AthenaChatBox: React.FC = () => {
                   <p className="text-sm">
                     Olá, eu sou a Athena, sua inteligência evolutiva. Em que posso ajudar hoje?
                   </p>
+                  <div className="mt-2 text-xs text-muted-foreground">
+                    <p>Experimente comandos como:</p>
+                    <ul className="list-disc pl-4 mt-1 space-y-1">
+                      <li>"Crie um novo projeto chamado Estudos de IA"</li>
+                      <li>"Quero criar o hábito de ler 30 minutos por dia"</li>
+                    </ul>
+                  </div>
                 </Card>
               )}
 
@@ -261,17 +305,29 @@ const AthenaChatBox: React.FC = () => {
               {messages.map((msg, index) => (
                 <div 
                   key={index} 
-                  className={`mb-3 flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
+                  className={`mb-3 flex ${
+                    msg.role === "user" 
+                      ? "justify-end" 
+                      : msg.role === "system" 
+                        ? "justify-center" 
+                        : "justify-start"
+                  }`}
                 >
-                  <div 
-                    className={`max-w-[85%] p-3 rounded-lg ${
-                      msg.role === "user"
-                        ? "bg-primary/20 text-foreground"
-                        : "bg-card/80 border border-border/50"
-                    }`}
-                  >
-                    <p className="text-sm whitespace-pre-wrap break-words">{msg.content}</p>
-                  </div>
+                  {msg.role === "system" ? (
+                    <div className="max-w-[90%] py-2 px-3 rounded-md bg-yellow-500/10 border border-yellow-500/25 text-yellow-500">
+                      <p className="text-xs">{msg.content}</p>
+                    </div>
+                  ) : (
+                    <div 
+                      className={`max-w-[85%] p-3 rounded-lg ${
+                        msg.role === "user"
+                          ? "bg-primary/20 text-foreground"
+                          : "bg-card/80 border border-border/50"
+                      }`}
+                    >
+                      <p className="text-sm whitespace-pre-wrap break-words">{msg.content}</p>
+                    </div>
+                  )}
                 </div>
               ))}
 

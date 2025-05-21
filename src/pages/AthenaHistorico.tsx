@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { Reply, Search, Calendar, ChevronDown, ChevronUp } from "lucide-react";
+import { Reply, Search, Calendar, ChevronDown, ChevronUp, Star, StarOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
@@ -24,6 +24,7 @@ interface AthenaLog {
   context_type: string;
   context_id: string | null;
   created_at: string;
+  is_favorite: boolean;
 }
 
 export default function AthenaHistorico() {
@@ -31,7 +32,7 @@ export default function AthenaHistorico() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [expandedLogs, setExpandedLogs] = useState<Set<string>>(new Set());
-  const { fetchHistory } = useAthenaHistory();
+  const { fetchHistory, toggleFavorite } = useAthenaHistory();
   const { user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -132,6 +133,30 @@ export default function AthenaHistorico() {
     }
   };
 
+  const handleToggleFavorite = async (log: AthenaLog) => {
+    const result = await toggleFavorite(log.id, log.is_favorite);
+    if (!result.error) {
+      // Update local state to reflect the change
+      setLogs(currentLogs => 
+        currentLogs.map(l => 
+          l.id === log.id ? { ...l, is_favorite: !l.is_favorite } : l
+        )
+      );
+      
+      toast({
+        title: log.is_favorite ? "Removido dos favoritos" : "Adicionado aos favoritos",
+        description: log.is_favorite 
+          ? "Conversa removida dos seus favoritos."
+          : "Conversa adicionada aos seus favoritos.",
+      });
+    }
+  };
+
+  const viewContextConversations = (contextType: string, contextId: string | null) => {
+    if (!contextId) return;
+    navigate(`/athena/contexto/${contextId}?tipo=${contextType}`);
+  };
+
   const filteredLogs = logs.filter(log => 
     log.prompt.toLowerCase().includes(searchTerm.toLowerCase()) || 
     log.response.toLowerCase().includes(searchTerm.toLowerCase())
@@ -212,13 +237,28 @@ export default function AthenaHistorico() {
                       <Calendar size={14} />
                       {format(new Date(log.created_at), "PPpp", { locale: ptBR })}
                       {log.context_type !== "geral" && (
-                        <span className="ml-2 px-2 py-0.5 bg-primary/10 text-primary rounded-md text-xs">
+                        <span 
+                          className="ml-2 px-2 py-0.5 bg-primary/10 text-primary rounded-md text-xs cursor-pointer hover:bg-primary/20"
+                          onClick={() => log.context_id && viewContextConversations(log.context_type, log.context_id)}
+                        >
                           {log.context_type}
                         </span>
                       )}
                     </CardDescription>
                     <CardTitle className="text-lg mt-1">{log.prompt}</CardTitle>
                   </div>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 rounded-full"
+                    onClick={() => handleToggleFavorite(log)}
+                  >
+                    {log.is_favorite ? (
+                      <Star className="h-4 w-4 text-yellow-400 fill-yellow-400" />
+                    ) : (
+                      <StarOff className="h-4 w-4 text-muted-foreground" />
+                    )}
+                  </Button>
                 </div>
               </CardHeader>
               <CardContent className="pb-2">
@@ -249,7 +289,7 @@ export default function AthenaHistorico() {
                   </Button>
                 )}
               </CardContent>
-              <CardFooter>
+              <CardFooter className="flex items-center gap-2">
                 <Button 
                   variant="outline"
                   size="sm"
@@ -259,6 +299,17 @@ export default function AthenaHistorico() {
                   <Reply size={16} />
                   <span>Reanalisar com Athena</span>
                 </Button>
+                {log.context_id && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => viewContextConversations(log.context_type, log.context_id)}
+                    className="flex items-center gap-2"
+                  >
+                    <Search size={16} />
+                    <span>Ver contexto</span>
+                  </Button>
+                )}
               </CardFooter>
             </Card>
           ))}

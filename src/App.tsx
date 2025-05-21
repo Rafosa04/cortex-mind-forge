@@ -26,6 +26,8 @@ import Planos from "./pages/Planos";
 import Landing from "./pages/Landing";
 import ChatAthena from "./pages/ChatAthena";
 import AthenaHistorico from "./pages/AthenaHistorico";
+import AthenaContexto from "./pages/AthenaContexto";
+import Dashboard from "./pages/Dashboard";
 import Connecta from "./pages/Connecta";
 import Insights from "./pages/Insights";
 import AdminDashboard from "./pages/AdminDashboard";
@@ -50,6 +52,7 @@ const App = () => (
                 {/* Rota protegida padrão (requer autenticação) */}
                 <Route element={<PrivateRoute />}>
                   <Route path="/" element={<Home />} />
+                  <Route path="/dashboard" element={<Dashboard />} />
                   <Route path="/onboarding" element={<Onboarding />} />
                   <Route path="/projetos" element={<Projetos />} />
                   <Route path="/habitos" element={<Habitos />} />
@@ -65,6 +68,7 @@ const App = () => (
                   <Route path="/planos" element={<Planos />} />
                   <Route path="/athena" element={<ChatAthena />} />
                   <Route path="/athena/historico" element={<AthenaHistorico />} />
+                  <Route path="/athena/contexto/:id" element={<AthenaContexto />} />
                   <Route path="/connecta" element={<Connecta />} />
                   <Route path="/insights" element={<Insights />} />
                 </Route>

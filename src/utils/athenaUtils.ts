@@ -15,7 +15,8 @@ export const saveAthenaLog = async (
   prompt: string,
   response: string,
   contextType: string = "geral",
-  contextId?: string
+  contextId?: string,
+  isFavorite: boolean = false
 ) => {
   try {
     // Verificar se o usuário está autenticado
@@ -34,7 +35,8 @@ export const saveAthenaLog = async (
         prompt,
         response,
         context_type: contextType,
-        context_id: contextId
+        context_id: contextId,
+        is_favorite: isFavorite
       });
       
     if (error) {
@@ -82,5 +84,98 @@ export const useAthenaHistory = () => {
     return { data, error: null };
   };
   
-  return { fetchHistory };
+  /**
+   * Alternar favorito em uma interação com Athena
+   */
+  const toggleFavorite = async (logId: string, currentIsFavorite: boolean) => {
+    if (!user) {
+      toast({
+        title: "Não autorizado",
+        description: "Você precisa estar logado para favoritar conversas.",
+        variant: "destructive"
+      });
+      return { error: "Usuário não autenticado" };
+    }
+    
+    const { data, error } = await supabase
+      .from("athena_logs")
+      .update({ is_favorite: !currentIsFavorite })
+      .eq("id", logId)
+      .eq("user_id", user.id)
+      .select();
+      
+    if (error) {
+      toast({
+        title: "Erro ao alterar favorito",
+        description: "Não foi possível atualizar o status de favorito.",
+        variant: "destructive"
+      });
+      return { error };
+    }
+    
+    return { data };
+  };
+  
+  return { fetchHistory, toggleFavorite };
+};
+
+/**
+ * Buscar detalhes de uma conversa específica com Athena pelo ID
+ */
+export const fetchAthenaConversation = async (conversationId: string) => {
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (!user) {
+      return { error: "Usuário não autenticado" };
+    }
+    
+    const { data, error } = await supabase
+      .from("athena_logs")
+      .select("*")
+      .eq("id", conversationId)
+      .eq("user_id", user.id)
+      .single();
+      
+    if (error) {
+      console.error("Erro ao buscar conversa:", error);
+      return { error };
+    }
+    
+    return { data };
+  } catch (error) {
+    console.error("Erro ao buscar conversa:", error);
+    return { error };
+  }
+};
+
+/**
+ * Buscar conversas relacionadas a um projeto ou hábito específico
+ */
+export const fetchContextConversations = async (contextType: string, contextId: string) => {
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (!user) {
+      return { error: "Usuário não autenticado" };
+    }
+    
+    const { data, error } = await supabase
+      .from("athena_logs")
+      .select("*")
+      .eq("context_type", contextType)
+      .eq("context_id", contextId)
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: true });
+      
+    if (error) {
+      console.error("Erro ao buscar conversas de contexto:", error);
+      return { error };
+    }
+    
+    return { data };
+  } catch (error) {
+    console.error("Erro ao buscar conversas de contexto:", error);
+    return { error };
+  }
 };
