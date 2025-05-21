@@ -1,4 +1,3 @@
-
 import { useState, useEffect, createContext, useContext } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from "@/integrations/supabase/client";
@@ -13,6 +12,7 @@ interface AuthContextType {
   signUp: (email: string, password: string, name: string) => Promise<{ error: any, user: any }>;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
+  createTestUser: () => Promise<{ error: any, user: any, email: string, password: string }>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -195,6 +195,73 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
+  // Criar usuário de teste com acesso total
+  const createTestUser = async () => {
+    try {
+      // Gerar email e senha aleatórios para o usuário de teste
+      const randomString = Math.random().toString(36).substring(2, 10);
+      const email = `test_${randomString}@cortex-test.com`;
+      const password = `Test${randomString}!`;
+      const name = "Usuário de Teste";
+      
+      // Limpar estado de autenticação existente
+      cleanupAuthState();
+      
+      // Criar usuário
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: { name }
+        }
+      });
+
+      if (error) {
+        toast({
+          title: "Erro ao criar usuário de teste",
+          description: error.message,
+          variant: "destructive",
+        });
+        return { error, user: null, email: "", password: "" };
+      }
+
+      if (!data.user) {
+        toast({
+          title: "Erro ao criar usuário de teste",
+          description: "Não foi possível criar o usuário",
+          variant: "destructive",
+        });
+        return { error: new Error("Não foi possível criar o usuário"), user: null, email: "", password: "" };
+      }
+      
+      // Atualizar o perfil para ser admin
+      if (data.user) {
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .update({ role: 'admin' })
+          .eq('id', data.user.id);
+          
+        if (profileError) {
+          console.error("Erro ao atualizar perfil para admin:", profileError);
+        }
+      }
+
+      toast({
+        title: "Usuário de teste criado com sucesso!",
+        description: `Email: ${email} | Senha: ${password}`,
+      });
+
+      return { error: null, user: data.user, email, password };
+    } catch (error: any) {
+      toast({
+        title: "Erro ao criar usuário de teste",
+        description: error.message || "Ocorreu um erro ao tentar criar o usuário de teste",
+        variant: "destructive",
+      });
+      return { error, user: null, email: "", password: "" };
+    }
+  };
+
   // Logout
   const signOut = async () => {
     try {
@@ -231,7 +298,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         signIn,
         signUp,
         signOut,
-        refreshProfile
+        refreshProfile,
+        createTestUser
       }}
     >
       {children}
