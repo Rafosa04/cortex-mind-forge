@@ -29,7 +29,8 @@ export function VisaoKanban({ projetos, loading, onVerDetalhes }: VisaoKanbanPro
     visible: { 
       opacity: 1,
       transition: { 
-        staggerChildren: 0.1
+        staggerChildren: 0.1,
+        when: "beforeChildren"
       }
     }
   };
@@ -39,15 +40,27 @@ export function VisaoKanban({ projetos, loading, onVerDetalhes }: VisaoKanbanPro
     visible: { opacity: 1, y: 0 }
   };
 
+  const columnVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: { 
+      opacity: 1, 
+      y: 0,
+      transition: { duration: 0.4 }
+    }
+  };
+
   return (
-    <div className="flex flex-col md:flex-row gap-4 md:gap-6 mt-1 fade-in min-h-[350px] overflow-x-auto pb-4">
+    <motion.div 
+      className="flex flex-col md:flex-row gap-4 md:gap-6 mt-1 min-h-[350px] overflow-x-auto pb-4"
+      variants={containerVariants}
+      initial="hidden"
+      animate="visible"
+    >
       {["ativo", "pausado", "concluído"].map((status) => (
         <motion.div 
           key={status} 
           className="flex-1 min-w-[250px] bg-[#191933]/70 backdrop-blur-md rounded-xl p-4 border border-white/5"
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3 }}
+          variants={columnVariants}
         >
           <div className="font-bold text-secondary mb-3 capitalize">{status}</div>
           
@@ -59,8 +72,6 @@ export function VisaoKanban({ projetos, loading, onVerDetalhes }: VisaoKanbanPro
             <motion.div 
               className="flex flex-col gap-4"
               variants={containerVariants}
-              initial="hidden"
-              animate="visible"
             >
               {getProjetosPorStatus(status).map((projeto) => (
                 <motion.div key={projeto.id} variants={itemVariants}>
@@ -74,6 +85,6 @@ export function VisaoKanban({ projetos, loading, onVerDetalhes }: VisaoKanbanPro
           )}
         </motion.div>
       ))}
-    </div>
+    </motion.div>
   );
 }

@@ -3,6 +3,7 @@ import React from "react";
 import { ProjectWithSteps } from "@/services/projectsService";
 import { ProjetoCard } from "./ProjetoCard";
 import { Skeleton } from "@/components/ui/skeleton";
+import { motion } from "framer-motion";
 
 type VisaoListaProps = {
   projetos: ProjectWithSteps[];
@@ -11,6 +12,23 @@ type VisaoListaProps = {
 };
 
 export function VisaoLista({ projetos, loading, onVerDetalhes }: VisaoListaProps) {
+  // Container and item animation variants
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: { 
+      opacity: 1,
+      transition: { 
+        staggerChildren: 0.1,
+        delayChildren: 0.1
+      }
+    }
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: { opacity: 1, y: 0 }
+  };
+  
   const renderLoaderCards = () => (
     <>
       {[1, 2, 3].map((i) => (
@@ -36,22 +54,33 @@ export function VisaoLista({ projetos, loading, onVerDetalhes }: VisaoListaProps
   );
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-7 fade-in mt-1">
+    <motion.div 
+      className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-7 mt-1"
+      variants={containerVariants}
+      initial="hidden"
+      animate="visible"
+    >
       {loading ? (
         renderLoaderCards()
       ) : projetos.length === 0 ? (
-        <div className="col-span-full text-center py-8 text-secondary/70">
+        <motion.div 
+          className="col-span-full text-center py-8 text-secondary/70"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.5 }}
+        >
           Nenhum projeto encontrado com os filtros atuais.
-        </div>
+        </motion.div>
       ) : (
         projetos.map((projeto) => (
-          <ProjetoCard
-            key={projeto.id}
-            projeto={projeto}
-            onVerDetalhes={() => onVerDetalhes(projeto)}
-          />
+          <motion.div key={projeto.id} variants={itemVariants}>
+            <ProjetoCard
+              projeto={projeto}
+              onVerDetalhes={() => onVerDetalhes(projeto)}
+            />
+          </motion.div>
         ))
       )}
-    </div>
+    </motion.div>
   );
 }
