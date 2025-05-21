@@ -26,3 +26,13 @@ export async function enableRealtimeForTable(tableName: string): Promise<boolean
 }
 
 // Setup realtime updates for all necessary tables
+export async function setupRealtimeUpdates(): Promise<void> {
+  const tables = ["projects", "project_steps"];
+
+  for (const table of tables) {
+    const success = await enableRealtimeForTable(table);
+    if (!success) {
+      console.warn(`Failed to enable realtime updates for ${table}`);
+    }
+  }
+}
