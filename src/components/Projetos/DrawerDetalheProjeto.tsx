@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from "react";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription, DrawerClose } from "@/components/ui/drawer";
 import { Button } from "@/components/ui/button";
@@ -80,6 +79,7 @@ export function DrawerDetalheProjeto({ projeto, open, onOpenChange, onProjectUpd
     if (sucesso && onProjectUpdated) {
       onProjectUpdated();
     }
+    return sucesso;
   };
 
   const handleChangeStatus = async (novoStatus: "ativo" | "pausado" | "concluído") => {
