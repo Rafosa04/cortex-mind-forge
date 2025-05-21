@@ -1,16 +1,18 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { MessageSquare, Send, X, Trash2 } from "lucide-react";
-import { Button } from "./ui/button";
-import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
-import { Textarea } from "./ui/textarea";
-import { ScrollArea } from "./ui/scroll-area";
-import { Card } from "./ui/card";
+import { MessageSquare, X } from "lucide-react";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { saveAthenaLog } from "@/utils/athenaUtils";
 import { processAthenaCommand } from "@/utils/athenaCommandUtils";
+
+// Newly refactored components
+import AthenaHeader from "./Athena/AthenaHeader";
+import AthenaHistoryPreview from "./Athena/AthenaHistoryPreview";
+import AthenaTypingIndicator from "./Athena/AthenaTypingIndicator";
+import AthenaInputBox from "./Athena/AthenaInputBox";
 
 interface Message {
   role: "user" | "assistant" | "system";
@@ -28,10 +30,20 @@ const AthenaChatBox: React.FC = () => {
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState<Message[]>([]);
   const [interactionCount, setInteractionCount] = useState(0);
+  const [expandedLogs, setExpandedLogs] = useState<Set<string>>(new Set());
   const { toast } = useToast();
   const { user } = useAuth();
   const scrollAreaRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLTextAreaElement>(null);
+
+  const toggleExpanded = (id: string) => {
+    const newExpanded = new Set(expandedLogs);
+    if (newExpanded.has(id)) {
+      newExpanded.delete(id);
+    } else {
+      newExpanded.add(id);
+    }
+    setExpandedLogs(newExpanded);
+  };
 
   // Carregar histórico de mensagens do localStorage ao iniciar
   useEffect(() => {
@@ -216,13 +228,6 @@ const AthenaChatBox: React.FC = () => {
     }
   };
 
-  const handleKeyPress = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      handleSendMessage();
-    }
-  };
-
   const clearHistory = () => {
     setMessages([]);
     setInteractionCount(0);
@@ -258,120 +263,30 @@ const AthenaChatBox: React.FC = () => {
             transition={{ duration: 0.2 }}
             className="fixed bottom-20 right-4 z-50 w-[320px] sm:w-[350px] md:w-[380px] max-w-[95vw] max-h-[600px] shadow-xl border border-border rounded-lg overflow-hidden glass-morphism"
           >
-            {/* Cabeçalho */}
-            <div className="p-3 pb-2 flex items-center justify-between bg-card/90 backdrop-blur-sm border-b border-border">
-              <div className="flex items-center gap-2">
-                <Avatar className="h-8 w-8 bg-primary">
-                  <AvatarFallback className="text-sm font-semibold text-primary-foreground">🧠</AvatarFallback>
-                </Avatar>
-                <div>
-                  <h3 className="font-semibold text-sm">Athena IA</h3>
-                  <p className="text-xs text-foreground/70">Seu assistente pessoal</p>
-                </div>
-              </div>
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                className="h-7 w-7 rounded-full hover:bg-destructive/20"
-                onClick={clearHistory}
-                title="Limpar histórico"
-              >
-                <Trash2 size={16} />
-              </Button>
-            </div>
-
-            {/* Área de mensagens */}
+            <AthenaHeader clearHistory={clearHistory} />
+            
             <ScrollArea 
               ref={scrollAreaRef} 
               className="flex-1 h-[350px] md:h-[400px] overflow-y-auto p-3 scrollbar-thin bg-background/95"
             >
-              {/* Mensagem inicial */}
-              {messages.length === 0 && (
-                <Card className="p-4 mb-3 bg-card/50 border-primary/20">
-                  <p className="text-sm">
-                    Olá, eu sou a Athena, sua inteligência evolutiva. Em que posso ajudar hoje?
-                  </p>
-                  <div className="mt-2 text-xs text-muted-foreground">
-                    <p>Experimente comandos como:</p>
-                    <ul className="list-disc pl-4 mt-1 space-y-1">
-                      <li>"Crie um novo projeto chamado Estudos de IA"</li>
-                      <li>"Quero criar o hábito de ler 30 minutos por dia"</li>
-                    </ul>
-                  </div>
-                </Card>
-              )}
-
-              {/* Histórico de mensagens */}
-              {messages.map((msg, index) => (
-                <div 
-                  key={index} 
-                  className={`mb-3 flex ${
-                    msg.role === "user" 
-                      ? "justify-end" 
-                      : msg.role === "system" 
-                        ? "justify-center" 
-                        : "justify-start"
-                  }`}
-                >
-                  {msg.role === "system" ? (
-                    <div className="max-w-[90%] py-2 px-3 rounded-md bg-yellow-500/10 border border-yellow-500/25 text-yellow-500">
-                      <p className="text-xs">{msg.content}</p>
-                    </div>
-                  ) : (
-                    <div 
-                      className={`max-w-[85%] p-3 rounded-lg ${
-                        msg.role === "user"
-                          ? "bg-primary/20 text-foreground"
-                          : "bg-card/80 border border-border/50"
-                      }`}
-                    >
-                      <p className="text-sm whitespace-pre-wrap break-words">{msg.content}</p>
-                    </div>
-                  )}
-                </div>
-              ))}
-
-              {/* Indicador de digitação */}
-              {isTyping && (
-                <div className="flex justify-start mb-3">
-                  <div className="max-w-[85%] p-3 rounded-lg bg-card/50 border border-border/50">
-                    <p className="text-sm text-foreground/70 animate-pulse">
-                      Athena está digitando...
-                    </p>
-                  </div>
-                </div>
-              )}
+              <AthenaHistoryPreview
+                messages={messages}
+                expandedLogs={expandedLogs}
+                toggleExpanded={toggleExpanded}
+                isTyping={isTyping}
+              />
+              
+              <AthenaTypingIndicator isTyping={isTyping} />
             </ScrollArea>
 
-            {/* Rodapé - área de input */}
-            <div className="p-3 pt-2 border-t border-border bg-card/90 backdrop-blur-sm">
-              <div className="flex gap-2">
-                <Textarea
-                  ref={inputRef}
-                  value={message}
-                  onChange={(e) => setMessage(e.target.value)}
-                  onKeyDown={handleKeyPress}
-                  placeholder="Pergunte algo à Athena…"
-                  className="min-h-[40px] max-h-[120px] bg-background/70"
-                  style={{ resize: "none" }}
-                />
-                <Button 
-                  onClick={handleSendMessage} 
-                  disabled={!message.trim() || isTyping}
-                  className="h-10 px-3"
-                >
-                  <Send size={18} />
-                </Button>
-              </div>
-
-              {/* Contador de interações */}
-              <div className="mt-1 text-xs text-foreground/50 flex justify-between">
-                <span>Interações: {interactionCount}/{MAX_INTERACTIONS}</span>
-                {message.length > 0 && (
-                  <span>{message.length} caracteres</span>
-                )}
-              </div>
-            </div>
+            <AthenaInputBox
+              message={message}
+              setMessage={setMessage}
+              handleSendMessage={handleSendMessage}
+              isTyping={isTyping}
+              interactionCount={interactionCount}
+              maxInteractions={MAX_INTERACTIONS}
+            />
           </motion.div>
         )}
       </AnimatePresence>

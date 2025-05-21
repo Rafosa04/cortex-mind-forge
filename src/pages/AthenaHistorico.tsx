@@ -2,19 +2,16 @@
 import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
-import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
-import { Reply, Search, Calendar, ChevronDown, ChevronUp, Star, StarOff } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { useAthenaHistory } from "@/utils/athenaUtils";
 import { saveAthenaLog } from "@/utils/athenaUtils";
+
+// Refactored components
+import AthenaHistoryCard from "@/components/Athena/AthenaHistoryCard";
+import AthenaFilterBar from "@/components/Athena/AthenaFilterBar";
+import AthenaEmptyState from "@/components/Athena/AthenaEmptyState";
 
 interface AthenaLog {
   id: string;
@@ -176,142 +173,35 @@ export default function AthenaHistorico() {
         </p>
       </div>
 
-      <div className="mb-6 flex flex-col sm:flex-row gap-4">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" size={18} />
-          <Input
-            placeholder="Pesquisar no histórico..."
-            className="pl-10"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-        </div>
-        <Button 
-          variant="outline" 
-          onClick={loadHistory}
-          className="flex items-center gap-2"
-        >
-          <Reply size={16} />
-          <span>Atualizar</span>
-        </Button>
-      </div>
+      <AthenaFilterBar 
+        searchTerm={searchTerm}
+        setSearchTerm={setSearchTerm}
+        loadHistory={loadHistory}
+      />
 
       {loading ? (
         <div className="space-y-4">
           {[1, 2, 3].map((i) => (
-            <Card key={i} className="mb-4">
-              <CardHeader>
-                <Skeleton className="h-4 w-24 mb-2" />
-                <Skeleton className="h-6 w-3/4" />
-              </CardHeader>
-              <CardContent>
-                <Skeleton className="h-20 w-full" />
-              </CardContent>
-              <CardFooter>
-                <Skeleton className="h-9 w-28" />
-              </CardFooter>
-            </Card>
+            <div key={i} className="mb-4">
+              <Skeleton className="h-24 w-full mb-2" />
+              <Skeleton className="h-8 w-28" />
+            </div>
           ))}
         </div>
       ) : filteredLogs.length === 0 ? (
-        <Card className="p-6 text-center">
-          <div className="py-10 flex flex-col items-center">
-            <span className="text-6xl mb-4">🤔</span>
-            <h3 className="text-xl font-semibold mb-2">Nenhuma conversa encontrada</h3>
-            <p className="text-muted-foreground mb-4">
-              {searchTerm ? 
-                "Não encontramos nenhuma conversa que corresponda à sua pesquisa." : 
-                "Você ainda não conversou com a Athena. Experimente fazer uma pergunta!"}
-            </p>
-            <Button onClick={() => navigate("/")}>Ir para o Dashboard</Button>
-          </div>
-        </Card>
+        <AthenaEmptyState hasSearchTerm={searchTerm.length > 0} />
       ) : (
         <div className="space-y-4">
           {filteredLogs.map((log) => (
-            <Card key={log.id} className="mb-4 overflow-hidden">
-              <CardHeader className="pb-2">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <CardDescription className="flex items-center gap-2">
-                      <Calendar size={14} />
-                      {format(new Date(log.created_at), "PPpp", { locale: ptBR })}
-                      {log.context_type !== "geral" && (
-                        <span 
-                          className="ml-2 px-2 py-0.5 bg-primary/10 text-primary rounded-md text-xs cursor-pointer hover:bg-primary/20"
-                          onClick={() => log.context_id && viewContextConversations(log.context_type, log.context_id)}
-                        >
-                          {log.context_type}
-                        </span>
-                      )}
-                    </CardDescription>
-                    <CardTitle className="text-lg mt-1">{log.prompt}</CardTitle>
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8 rounded-full"
-                    onClick={() => handleToggleFavorite(log)}
-                  >
-                    {log.is_favorite ? (
-                      <Star className="h-4 w-4 text-yellow-400 fill-yellow-400" />
-                    ) : (
-                      <StarOff className="h-4 w-4 text-muted-foreground" />
-                    )}
-                  </Button>
-                </div>
-              </CardHeader>
-              <CardContent className="pb-2">
-                <div 
-                  className={`relative ${!expandedLogs.has(log.id) && log.response.length > 300 ? "max-h-32 overflow-hidden" : ""}`}
-                >
-                  <p className="text-sm whitespace-pre-wrap">{log.response}</p>
-                  {!expandedLogs.has(log.id) && log.response.length > 300 && (
-                    <div className="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-background to-transparent" />
-                  )}
-                </div>
-                {log.response.length > 300 && (
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    onClick={() => toggleExpanded(log.id)}
-                    className="mt-2 flex items-center gap-1 text-xs"
-                  >
-                    {expandedLogs.has(log.id) ? (
-                      <>
-                        <ChevronUp size={14} /> Ver menos
-                      </>
-                    ) : (
-                      <>
-                        <ChevronDown size={14} /> Ver mais
-                      </>
-                    )}
-                  </Button>
-                )}
-              </CardContent>
-              <CardFooter className="flex items-center gap-2">
-                <Button 
-                  variant="outline"
-                  size="sm"
-                  onClick={() => reprocessPrompt(log.prompt)}
-                  className="flex items-center gap-2"
-                >
-                  <Reply size={16} />
-                  <span>Reanalisar com Athena</span>
-                </Button>
-                {log.context_id && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => viewContextConversations(log.context_type, log.context_id)}
-                    className="flex items-center gap-2"
-                  >
-                    <Search size={16} />
-                    <span>Ver contexto</span>
-                  </Button>
-                )}
-              </CardFooter>
-            </Card>
+            <AthenaHistoryCard
+              key={log.id}
+              log={log}
+              expandedLogs={expandedLogs}
+              toggleExpanded={toggleExpanded}
+              handleToggleFavorite={handleToggleFavorite}
+              reprocessPrompt={reprocessPrompt}
+              viewContextConversations={viewContextConversations}
+            />
           ))}
         </div>
       )}
