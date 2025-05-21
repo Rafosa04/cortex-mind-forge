@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { Replay, Search, Calendar, ChevronDown, ChevronUp } from "lucide-react";
+import { Reply, Search, Calendar, ChevronDown, ChevronUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
@@ -166,7 +166,7 @@ export default function AthenaHistorico() {
           onClick={loadHistory}
           className="flex items-center gap-2"
         >
-          <Replay size={16} />
+          <Reply size={16} />
           <span>Atualizar</span>
         </Button>
       </div>
@@ -256,7 +256,7 @@ export default function AthenaHistorico() {
                   onClick={() => reprocessPrompt(log.prompt)}
                   className="flex items-center gap-2"
                 >
-                  <Replay size={16} />
+                  <Reply size={16} />
                   <span>Reanalisar com Athena</span>
                 </Button>
               </CardFooter>
