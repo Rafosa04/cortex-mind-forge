@@ -12,6 +12,9 @@ export type Project = {
   progress: number;
   created_at: string;
   user_id: string;
+  tags: string[] | null;
+  is_favorite: boolean;
+  content: string | null;
 };
 
 export type ProjectStep = {
@@ -30,10 +33,18 @@ export type ProjectWithSteps = Project & {
 export const projectsService = {
   async getProjetosComEtapas(): Promise<ProjectWithSteps[]> {
     try {
+      // Get current user
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        throw new Error("Usuário não autenticado");
+      }
+      
       // Fetch projects for the current user
       const { data: projects, error: projectsError } = await supabase
         .from("projects")
         .select("*")
+        .eq("user_id", user.id)
         .order("created_at", { ascending: false });
 
       if (projectsError) {
@@ -72,7 +83,9 @@ export const projectsService = {
           steps: projectSteps,
           progress: calculatedProgress,
           // Ensure status is one of the allowed values
-          status: (project.status as "ativo" | "pausado" | "concluído") || "ativo"
+          status: (project.status as "ativo" | "pausado" | "concluído") || "ativo",
+          // Ensure tags is an array
+          tags: project.tags || []
         } as ProjectWithSteps;
       });
 
@@ -94,7 +107,8 @@ export const projectsService = {
     category: string | null = null,
     status: "ativo" | "pausado" | "concluído" = "ativo",
     deadline: string | null = null,
-    etapas: { texto: string; feita: boolean }[] = []
+    etapas: { texto: string; feita: boolean }[] = [],
+    tags: string[] = []
   ): Promise<ProjectWithSteps | null> {
     try {
       // Get the current user's ID
@@ -114,7 +128,9 @@ export const projectsService = {
           status,
           deadline,
           progress: 0, // Will calculate after adding steps
-          user_id: user.id // Add the user_id here
+          user_id: user.id,
+          tags: tags,
+          is_favorite: false
         })
         .select()
         .single();
@@ -147,7 +163,7 @@ export const projectsService = {
 
         // Calculate and update progress
         const completedSteps = etapas.filter(etapa => etapa.feita).length;
-        const progress = Math.round((completedSteps / etapas.length) * 100);
+        const progress = etapas.length > 0 ? Math.round((completedSteps / etapas.length) * 100) : 0;
 
         // Update project with calculated progress
         const { error: updateError } = await supabase
@@ -164,7 +180,8 @@ export const projectsService = {
           steps: steps || [],
           progress,
           // Ensure status is one of the allowed values
-          status: (project.status as "ativo" | "pausado" | "concluído") 
+          status: (project.status as "ativo" | "pausado" | "concluído"),
+          tags: project.tags || []
         } as ProjectWithSteps;
       }
 
@@ -173,7 +190,8 @@ export const projectsService = {
         steps: [],
         progress: 0,
         // Ensure status is one of the allowed values
-        status: (project.status as "ativo" | "pausado" | "concluído") 
+        status: (project.status as "ativo" | "pausado" | "concluído"),
+        tags: project.tags || []
       } as ProjectWithSteps;
     } catch (error: any) {
       console.error("Error creating project:", error);
@@ -259,6 +277,52 @@ export const projectsService = {
     }
   },
 
+  async toggleFavoritoProjeto(projectId: string, isFavorite: boolean): Promise<boolean> {
+    try {
+      const { error } = await supabase
+        .from("projects")
+        .update({ is_favorite: isFavorite })
+        .eq("id", projectId);
+
+      if (error) {
+        throw error;
+      }
+
+      return true;
+    } catch (error: any) {
+      console.error("Error updating favorite status:", error);
+      toast({
+        title: "Erro ao atualizar favorito",
+        description: error.message || "Ocorreu um erro ao atualizar o status de favorito",
+        variant: "destructive",
+      });
+      return false;
+    }
+  },
+
+  async atualizarConteudoProjeto(projectId: string, content: string): Promise<boolean> {
+    try {
+      const { error } = await supabase
+        .from("projects")
+        .update({ content })
+        .eq("id", projectId);
+
+      if (error) {
+        throw error;
+      }
+
+      return true;
+    } catch (error: any) {
+      console.error("Error updating project content:", error);
+      toast({
+        title: "Erro ao atualizar conteúdo",
+        description: error.message || "Ocorreu um erro ao atualizar o conteúdo do projeto",
+        variant: "destructive",
+      });
+      return false;
+    }
+  },
+
   async adicionarEtapaProjeto(projectId: string, description: string): Promise<ProjectStep | null> {
     try {
       // Get current highest order_index
@@ -337,6 +401,63 @@ export const projectsService = {
       toast({
         title: "Erro ao remover etapa",
         description: error.message || "Ocorreu um erro ao remover a etapa",
+        variant: "destructive",
+      });
+      return false;
+    }
+  },
+
+  async removerProjeto(projectId: string): Promise<boolean> {
+    try {
+      // First, delete all steps for this project
+      const { error: stepsError } = await supabase
+        .from("project_steps")
+        .delete()
+        .eq("project_id", projectId);
+
+      if (stepsError) {
+        throw stepsError;
+      }
+
+      // Then delete the project
+      const { error } = await supabase
+        .from("projects")
+        .delete()
+        .eq("id", projectId);
+
+      if (error) {
+        throw error;
+      }
+
+      return true;
+    } catch (error: any) {
+      console.error("Error removing project:", error);
+      toast({
+        title: "Erro ao remover projeto",
+        description: error.message || "Ocorreu um erro ao remover o projeto",
+        variant: "destructive",
+      });
+      return false;
+    }
+  },
+
+  async atualizarTagsProjeto(projectId: string, tags: string[]): Promise<boolean> {
+    try {
+      const { error } = await supabase
+        .from("projects")
+        .update({ tags })
+        .eq("id", projectId);
+
+      if (error) {
+        throw error;
+      }
+
+      return true;
+    } catch (error: any) {
+      console.error("Error updating project tags:", error);
+      toast({
+        title: "Erro ao atualizar tags",
+        description: error.message || "Ocorreu um erro ao atualizar as tags do projeto",
         variant: "destructive",
       });
       return false;

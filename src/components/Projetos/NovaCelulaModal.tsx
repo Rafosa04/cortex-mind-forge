@@ -1,13 +1,14 @@
 
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogClose } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Bot, Calendar, PlusCircle } from "lucide-react";
+import { Bot, Calendar, PlusCircle, X } from "lucide-react";
 import React, { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useProjetos } from "@/hooks/useProjetos";
 import { toast } from "@/hooks/use-toast";
 import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
 
 type Props = {
   open: boolean;
@@ -23,6 +24,8 @@ export function NovaCelulaModal({ open, onOpenChange }: Props) {
   const [etapas, setEtapas] = useState<string[]>([""]); // Começa com uma etapa vazia
   const [prazo, setPrazo] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [tagInput, setTagInput] = useState("");
+  const [tags, setTags] = useState<string[]>([]);
 
   const resetForm = () => {
     setNome("");
@@ -30,6 +33,8 @@ export function NovaCelulaModal({ open, onOpenChange }: Props) {
     setCategoria("");
     setEtapas([""]);
     setPrazo("");
+    setTags([]);
+    setTagInput("");
   };
 
   const handleAddEtapa = () => {
@@ -46,6 +51,23 @@ export function NovaCelulaModal({ open, onOpenChange }: Props) {
     if (etapas.length <= 1) return; // Manter pelo menos uma etapa
     const novasEtapas = etapas.filter((_, i) => i !== index);
     setEtapas(novasEtapas);
+  };
+
+  const handleAddTag = () => {
+    if (!tagInput.trim()) return;
+    if (tags.includes(tagInput.trim())) {
+      toast({
+        title: "Tag já existe",
+        description: "Esta tag já foi adicionada ao projeto",
+      });
+      return;
+    }
+    setTags([...tags, tagInput.trim()]);
+    setTagInput("");
+  };
+
+  const handleRemoveTag = (tag: string) => {
+    setTags(tags.filter(t => t !== tag));
   };
 
   const handleSubmit = async () => {
@@ -72,7 +94,8 @@ export function NovaCelulaModal({ open, onOpenChange }: Props) {
         categoria || null,
         "ativo",
         prazo || null,
-        etapasFiltradas
+        etapasFiltradas,
+        tags
       );
 
       if (resultado) {
@@ -135,6 +158,43 @@ export function NovaCelulaModal({ open, onOpenChange }: Props) {
               value={categoria} 
               onChange={e => setCategoria(e.target.value)} 
             />
+          </div>
+          
+          <div>
+            <Label>Tags</Label>
+            <div className="flex gap-2 mb-2">
+              <Input
+                placeholder="Adicionar tag..."
+                value={tagInput}
+                onChange={(e) => setTagInput(e.target.value)}
+                className="flex-1"
+                onKeyPress={(e) => e.key === 'Enter' && handleAddTag()}
+              />
+              <Button 
+                onClick={handleAddTag}
+                disabled={!tagInput.trim()}
+                variant="outline"
+                className="border-[#993887]/40 text-secondary"
+              >
+                Adicionar
+              </Button>
+            </div>
+            <div className="flex flex-wrap gap-1 mt-1">
+              {tags.map(tag => (
+                <Badge 
+                  key={tag}
+                  className="flex items-center gap-1 bg-[#993887]/30 text-[#E6E6F0] px-2 py-1"
+                >
+                  {tag}
+                  <button 
+                    className="ml-1 text-[#E6E6F0]/70 hover:text-[#E6E6F0]"
+                    onClick={() => handleRemoveTag(tag)}
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </Badge>
+              ))}
+            </div>
           </div>
           
           <div>

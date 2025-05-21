@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { FiltroProjetos } from "@/components/Projetos/FiltroProjetos";
 import { ProjetoCard } from "@/components/Projetos/ProjetoCard";
@@ -12,6 +12,8 @@ import { FloatingAthenaButton } from "@/components/Projetos/FloatingAthenaButton
 import { useProjetos } from "@/hooks/useProjetos";
 import { ProjectWithSteps } from "@/services/projectsService";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useNavigate } from "react-router-dom";
+import { toast } from "@/hooks/use-toast";
 
 // Modos de visualização possíveis, com type literal
 const modosVisao = ["Lista", "Kanban", "Linha do tempo", "Galeria"] as const;
@@ -23,8 +25,39 @@ export default function Projetos() {
   const [projetoSelecionado, setProjetoSelecionado] = useState<ProjectWithSteps | null>(null);
   const [modoVisao, setModoVisao] = useState<ModoVisao>("Lista");
   const [abrirAthena, setAbrirAthena] = useState(false);
+  const navigate = useNavigate();
   
-  const { projetos, loading, error, carregarProjetos } = useProjetos();
+  // Get all projects data and functions from the hook
+  const { 
+    projetos, 
+    allProjetos,
+    loading, 
+    error, 
+    carregarProjetos, 
+    removerProjeto,
+    toggleFavoritoProjeto,
+    filterText,
+    setFilterText,
+    filterTags,
+    setFilterTags,
+    filterStatus,
+    setFilterStatus
+  } = useProjetos();
+
+  // Extract all unique tags from projects for filtering
+  const [availableTags, setAvailableTags] = useState<string[]>([]);
+
+  useEffect(() => {
+    if (allProjetos.length) {
+      const tags = new Set<string>();
+      allProjetos.forEach(projeto => {
+        if (projeto.tags) {
+          projeto.tags.forEach(tag => tags.add(tag));
+        }
+      });
+      setAvailableTags(Array.from(tags));
+    }
+  }, [allProjetos]);
 
   const handleVerDetalhes = (projeto: ProjectWithSteps) => {
     setProjetoSelecionado(projeto);
@@ -33,6 +66,29 @@ export default function Projetos() {
 
   const getProjetosPorStatus = (status: string) => {
     return projetos.filter(p => p.status === status);
+  };
+
+  const handleRemoveProjeto = async (projetoId: string) => {
+    const result = await removerProjeto(projetoId);
+    if (result && projetoSelecionado?.id === projetoId) {
+      setDetalheAberto(false);
+    }
+    return result;
+  };
+
+  const handleToggleFavorite = async (projetoId: string, isFavorite: boolean) => {
+    return await toggleFavoritoProjeto(projetoId, isFavorite);
+  };
+
+  const handleSugerirEtapa = (projeto: ProjectWithSteps) => {
+    // Navigate to Athena chat with project context
+    navigate(`/athena?project=${projeto.id}&type=etapa`);
+  };
+
+  const handleAthenaAction = (action: string) => {
+    if (action === "open_chat") {
+      navigate("/athena");
+    }
   };
 
   const renderLoaderCards = () => (
@@ -84,7 +140,15 @@ export default function Projetos() {
           <NovaCelulaModal open={modalAberto} onOpenChange={setModalAberto} />
         </header>
         
-        <FiltroProjetos />
+        <FiltroProjetos 
+          filterText={filterText}
+          setFilterText={setFilterText}
+          filterTags={filterTags}
+          setFilterTags={setFilterTags}
+          filterStatus={filterStatus}
+          setFilterStatus={setFilterStatus}
+          allTags={availableTags}
+        />
         
         {/* Estado de erro */}
         {error && !loading && (
@@ -100,7 +164,24 @@ export default function Projetos() {
         {!loading && !error && projetos.length === 0 && (
           <div className="rounded-xl bg-[#191933]/60 p-6 sm:p-10 text-secondary/70 flex flex-col items-center justify-center h-[320px] fade-in">
             <span className="text-xl">Nenhum projeto encontrado</span>
-            <div className="mt-4 text-base">Crie sua primeira célula usando o botão "Nova Célula".</div>
+            <div className="mt-4 text-base">
+              {allProjetos.length === 0
+                ? "Crie sua primeira célula usando o botão 'Nova Célula'."
+                : "Nenhum resultado corresponde aos filtros aplicados."}
+            </div>
+            {allProjetos.length > 0 && projetos.length === 0 && (
+              <Button 
+                variant="outline" 
+                className="mt-4 border-[#993887]/40" 
+                onClick={() => {
+                  setFilterText('');
+                  setFilterTags([]);
+                  setFilterStatus(null);
+                }}
+              >
+                Limpar filtros
+              </Button>
+            )}
           </div>
         )}
         
@@ -116,7 +197,10 @@ export default function Projetos() {
                   <ProjetoCard
                     key={projeto.id}
                     projeto={projeto}
-                    onVerDetalhes={() => handleVerDetalhes(projeto)}
+                    onVerDetalhes={handleVerDetalhes}
+                    onRemoveProjeto={handleRemoveProjeto}
+                    onToggleFavorite={handleToggleFavorite}
+                    onSugerirEtapa={handleSugerirEtapa}
                   />
                 ))
               )}
@@ -143,7 +227,10 @@ export default function Projetos() {
                         <ProjetoCard
                           key={projeto.id}
                           projeto={projeto}
-                          onVerDetalhes={() => handleVerDetalhes(projeto)}
+                          onVerDetalhes={handleVerDetalhes}
+                          onRemoveProjeto={handleRemoveProjeto}
+                          onToggleFavorite={handleToggleFavorite}
+                          onSugerirEtapa={handleSugerirEtapa}
                         />
                       ))}
                     </div>
@@ -153,18 +240,39 @@ export default function Projetos() {
             </div>
           )}
           
-          {/* Placeholders para outras visualizações */}
+          {/* Linha do tempo */}
           {modoVisao === "Linha do tempo" && (
             <div className="rounded-xl bg-[#191933]/60 p-6 sm:p-10 text-secondary/70 flex flex-col items-center justify-center h-[320px] fade-in">
-              <span className="text-xl">[Linha do tempo - mock visual]</span>
+              <span className="text-xl">[Linha do tempo]</span>
               <div className="mt-4 text-base">Visualização cronológica dos projetos (em breve).</div>
+              <Button 
+                variant="outline" 
+                className="mt-4 border-[#60B5B5]/40"
+                onClick={() => toast({
+                  title: "Em desenvolvimento",
+                  description: "A visualização de linha do tempo estará disponível em breve!"
+                })}
+              >
+                Prévia
+              </Button>
             </div>
           )}
           
+          {/* Galeria */}
           {modoVisao === "Galeria" && (
             <div className="rounded-xl bg-[#191933]/60 p-6 sm:p-10 text-secondary/70 flex flex-col items-center justify-center h-[320px] fade-in">
-              <span className="text-xl">[Galeria de células - mock visual]</span>
+              <span className="text-xl">[Galeria de células]</span>
               <div className="mt-4 text-base">Cards em grid de galeria (em breve).</div>
+              <Button 
+                variant="outline" 
+                className="mt-4 border-[#60B5B5]/40"
+                onClick={() => toast({
+                  title: "Em desenvolvimento",
+                  description: "A visualização de galeria estará disponível em breve!"
+                })}
+              >
+                Prévia
+              </Button>
             </div>
           )}
         </div>
@@ -184,10 +292,14 @@ export default function Projetos() {
         projeto={projetoSelecionado}
         open={detalheAberto}
         onOpenChange={setDetalheAberto}
+        onProjectUpdated={carregarProjetos}
       />
       
       {/* Botão flutuante "Falar com a Athena" */}
-      <FloatingAthenaButton onClick={() => setAbrirAthena(true)} />
+      <FloatingAthenaButton 
+        onClick={() => setAbrirAthena(true)} 
+        onAthenaAction={handleAthenaAction}
+      />
       
       {/* Chat lateral da Athena (mock visual) */}
       {abrirAthena && (
@@ -200,13 +312,35 @@ export default function Projetos() {
             <Button size="icon" variant="ghost" onClick={() => setAbrirAthena(false)}>x</Button>
           </div>
           <div className="text-primary mb-2">Como posso ajudar nos seus projetos?</div>
-          <input
-            type="text"
-            className="w-full px-3 py-2 rounded-lg bg-[#191933]/70 border border-[#993887]/40 text-foreground focus:outline-none focus:border-primary mb-2 text-sm"
-            placeholder="Pergunte algo para Athena..."
-            disabled
-          />
-          <small className="text-xs text-secondary/60">(Chat limitado a visual, integração futura)</small>
+          <div className="flex gap-2">
+            <input
+              type="text"
+              className="flex-1 px-3 py-2 rounded-lg bg-[#191933]/70 border border-[#993887]/40 text-foreground focus:outline-none focus:border-primary text-sm"
+              placeholder="Pergunte algo para Athena..."
+            />
+            <Button 
+              size="icon" 
+              variant="ghost"
+              className="border-[#993887]/40"
+              onClick={() => {
+                navigate('/athena');
+                setAbrirAthena(false);
+              }}
+            >
+              <Bot className="w-4 h-4 text-[#993887]" />
+            </Button>
+          </div>
+          <div className="mt-3 space-y-1">
+            <div className="text-xs text-primary/70 hover:text-primary cursor-pointer" onClick={() => navigate('/athena')}>
+              » Como posso organizar meu projeto?
+            </div>
+            <div className="text-xs text-primary/70 hover:text-primary cursor-pointer" onClick={() => navigate('/athena')}>
+              » Sugira etapas para a célula
+            </div>
+            <div className="text-xs text-primary/70 hover:text-primary cursor-pointer" onClick={() => navigate('/athena')}>
+              » Ajude-me a planejar um cronograma
+            </div>
+          </div>
         </div>
       )}
     </div>
