@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 
@@ -11,16 +12,13 @@ export type Project = {
   progress: number;
   created_at: string;
   user_id: string;
-  content?: string | null;
-  is_favorite?: boolean | null;
-  tags?: string[] | null;
 };
 
 export type ProjectStep = {
   id: string;
   project_id: string;
   description: string;
-  done: boolean | null;
+  done: boolean;
   order_index: number | null;
   created_at: string;
 };
@@ -29,32 +27,13 @@ export type ProjectWithSteps = Project & {
   steps: ProjectStep[];
 };
 
-export type ProjectUpdateData = {
-  name?: string;
-  description?: string;
-  category?: string;
-  deadline?: string;
-  status?: "ativo" | "pausado" | "concluído";
-  content?: string;
-  is_favorite?: boolean;
-  tags?: string[];
-};
-
 export const projectsService = {
   async getProjetosComEtapas(): Promise<ProjectWithSteps[]> {
     try {
-      // Get current authenticated user
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      if (!user) {
-        throw new Error("Usuário não autenticado");
-      }
-      
       // Fetch projects for the current user
       const { data: projects, error: projectsError } = await supabase
         .from("projects")
         .select("*")
-        .eq("user_id", user.id)
         .order("created_at", { ascending: false });
 
       if (projectsError) {
@@ -105,26 +84,6 @@ export const projectsService = {
         description: error.message || "Ocorreu um erro ao carregar seus projetos",
         variant: "destructive",
       });
-      return [];
-    }
-  },
-
-  async getAllCategorias(): Promise<string[]> {
-    try {
-      const { data: projects, error } = await supabase
-        .from("projects")
-        .select("category")
-        .not("category", "is", null);
-
-      if (error) {
-        throw error;
-      }
-
-      // Extract unique categories
-      const categorias = [...new Set(projects.map(p => p.category).filter(Boolean))];
-      return categorias as string[];
-    } catch (error: any) {
-      console.error("Error fetching categories:", error);
       return [];
     }
   },
@@ -204,6 +163,7 @@ export const projectsService = {
           ...project,
           steps: steps || [],
           progress,
+          // Ensure status is one of the allowed values
           status: (project.status as "ativo" | "pausado" | "concluído") 
         } as ProjectWithSteps;
       }
@@ -212,6 +172,7 @@ export const projectsService = {
         ...project,
         steps: [],
         progress: 0,
+        // Ensure status is one of the allowed values
         status: (project.status as "ativo" | "pausado" | "concluído") 
       } as ProjectWithSteps;
     } catch (error: any) {
@@ -222,32 +183,6 @@ export const projectsService = {
         variant: "destructive",
       });
       return null;
-    }
-  },
-
-  async atualizarProjeto(
-    projectId: string, 
-    data: ProjectUpdateData
-  ): Promise<boolean> {
-    try {
-      const { error } = await supabase
-        .from("projects")
-        .update(data)
-        .eq("id", projectId);
-
-      if (error) {
-        throw error;
-      }
-
-      return true;
-    } catch (error: any) {
-      console.error("Error updating project:", error);
-      toast({
-        title: "Erro ao atualizar projeto",
-        description: error.message || "Ocorreu um erro ao atualizar o projeto",
-        variant: "destructive",
-      });
-      return false;
     }
   },
 
@@ -437,107 +372,5 @@ export const projectsService = {
     } catch (error: any) {
       console.error("Error recalculating progress:", error);
     }
-  },
-  
-  async getProjetoComFiltros(
-    filtros: {
-      search?: string;
-      status?: string | null;
-      tag?: string | null;
-      dateFrom?: Date | null;
-      dateTo?: Date | null;
-    }
-  ): Promise<ProjectWithSteps[]> {
-    try {
-      // Get current authenticated user
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      if (!user) {
-        throw new Error("Usuário não autenticado");
-      }
-      
-      // Start with a basic query that filters by user_id
-      let query = supabase
-        .from("projects")
-        .select("*")
-        .eq("user_id", user.id);
-
-      // Apply filters
-      if (filtros.status) {
-        query = query.eq("status", filtros.status);
-      }
-
-      if (filtros.tag) {
-        query = query.eq("category", filtros.tag);
-      }
-      
-      if (filtros.search) {
-        query = query.or(`name.ilike.%${filtros.search}%,description.ilike.%${filtros.search}%,category.ilike.%${filtros.search}%`);
-      }
-
-      if (filtros.dateFrom) {
-        query = query.gte("created_at", filtros.dateFrom.toISOString());
-      }
-
-      if (filtros.dateTo) {
-        // Add 1 day to include the end date
-        const endDate = new Date(filtros.dateTo);
-        endDate.setDate(endDate.getDate() + 1);
-        query = query.lt("created_at", endDate.toISOString());
-      }
-
-      // Execute the query
-      const { data: projects, error } = await query.order("created_at", { ascending: false });
-
-      if (error) {
-        throw error;
-      }
-
-      if (!projects || projects.length === 0) {
-        return [];
-      }
-
-      // Fetch steps for filtered projects
-      const projectIds = projects.map(project => project.id);
-      const { data: steps, error: stepsError } = await supabase
-        .from("project_steps")
-        .select("*")
-        .in("project_id", projectIds)
-        .order("order_index", { ascending: true });
-
-      if (stepsError) {
-        throw stepsError;
-      }
-
-      // Build the final result
-      const result = projects.map(project => {
-        const projectSteps = steps?.filter(step => step.project_id === project.id) || [];
-        
-        // Calculate progress if needed
-        let progress = project.progress || 0;
-        if (projectSteps.length > 0) {
-          const completedSteps = projectSteps.filter(step => step.done).length;
-          progress = Math.round((completedSteps / projectSteps.length) * 100);
-        }
-
-        return {
-          ...project,
-          steps: projectSteps,
-          progress,
-          status: (project.status as "ativo" | "pausado" | "concluído") || "ativo"
-        } as ProjectWithSteps;
-      });
-
-      return result;
-    } catch (error: any) {
-      console.error("Error fetching filtered projects:", error);
-      toast({
-        title: "Erro ao carregar projetos filtrados",
-        description: error.message || "Ocorreu um erro ao aplicar os filtros",
-        variant: "destructive",
-      });
-      return [];
-    }
   }
-  
 };

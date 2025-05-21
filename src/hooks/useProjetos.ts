@@ -1,24 +1,15 @@
 
-import { useEffect, useState, useCallback } from 'react';
-import { projectsService, ProjectWithSteps, ProjectUpdateData } from '@/services/projectsService';
+import { useEffect, useState } from 'react';
+import { projectsService, ProjectWithSteps } from '@/services/projectsService';
 import { useAuth } from '@/hooks/useAuth';
-import { DateRange } from 'react-day-picker';
-
-export type ProjetoFiltros = {
-  search: string;
-  status: string | null;
-  tag: string | null;
-  dateRange: DateRange | null;
-};
 
 export function useProjetos() {
   const [projetos, setProjetos] = useState<ProjectWithSteps[]>([]);
-  const [categorias, setCategorias] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { user } = useAuth();
 
-  const carregarProjetos = useCallback(async () => {
+  const carregarProjetos = async () => {
     if (!user) {
       setError("Usuário não autenticado");
       setLoading(false);
@@ -29,11 +20,6 @@ export function useProjetos() {
     try {
       const data = await projectsService.getProjetosComEtapas();
       setProjetos(data);
-      
-      // Load categories
-      const categoriasData = await projectsService.getAllCategorias();
-      setCategorias(categoriasData);
-      
       setError(null);
     } catch (err: any) {
       setError(err.message || "Erro ao carregar projetos");
@@ -41,36 +27,11 @@ export function useProjetos() {
     } finally {
       setLoading(false);
     }
-  }, [user]);
+  };
 
-  // Run carregarProjetos when the hook is first used and user is available
   useEffect(() => {
     if (user) {
       carregarProjetos();
-    }
-  }, [user, carregarProjetos]);
-
-  const filtrarProjetos = useCallback(async (filtros: ProjetoFiltros) => {
-    if (!user) return;
-    
-    setLoading(true);
-    try {
-      const filtroParams = {
-        search: filtros.search || undefined,
-        status: filtros.status || undefined,
-        tag: filtros.tag || undefined,
-        dateFrom: filtros.dateRange?.from || undefined,
-        dateTo: filtros.dateRange?.to || undefined,
-      };
-      
-      const data = await projectsService.getProjetoComFiltros(filtroParams);
-      setProjetos(data);
-      setError(null);
-    } catch (err: any) {
-      setError(err.message || "Erro ao filtrar projetos");
-      console.error("Error filtering projects:", err);
-    } finally {
-      setLoading(false);
     }
   }, [user]);
 
@@ -90,35 +51,9 @@ export function useProjetos() {
 
     if (novoProjeto) {
       setProjetos(prevProjetos => [novoProjeto, ...prevProjetos]);
-      
-      // Update categories if new category was added
-      if (categoria && !categorias.includes(categoria)) {
-        setCategorias(prev => [...prev, categoria]);
-      }
     }
 
     return novoProjeto;
-  };
-
-  const atualizarProjeto = async (projetoId: string, dados: ProjectUpdateData) => {
-    const sucesso = await projectsService.atualizarProjeto(projetoId, dados);
-
-    if (sucesso) {
-      // Update the projects list with new data
-      setProjetos(prevProjetos => 
-        prevProjetos.map(projeto => 
-          projeto.id === projetoId ? { ...projeto, ...dados } : projeto
-        )
-      );
-      
-      // If category was updated, refresh categories list
-      if (dados.category) {
-        const categoriasData = await projectsService.getAllCategorias();
-        setCategorias(categoriasData);
-      }
-    }
-
-    return sucesso;
   };
 
   const atualizarEtapa = async (etapaId: string, concluida: boolean) => {
@@ -168,13 +103,10 @@ export function useProjetos() {
 
   return {
     projetos,
-    categorias,
     loading,
     error,
     carregarProjetos,
-    filtrarProjetos,
     criarProjeto,
-    atualizarProjeto,
     atualizarEtapa,
     atualizarStatusProjeto,
     adicionarEtapa,

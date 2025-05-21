@@ -203,44 +203,35 @@ export type Database = {
       projects: {
         Row: {
           category: string | null
-          content: string | null
           created_at: string | null
           deadline: string | null
           description: string | null
           id: string
-          is_favorite: boolean | null
           name: string
           progress: number | null
           status: string | null
-          tags: string[] | null
           user_id: string
         }
         Insert: {
           category?: string | null
-          content?: string | null
           created_at?: string | null
           deadline?: string | null
           description?: string | null
           id?: string
-          is_favorite?: boolean | null
           name: string
           progress?: number | null
           status?: string | null
-          tags?: string[] | null
           user_id: string
         }
         Update: {
           category?: string | null
-          content?: string | null
           created_at?: string | null
           deadline?: string | null
           description?: string | null
           id?: string
-          is_favorite?: boolean | null
           name?: string
           progress?: number | null
           status?: string | null
-          tags?: string[] | null
           user_id?: string
         }
         Relationships: []

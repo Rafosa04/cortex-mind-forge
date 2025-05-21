@@ -1,22 +1,20 @@
 
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogClose } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Bot, Calendar, PlusCircle, Trash2 } from "lucide-react";
+import { Bot, Calendar, PlusCircle } from "lucide-react";
 import React, { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useProjetos } from "@/hooks/useProjetos";
 import { toast } from "@/hooks/use-toast";
 import { Label } from "@/components/ui/label";
-import { motion } from "framer-motion";
 
 type Props = {
   open: boolean;
   onOpenChange: (o: boolean) => void;
-  categorias: string[];
 };
 
-export function NovaCelulaModal({ open, onOpenChange, categorias }: Props) {
+export function NovaCelulaModal({ open, onOpenChange }: Props) {
   const { criarProjeto } = useProjetos();
 
   const [nome, setNome] = useState("");
@@ -131,70 +129,28 @@ export function NovaCelulaModal({ open, onOpenChange, categorias }: Props) {
           
           <div>
             <Label htmlFor="categoria">Categoria</Label>
-            {categorias.length > 0 ? (
-              <div className="flex flex-col gap-2">
-                <Input 
-                  id="categoria" 
-                  placeholder="Digite ou selecione uma categoria" 
-                  value={categoria} 
-                  onChange={e => setCategoria(e.target.value)} 
-                  list="categorias-list"
-                />
-                <datalist id="categorias-list">
-                  {categorias.map((cat) => (
-                    <option key={cat} value={cat} />
-                  ))}
-                </datalist>
-                
-                <div className="flex flex-wrap gap-2 mt-1">
-                  {categorias.slice(0, 5).map((cat) => (
-                    <Button
-                      key={cat}
-                      type="button"
-                      size="sm"
-                      variant={categoria === cat ? "secondary" : "outline"}
-                      onClick={() => setCategoria(cat)}
-                      className="text-xs"
-                    >
-                      {cat}
-                    </Button>
-                  ))}
-                </div>
-              </div>
-            ) : (
-              <Input 
-                id="categoria" 
-                placeholder="Categoria do projeto" 
-                value={categoria} 
-                onChange={e => setCategoria(e.target.value)} 
-              />
-            )}
+            <Input 
+              id="categoria" 
+              placeholder="Categoria do projeto" 
+              value={categoria} 
+              onChange={e => setCategoria(e.target.value)} 
+            />
           </div>
           
           <div>
             <Label htmlFor="prazo">Prazo</Label>
-            <div className="flex items-center">
-              <Input 
-                id="prazo" 
-                type="date" 
-                value={prazo} 
-                onChange={e => setPrazo(e.target.value)} 
-                className="flex-1"
-              />
-              <Calendar className="ml-2 text-muted-foreground w-5 h-5" />
-            </div>
+            <Input 
+              id="prazo" 
+              type="date" 
+              value={prazo} 
+              onChange={e => setPrazo(e.target.value)} 
+            />
           </div>
           
           <div className="space-y-2">
             <Label>Etapas</Label>
             {etapas.map((etapa, index) => (
-              <motion.div 
-                key={index} 
-                className="flex gap-2 items-center"
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.2 }}
-              >
+              <div key={index} className="flex gap-2 items-center">
                 <Input 
                   placeholder={`Etapa ${index + 1}`} 
                   value={etapa} 
@@ -206,11 +162,10 @@ export function NovaCelulaModal({ open, onOpenChange, categorias }: Props) {
                   size="icon" 
                   onClick={() => handleRemoveEtapa(index)}
                   disabled={etapas.length <= 1}
-                  className="text-red-400 hover:text-red-500 hover:bg-red-500/10"
                 >
-                  <Trash2 className="h-4 w-4" />
+                  -
                 </Button>
-              </motion.div>
+              </div>
             ))}
             <Button 
               type="button" 
@@ -224,12 +179,13 @@ export function NovaCelulaModal({ open, onOpenChange, categorias }: Props) {
           
           <div className="flex justify-end gap-3 mt-4">
             <DialogClose asChild>
-              <Button variant="ghost">Cancelar</Button>
+              <Button variant="secondary">Cancelar</Button>
             </DialogClose>
             <Button 
               onClick={handleSubmit} 
               disabled={isLoading} 
-              className="bg-primary hover:bg-primary/80 text-background font-medium"
+              variant="default"
+              className="bg-primary hover:bg-secondary text-background rounded-lg font-bold shadow"
             >
               {isLoading ? "Criando..." : "Criar Projeto"}
             </Button>
