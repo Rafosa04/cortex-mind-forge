@@ -3,7 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { ThemeProvider } from '@/components/ThemeProvider';
 import { Toaster } from '@/components/ui/toaster';
 import MainLayout from '@/layouts/MainLayout';
-import PrivateRoute from '@/components/PrivateRoute';
+import { PrivateRoute } from '@/components/PrivateRoute';
 import Dashboard from '@/pages/Dashboard';
 import Login from '@/pages/Login';
 import Landing from '@/pages/Landing';

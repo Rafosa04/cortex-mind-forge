@@ -436,13 +436,11 @@ export function DrawerDetalheProjeto({ projeto, open, onOpenChange, onProjectUpd
                           {etapa.description}
                         </span>
                         {etapa.done && (
-                          <motion.div
-                            initial={{ scale: 0 }}
-                            animate={{ scale: 1 }}
-                            transition={{ type: "spring", duration: 0.3 }}
+                          <div
+                            className="scale-100"
                           >
                             <CircleCheck className="w-4 h-4 text-[#60B5B5]" />
-                          </motion.div>
+                          </div>
                         )}
                         {atualizandoEtapaId === etapa.id && (
                           <div className="animate-spin ml-1 w-4 h-4 border-2 border-primary border-t-transparent rounded-full" />

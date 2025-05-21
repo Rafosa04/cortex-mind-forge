@@ -61,8 +61,13 @@ export default function Projetos() {
           table: 'projects' 
         }, 
         (payload) => {
-          // Refresh projects when other users make changes
-          if (payload.new.user_id !== payload.old?.user_id) {
+          // Refresh projects when changes are detected
+          // Check if the payload has old and new properties
+          const oldData = payload.old || {};
+          const newData = payload.new || {};
+          
+          // Only refresh if the user_id is different or not comparing the same project
+          if (oldData.user_id !== newData.user_id) {
             carregarProjetos();
           }
         }
