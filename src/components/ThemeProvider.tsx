@@ -1,5 +1,6 @@
 
 import { createContext, useContext, useEffect, useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 
 type Theme = "dark" | "light";
 
@@ -37,9 +38,19 @@ export function ThemeProvider({
     const root = window.document.documentElement;
     
     root.classList.remove("light", "dark");
+    
+    // Add smooth transition when changing themes
+    root.classList.add("theme-transition");
     root.classList.add(theme);
-
+    
     localStorage.setItem(storageKey, theme);
+    
+    // Remove transition class after transition completes
+    const transitionTimeout = setTimeout(() => {
+      root.classList.remove("theme-transition");
+    }, 300);
+    
+    return () => clearTimeout(transitionTimeout);
   }, [theme, storageKey]);
 
   const toggleTheme = () => {
@@ -54,7 +65,17 @@ export function ThemeProvider({
 
   return (
     <ThemeProviderContext.Provider {...props} value={value}>
-      {children}
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={theme}
+          initial={{ opacity: 0.8 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0.8 }}
+          transition={{ duration: 0.15 }}
+        >
+          {children}
+        </motion.div>
+      </AnimatePresence>
     </ThemeProviderContext.Provider>
   );
 }

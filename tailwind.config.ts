@@ -22,74 +22,48 @@ export default {
       screens: {
         'xs': '480px',
       },
+      fontFamily: {
+        sans: ['Inter', 'sans-serif'],
+      },
       colors: {
-        // Dark Mode Colors (Default)
-        border: {
-          DEFAULT: "#1F2937",
-          light: "#CBD5E0",
-        },
-        input: {
-          DEFAULT: "#191933",
-          light: "#EDF2F7",
-        },
-        ring: {
-          DEFAULT: "#60B5B5",
-          light: "#60B5B5",
-        },
-        background: {
-          DEFAULT: "#0C0C1C",
-          light: "#F7FAFC",
-        },
-        foreground: {
-          DEFAULT: "#E6E6F0",
-          light: "#1A202C",
+        border: "hsl(var(--border))",
+        input: "hsl(var(--input))",
+        ring: "hsl(var(--ring))",
+        background: "hsl(var(--background))",
+        foreground: "hsl(var(--foreground))",
+        primary: {
+          DEFAULT: "hsl(var(--primary))",
+          foreground: "hsl(var(--primary-foreground))",
         },
         secondary: {
-          DEFAULT: "#993887",
-          foreground: "#E6E6F0",
-          light: "#993887",
-          "light-foreground": "#1A202C",
+          DEFAULT: "hsl(var(--secondary))",
+          foreground: "hsl(var(--secondary-foreground))",
         },
-        primary: {
-          DEFAULT: "#60B5B5",
-          foreground: "#0C0C1C",
-          light: "#60B5B5",
-          "light-foreground": "#1A202C",
-        },
-        accent: {
-          DEFAULT: "#E6E6F0",
-          foreground: "#0C0C1C",
-          light: "#3182CE",
-          "light-foreground": "#F7FAFC",
-        },
-        card: {
-          DEFAULT: "#191933",
-          foreground: "#E6E6F0",
-          light: "#EDF2F7",
-          "light-foreground": "#1A202C",
+        destructive: {
+          DEFAULT: "hsl(var(--destructive))",
+          foreground: "hsl(var(--destructive-foreground))",
         },
         muted: {
-          DEFAULT: "#121826",
-          foreground: "#A3A3B3",
-          light: "#EDF2F7",
-          "light-foreground": "#4A5568",
+          DEFAULT: "hsl(var(--muted))",
+          foreground: "hsl(var(--muted-foreground))",
         },
-        success: {
-          DEFAULT: "#5EF2B1",
-          light: "#38B2AC",
+        accent: {
+          DEFAULT: "hsl(var(--accent))",
+          foreground: "hsl(var(--accent-foreground))",
         },
-        error: {
-          DEFAULT: "#F87171",
-          light: "#E53E3E",
+        popover: {
+          DEFAULT: "hsl(var(--popover))",
+          foreground: "hsl(var(--popover-foreground))",
         },
-      },
-      fontFamily: {
-        poppins: ['Poppins', 'sans-serif'],
+        card: {
+          DEFAULT: "hsl(var(--card))",
+          foreground: "hsl(var(--card-foreground))",
+        },
       },
       borderRadius: {
-        lg: '1rem',
-        md: '0.75rem',
-        sm: '0.5rem'
+        lg: "var(--radius)",
+        md: "calc(var(--radius) - 2px)",
+        sm: "calc(var(--radius) - 4px)",
       },
       keyframes: {
         "card-pop": {
@@ -118,13 +92,27 @@ export default {
           from: { height: 'var(--radix-accordion-content-height)' },
           to: { height: '0' }
         },
+        'pulse': {
+          '0%, 100%': { opacity: '1' },
+          '50%': { opacity: '0.7' }
+        },
+        'glow': {
+          '0%, 100%': { 
+            boxShadow: '0 0 5px rgba(96, 181, 181, 0.5)' 
+          },
+          '50%': { 
+            boxShadow: '0 0 15px rgba(96, 181, 181, 0.8), 0 0 20px rgba(153, 56, 135, 0.4)' 
+          }
+        }
       },
       animation: {
         "card-pop": "card-pop 0.5s cubic-bezier(0.22,1,0.36,1)",
         "floating-dots": "floating-dots 15s ease infinite",
         "fade-in": "fade-in 0.5s ease-out forwards",
         'accordion-down': 'accordion-down 0.2s ease-out',
-        'accordion-up': 'accordion-up 0.2s ease-out'
+        'accordion-up': 'accordion-up 0.2s ease-out',
+        'pulse': 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+        'glow': 'glow 3s infinite ease-in-out'
       }
     }
   },
@@ -140,6 +128,7 @@ export default {
           },
           '&::-webkit-scrollbar-track': {
             background: 'rgba(0, 0, 0, 0.1)',
+            borderRadius: '20px',
           },
           '&::-webkit-scrollbar-thumb': {
             background: 'rgba(96, 181, 181, 0.5)',
@@ -164,7 +153,6 @@ export default {
           transition: 'all 0.3s ease',
           '&:hover': {
             textShadow: '0 0 5px rgba(96, 181, 181, 0.7), 0 0 10px rgba(96, 181, 181, 0.5)',
-            boxShadow: '0 0 5px rgba(96, 181, 181, 0.7), 0 0 10px rgba(96, 181, 181, 0.5)',
           },
         },
         '.text-gradient': {
@@ -173,6 +161,11 @@ export default {
           WebkitTextFillColor: 'transparent',
           backgroundClip: 'text',
           color: 'transparent',
+        },
+        '.btn-glow': {
+          '&:hover': {
+            boxShadow: '0 0 15px rgba(96, 181, 181, 0.6)',
+          }
         }
       };
       addUtilities(newUtilities);
