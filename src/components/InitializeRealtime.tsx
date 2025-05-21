@@ -1,18 +1,12 @@
 
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { setupRealtimeUpdates } from '@/utils/supabaseUtils';
 
 export function InitializeRealtime() {
-  const [initialized, setInitialized] = useState(false);
-
   useEffect(() => {
-    const initialize = async () => {
-      await setupRealtimeUpdates();
-      setInitialized(true);
-    };
-
-    initialize();
+    setupRealtimeUpdates();
   }, []);
-
-  return null; // This component doesn't render anything
+  
+  // Return null since this is just a utility component with no UI
+  return null;
 }
