@@ -43,6 +43,7 @@ export function useProjetos() {
     }
   }, [user]);
 
+  // Run carregarProjetos when the hook is first used and user is available
   useEffect(() => {
     if (user) {
       carregarProjetos();

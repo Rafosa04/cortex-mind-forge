@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 
@@ -44,10 +43,18 @@ export type ProjectUpdateData = {
 export const projectsService = {
   async getProjetosComEtapas(): Promise<ProjectWithSteps[]> {
     try {
+      // Get current authenticated user
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        throw new Error("Usuário não autenticado");
+      }
+      
       // Fetch projects for the current user
       const { data: projects, error: projectsError } = await supabase
         .from("projects")
         .select("*")
+        .eq("user_id", user.id)
         .order("created_at", { ascending: false });
 
       if (projectsError) {
@@ -442,10 +449,18 @@ export const projectsService = {
     }
   ): Promise<ProjectWithSteps[]> {
     try {
-      // Start with a basic query
+      // Get current authenticated user
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        throw new Error("Usuário não autenticado");
+      }
+      
+      // Start with a basic query that filters by user_id
       let query = supabase
         .from("projects")
-        .select("*");
+        .select("*")
+        .eq("user_id", user.id);
 
       // Apply filters
       if (filtros.status) {
@@ -524,4 +539,5 @@ export const projectsService = {
       return [];
     }
   }
+  
 };
