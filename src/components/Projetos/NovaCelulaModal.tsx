@@ -1,8 +1,13 @@
 
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogClose } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Bot } from "lucide-react";
-import React from "react";
+import { Bot, Calendar, PlusCircle } from "lucide-react";
+import React, { useState } from "react";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { useProjetos } from "@/hooks/useProjetos";
+import { toast } from "@/hooks/use-toast";
+import { Label } from "@/components/ui/label";
 
 type Props = {
   open: boolean;
@@ -10,23 +15,182 @@ type Props = {
 };
 
 export function NovaCelulaModal({ open, onOpenChange }: Props) {
+  const { criarProjeto } = useProjetos();
+
+  const [nome, setNome] = useState("");
+  const [descricao, setDescricao] = useState("");
+  const [categoria, setCategoria] = useState("");
+  const [etapas, setEtapas] = useState<string[]>([""]); // Começa com uma etapa vazia
+  const [prazo, setPrazo] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+
+  const resetForm = () => {
+    setNome("");
+    setDescricao("");
+    setCategoria("");
+    setEtapas([""]);
+    setPrazo("");
+  };
+
+  const handleAddEtapa = () => {
+    setEtapas([...etapas, ""]);
+  };
+
+  const handleEtapaChange = (index: number, value: string) => {
+    const novasEtapas = [...etapas];
+    novasEtapas[index] = value;
+    setEtapas(novasEtapas);
+  };
+
+  const handleRemoveEtapa = (index: number) => {
+    if (etapas.length <= 1) return; // Manter pelo menos uma etapa
+    const novasEtapas = etapas.filter((_, i) => i !== index);
+    setEtapas(novasEtapas);
+  };
+
+  const handleSubmit = async () => {
+    if (!nome.trim()) {
+      toast({
+        title: "Nome obrigatório",
+        description: "Por favor, insira um nome para o projeto",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      
+      // Filtrar etapas vazias
+      const etapasFiltradas = etapas
+        .filter(e => e.trim() !== "")
+        .map(texto => ({ texto, feita: false }));
+
+      const resultado = await criarProjeto(
+        nome,
+        descricao,
+        categoria || null,
+        "ativo",
+        prazo || null,
+        etapasFiltradas
+      );
+
+      if (resultado) {
+        toast({
+          title: "Projeto criado",
+          description: "O projeto foi criado com sucesso",
+        });
+        resetForm();
+        onOpenChange(false);
+      }
+    } catch (error) {
+      console.error("Erro ao criar projeto:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={(newOpen) => {
+      if (!newOpen) resetForm();
+      onOpenChange(newOpen);
+    }}>
       <DialogContent className="max-w-md rounded-2xl bg-background border border-[#60B5B5]/60 neon-anim">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-lg text-primary drop-shadow">
-            <Bot className="text-primary w-5 h-5" /> Nova Célula com Athena
+            <Bot className="text-primary w-5 h-5" /> Nova Célula
           </DialogTitle>
           <DialogDescription className="text-secondary pb-2">
-            Em breve: Criação inteligente de projetos via IA Athena.
+            Crie uma nova célula de projeto
           </DialogDescription>
         </DialogHeader>
-        <div className="p-3 text-foreground/80 opacity-70">
-          O sistema IA ajudará a criar e organizar novas células de projeto para você!
+        
+        <div className="space-y-4">
+          <div>
+            <Label htmlFor="nome">Nome</Label>
+            <Input 
+              id="nome" 
+              placeholder="Nome do projeto" 
+              value={nome} 
+              onChange={e => setNome(e.target.value)} 
+            />
+          </div>
+          
+          <div>
+            <Label htmlFor="descricao">Descrição</Label>
+            <Textarea 
+              id="descricao" 
+              placeholder="Descrição do projeto" 
+              value={descricao} 
+              onChange={e => setDescricao(e.target.value)} 
+              rows={3}
+            />
+          </div>
+          
+          <div>
+            <Label htmlFor="categoria">Categoria</Label>
+            <Input 
+              id="categoria" 
+              placeholder="Categoria do projeto" 
+              value={categoria} 
+              onChange={e => setCategoria(e.target.value)} 
+            />
+          </div>
+          
+          <div>
+            <Label htmlFor="prazo">Prazo</Label>
+            <Input 
+              id="prazo" 
+              type="date" 
+              value={prazo} 
+              onChange={e => setPrazo(e.target.value)} 
+            />
+          </div>
+          
+          <div className="space-y-2">
+            <Label>Etapas</Label>
+            {etapas.map((etapa, index) => (
+              <div key={index} className="flex gap-2 items-center">
+                <Input 
+                  placeholder={`Etapa ${index + 1}`} 
+                  value={etapa} 
+                  onChange={e => handleEtapaChange(index, e.target.value)} 
+                />
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  size="icon" 
+                  onClick={() => handleRemoveEtapa(index)}
+                  disabled={etapas.length <= 1}
+                >
+                  -
+                </Button>
+              </div>
+            ))}
+            <Button 
+              type="button" 
+              variant="outline" 
+              className="w-full mt-2 text-primary border-[#60B5B5]/40" 
+              onClick={handleAddEtapa}
+            >
+              <PlusCircle className="h-4 w-4 mr-2" /> Adicionar etapa
+            </Button>
+          </div>
+          
+          <div className="flex justify-end gap-3 mt-4">
+            <DialogClose asChild>
+              <Button variant="secondary">Cancelar</Button>
+            </DialogClose>
+            <Button 
+              onClick={handleSubmit} 
+              disabled={isLoading} 
+              variant="default"
+              className="bg-primary hover:bg-secondary text-background rounded-lg font-bold shadow"
+            >
+              {isLoading ? "Criando..." : "Criar Projeto"}
+            </Button>
+          </div>
         </div>
-        <DialogClose asChild>
-          <Button variant="secondary" className="mt-2 w-full">Fechar</Button>
-        </DialogClose>
       </DialogContent>
     </Dialog>
   );

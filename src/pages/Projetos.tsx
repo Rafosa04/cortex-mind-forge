@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { FiltroProjetos } from "@/components/Projetos/FiltroProjetos";
 import { ProjetoCard } from "@/components/Projetos/ProjetoCard";
@@ -9,77 +9,55 @@ import { motion } from "framer-motion";
 import { DrawerDetalheProjeto } from "@/components/Projetos/DrawerDetalheProjeto";
 import { FiltroLateralProjetos } from "@/components/Projetos/FiltroLateralProjetos";
 import { FloatingAthenaButton } from "@/components/Projetos/FloatingAthenaButton";
-
-// Declaração explícita do tipo Projeto com status limitado
-type StatusProjeto = "ativo" | "pausado" | "concluído";
-type Projeto = {
-  nome: string;
-  progresso: number;
-  tags: string[];
-  status: StatusProjeto;
-  descricao: string;
-  datas: { criado: string; prazo: string; ultima: string };
-  etapas: { texto: string; feita: boolean }[];
-};
-
-// Mock dos projetos com detalhes extra e tipos ajustados
-const projetos: Projeto[] = [
-  {
-    nome: "Nova Rotina Saudável",
-    progresso: 65,
-    tags: ["saúde", "inspiração"],
-    status: "ativo",
-    descricao: "Crie e mantenha hábitos positivos para uma vida mais saudável.",
-    datas: { criado: "2023-12-10", prazo: "2024-08-01", ultima: "2024-05-10" },
-    etapas: [
-      { texto: "Definir hábitos", feita: true },
-      { texto: "Registrar diariamente", feita: false },
-      { texto: "Revisão semanal", feita: false },
-    ]
-  },
-  {
-    nome: "TCC Neurociência",
-    progresso: 25,
-    tags: ["estudo"],
-    status: "pausado",
-    descricao: "Desenvolvimento do trabalho final sobre pesquisa em Neurociência.",
-    datas: { criado: "2024-01-10", prazo: "2024-07-14", ultima: "2024-04-18" },
-    etapas: [
-      { texto: "Revisão bibliográfica", feita: true },
-      { texto: "Escrever introdução", feita: false },
-      { texto: "Desenvolvimento", feita: false },
-    ]
-  },
-  {
-    nome: "Organização Financeira",
-    progresso: 92,
-    tags: ["finanças"],
-    status: "concluído",
-    descricao: "Organização de contas, orçamento mensal e objetivos financeiros.",
-    datas: { criado: "2023-08-14", prazo: "2024-03-30", ultima: "2024-03-30" },
-    etapas: [
-      { texto: "Analisar extratos", feita: true },
-      { texto: "Elaborar planilha", feita: true },
-      { texto: "Definir metas", feita: true },
-    ]
-  },
-];
+import { useProjetos } from "@/hooks/useProjetos";
+import { ProjectWithSteps } from "@/services/projectsService";
+import { Skeleton } from "@/components/ui/skeleton";
 
 // Modos de visualização possíveis, com type literal
 const modosVisao = ["Lista", "Kanban", "Linha do tempo", "Galeria"] as const;
 type ModoVisao = typeof modosVisao[number];
 
 export default function Projetos() {
-  const [modalAberto, setModalAberto] = React.useState(false);
-  const [detalheAberto, setDetalheAberto] = React.useState(false);
-  const [projetoSelecionado, setProjetoSelecionado] = React.useState<Projeto | null>(null);
-  const [modoVisao, setModoVisao] = React.useState<ModoVisao>("Lista");
-  const [abrirAthena, setAbrirAthena] = React.useState(false);
+  const [modalAberto, setModalAberto] = useState(false);
+  const [detalheAberto, setDetalheAberto] = useState(false);
+  const [projetoSelecionado, setProjetoSelecionado] = useState<ProjectWithSteps | null>(null);
+  const [modoVisao, setModoVisao] = useState<ModoVisao>("Lista");
+  const [abrirAthena, setAbrirAthena] = useState(false);
+  
+  const { projetos, loading, error, carregarProjetos } = useProjetos();
 
-  const handleVerDetalhes = (projeto: Projeto) => {
+  const handleVerDetalhes = (projeto: ProjectWithSteps) => {
     setProjetoSelecionado(projeto);
     setDetalheAberto(true);
   };
+
+  const getProjetosPorStatus = (status: string) => {
+    return projetos.filter(p => p.status === status);
+  };
+
+  const renderLoaderCards = () => (
+    <>
+      {[1, 2, 3].map((i) => (
+        <div key={i} className="rounded-2xl bg-[#141429]/90 border border-[#191933] shadow-xl p-6 flex flex-col gap-3">
+          <div className="flex justify-between">
+            <Skeleton className="h-6 w-40 bg-[#191933]" />
+            <Skeleton className="h-6 w-20 bg-[#191933]" />
+          </div>
+          <div className="flex gap-2 mt-1">
+            <Skeleton className="h-4 w-20 bg-[#191933]" />
+          </div>
+          <Skeleton className="h-3 w-full bg-[#191933] mt-2" />
+          <div className="flex justify-between mt-2">
+            <Skeleton className="h-8 w-28 bg-[#191933]" />
+            <div className="flex gap-2">
+              <Skeleton className="h-8 w-8 rounded-full bg-[#191933]" />
+              <Skeleton className="h-8 w-8 rounded-full bg-[#191933]" />
+            </div>
+          </div>
+        </div>
+      ))}
+    </>
+  );
 
   return (
     <div className="w-full flex flex-col md:flex-row fade-in">
@@ -108,42 +86,74 @@ export default function Projetos() {
         
         <FiltroProjetos />
         
-        {/* Grid/List view simulada */}
+        {/* Estado de erro */}
+        {error && !loading && (
+          <div className="p-6 text-center">
+            <p className="text-red-400 mb-2">Erro ao carregar projetos</p>
+            <Button onClick={() => carregarProjetos()} variant="outline">
+              Tentar novamente
+            </Button>
+          </div>
+        )}
+        
+        {/* Estado vazio */}
+        {!loading && !error && projetos.length === 0 && (
+          <div className="rounded-xl bg-[#191933]/60 p-6 sm:p-10 text-secondary/70 flex flex-col items-center justify-center h-[320px] fade-in">
+            <span className="text-xl">Nenhum projeto encontrado</span>
+            <div className="mt-4 text-base">Crie sua primeira célula usando o botão "Nova Célula".</div>
+          </div>
+        )}
+        
+        {/* Grid/List view */}
         <div className="relative">
+          {/* Lista */}
           {modoVisao === "Lista" && (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-7 fade-in mt-1">
-              {projetos.map((projeto, i) => (
-                <ProjetoCard
-                  key={i}
-                  projeto={projeto}
-                  onVerDetalhes={() => handleVerDetalhes(projeto)}
-                />
-              ))}
+              {loading ? (
+                renderLoaderCards()
+              ) : (
+                projetos.map((projeto) => (
+                  <ProjetoCard
+                    key={projeto.id}
+                    projeto={projeto}
+                    onVerDetalhes={() => handleVerDetalhes(projeto)}
+                  />
+                ))
+              )}
             </div>
           )}
           
+          {/* Kanban */}
           {modoVisao === "Kanban" && (
             <div className="flex flex-col md:flex-row gap-4 md:gap-6 mt-1 fade-in min-h-[350px] overflow-x-auto pb-4">
               {["ativo", "pausado", "concluído"].map((status) => (
                 <div key={status} className="flex-1 min-w-[250px] bg-[#191933]/70 rounded-xl p-4">
                   <div className="font-bold text-secondary mb-3 capitalize">{status}</div>
-                  {projetos.filter(p => p.status === status).length === 0 && (
+                  
+                  {loading ? (
+                    <div className="space-y-4">
+                      <Skeleton className="h-32 w-full bg-[#141429]/90" />
+                      <Skeleton className="h-32 w-full bg-[#141429]/90" />
+                    </div>
+                  ) : getProjetosPorStatus(status).length === 0 ? (
                     <div className="text-secondary/60 italic">Sem projetos neste status.</div>
+                  ) : (
+                    <div className="flex flex-col gap-4">
+                      {getProjetosPorStatus(status).map((projeto) => (
+                        <ProjetoCard
+                          key={projeto.id}
+                          projeto={projeto}
+                          onVerDetalhes={() => handleVerDetalhes(projeto)}
+                        />
+                      ))}
+                    </div>
                   )}
-                  <div className="flex flex-col gap-4">
-                    {projetos.filter(p => p.status === status).map((projeto, i) => (
-                      <ProjetoCard
-                        key={i}
-                        projeto={projeto}
-                        onVerDetalhes={() => handleVerDetalhes(projeto)}
-                      />
-                    ))}
-                  </div>
                 </div>
               ))}
             </div>
           )}
           
+          {/* Placeholders para outras visualizações */}
           {modoVisao === "Linha do tempo" && (
             <div className="rounded-xl bg-[#191933]/60 p-6 sm:p-10 text-secondary/70 flex flex-col items-center justify-center h-[320px] fade-in">
               <span className="text-xl">[Linha do tempo - mock visual]</span>

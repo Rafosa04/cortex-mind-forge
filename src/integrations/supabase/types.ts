@@ -165,6 +165,41 @@ export type Database = {
         }
         Relationships: []
       }
+      project_steps: {
+        Row: {
+          created_at: string | null
+          description: string
+          done: boolean | null
+          id: string
+          order_index: number | null
+          project_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          description: string
+          done?: boolean | null
+          id?: string
+          order_index?: number | null
+          project_id: string
+        }
+        Update: {
+          created_at?: string | null
+          description?: string
+          done?: boolean | null
+          id?: string
+          order_index?: number | null
+          project_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_steps_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       projects: {
         Row: {
           category: string | null

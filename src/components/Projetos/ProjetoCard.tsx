@@ -6,17 +6,10 @@ import { StatusTag } from "./StatusTag";
 import { TagProjeto } from "./TagProjeto";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
-import { AvatarImage } from "@radix-ui/react-avatar";
-
-type Projeto = {
-  nome: string;
-  progresso: number; // 0-100
-  tags: string[];
-  status: "ativo" | "pausado" | "concluído";
-};
+import { ProjectWithSteps } from "@/services/projectsService";
 
 type Props = {
-  projeto: Projeto;
+  projeto: ProjectWithSteps;
   onVerDetalhes?: () => void;
 };
 
@@ -29,18 +22,18 @@ export function ProjetoCard({ projeto, onVerDetalhes }: Props) {
     >
       <div className="flex items-start justify-between">
         <div>
-          <span className="text-lg font-bold text-primary drop-shadow-sm">{projeto.nome}</span>
+          <span className="text-lg font-bold text-primary drop-shadow-sm">{projeto.name}</span>
         </div>
         <StatusTag status={projeto.status} />
       </div>
       <div className="flex gap-2 flex-wrap mt-1">
-        {projeto.tags.map((t) => (
-          <TagProjeto key={t}>{t}</TagProjeto>
-        ))}
+        {projeto.category && (
+          <TagProjeto key={projeto.category}>{projeto.category}</TagProjeto>
+        )}
       </div>
       <div className="flex items-center gap-3 mt-2">
-        <Progress value={projeto.progresso} className="w-[70%] h-3 bg-[#191933] rounded-full" />
-        <span className="text-xs text-[#E6E6F0]/70">{projeto.progresso}%</span>
+        <Progress value={projeto.progress} className="w-[70%] h-3 bg-[#191933] rounded-full" />
+        <span className="text-xs text-[#E6E6F0]/70">{projeto.progress}%</span>
       </div>
       <div className="flex items-center justify-between mt-2">
         <Button onClick={onVerDetalhes} size="sm" variant="outline" className="group/button text-xs flex items-center gap-1 border-primary/50 shadow-glow transition hover:bg-primary/90 hover:text-[#0C0C1C]">
