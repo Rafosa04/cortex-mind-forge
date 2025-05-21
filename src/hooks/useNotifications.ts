@@ -37,9 +37,10 @@ export function useNotifications() {
         return;
       }
 
-      // Use type assertion to ensure TypeScript recognizes the data as Notification[]
-      setNotifications(data as Notification[]);
-      setUnreadCount((data as Notification[]).filter(n => !n.is_read).length);
+      // Safely convert data to Notification[] with a safer approach
+      const notificationData = data as unknown as Notification[];
+      setNotifications(notificationData);
+      setUnreadCount(notificationData.filter(n => !n.is_read).length);
     } catch (error) {
       console.error("Error in notifications hook:", error);
     } finally {
@@ -155,7 +156,7 @@ export function useNotifications() {
           },
           (payload) => {
             // Add the new notification to the state
-            const newNotification = payload.new as Notification;
+            const newNotification = payload.new as unknown as Notification;
             setNotifications(prev => [newNotification, ...prev]);
             setUnreadCount(prev => prev + 1);
             
