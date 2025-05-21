@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
@@ -20,6 +19,8 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { generateAthenaInsights } from "@/utils/athenaInsightUtils";
+import AthenaDashboardInsight from "@/components/Athena/AthenaDashboardInsight";
 
 interface DashboardStats {
   projectsActive: number;
@@ -30,6 +31,8 @@ interface DashboardStats {
   favoriteCount: number;
   recentFavorites: any[];
   athenaInsight: string | null;
+  athenaActionText?: string;
+  athenaActionUrl?: string;
   loading: boolean;
 }
 
@@ -99,6 +102,24 @@ export default function Dashboard() {
       const favoriteCount = athenaLogs 
         ? athenaLogs.filter(log => log.is_favorite).length 
         : 0;
+      
+      // Generate Athena insights based on user data
+      if (user) {
+        const insights = await generateAthenaInsights(user.id);
+        
+        if (insights.length > 0) {
+          // Choose a random insight to display
+          const randomIndex = Math.floor(Math.random() * insights.length);
+          const selectedInsight = insights[randomIndex];
+          
+          setStats(prev => ({
+            ...prev,
+            athenaInsight: selectedInsight.message,
+            athenaActionText: selectedInsight.actionText,
+            athenaActionUrl: selectedInsight.actionUrl
+          }));
+        }
+      }
       
       setStats({
         projectsActive: activeProjects?.length || 0,
@@ -263,26 +284,12 @@ export default function Dashboard() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {stats.loading ? (
-              <div className="space-y-2">
-                <Skeleton className="h-4 w-full" />
-                <Skeleton className="h-4 w-[80%]" />
-                <Skeleton className="h-4 w-[60%]" />
-              </div>
-            ) : (
-              <div className="p-4 border rounded-lg bg-card/50 relative">
-                <div className="absolute -top-3 -left-3 w-8 h-8 rounded-full bg-primary flex items-center justify-center">
-                  <span className="text-primary-foreground text-lg font-bold">A</span>
-                </div>
-                <p className="pl-6">{stats.athenaInsight}</p>
-                
-                <div className="mt-4 flex justify-end">
-                  <Button onClick={() => navigate("/athena")}>
-                    Falar com Athena
-                  </Button>
-                </div>
-              </div>
-            )}
+            <AthenaDashboardInsight 
+              insight={stats.athenaInsight}
+              loading={stats.loading}
+              actionText={stats.athenaActionText}
+              actionUrl={stats.athenaActionUrl}
+            />
           </CardContent>
         </Card>
         

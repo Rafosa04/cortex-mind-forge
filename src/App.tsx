@@ -31,6 +31,7 @@ import Dashboard from "./pages/Dashboard";
 import Connecta from "./pages/Connecta";
 import Insights from "./pages/Insights";
 import AdminDashboard from "./pages/AdminDashboard";
+import Integracoes from "./pages/Integracoes";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -65,6 +66,7 @@ const App = () => (
                   <Route path="/notificacoes" element={<Notificacoes />} />
                   <Route path="/perfil" element={<Perfil />} />
                   <Route path="/configuracoes" element={<Configuracoes />} />
+                  <Route path="/integracoes" element={<Integracoes />} />
                   <Route path="/planos" element={<Planos />} />
                   <Route path="/athena" element={<ChatAthena />} />
                   <Route path="/athena/historico" element={<AthenaHistorico />} />

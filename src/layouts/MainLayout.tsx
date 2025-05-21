@@ -4,6 +4,7 @@ import { SidebarProvider, Sidebar as UISidebar, SidebarContent, SidebarRail, Sid
 import Sidebar from "@/components/Sidebar";
 import AthenaChatBox from "@/components/AthenaChatBox";
 import { useAuth } from "@/hooks/useAuth";
+import NotificationIndicator from "@/components/Notifications/NotificationIndicator";
 
 export default function MainLayout({ children }: { children: React.ReactNode }) {
   const { user, profile } = useAuth();
@@ -26,6 +27,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
               <span className="ml-1 sm:ml-2 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-md bg-secondary text-secondary-foreground text-xs">Athena IA</span>
             </div>
             <div className="flex items-center gap-4">
+              {user && <NotificationIndicator />}
               <div className="text-sm sm:text-md text-foreground/70 dark:text-foreground/70 light:text-foreground-light/70">
                 {user ? (
                   <span>Olá, {profile?.name || 'Usuário'}</span>
