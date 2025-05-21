@@ -97,7 +97,7 @@ export function ProjetoCard({
           <TagProjeto key={`category-${projeto.category}`}>{projeto.category}</TagProjeto>
         )}
         {projeto.tags && projeto.tags.map((tag) => (
-          <TagProjeto key={`tag-${tag}`} variant="secondary">{tag}</TagProjeto>
+          <TagProjeto key={`tag-${tag}`}>{tag}</TagProjeto>
         ))}
       </div>
       

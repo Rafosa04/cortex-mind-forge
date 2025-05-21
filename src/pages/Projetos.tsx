@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { FiltroProjetos } from "@/components/Projetos/FiltroProjetos";
 import { ProjetoCard } from "@/components/Projetos/ProjetoCard";
 import { NovaCelulaModal } from "@/components/Projetos/NovaCelulaModal";
-import { Plus } from "lucide-react";
+import { Plus, Bot } from "lucide-react";
 import { motion } from "framer-motion";
 import { DrawerDetalheProjeto } from "@/components/Projetos/DrawerDetalheProjeto";
 import { FiltroLateralProjetos } from "@/components/Projetos/FiltroLateralProjetos";
