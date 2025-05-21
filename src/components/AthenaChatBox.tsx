@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { MessageSquare, Send, X, Trash2 } from "lucide-react";
@@ -9,6 +8,8 @@ import { Textarea } from "./ui/textarea";
 import { ScrollArea } from "./ui/scroll-area";
 import { Card } from "./ui/card";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
+import { saveAthenaLog } from "@/utils/athenaUtils";
 
 interface Message {
   role: "user" | "assistant";
@@ -27,6 +28,7 @@ const AthenaChatBox: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [interactionCount, setInteractionCount] = useState(0);
   const { toast } = useToast();
+  const { user } = useAuth();
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
@@ -148,6 +150,12 @@ const AthenaChatBox: React.FC = () => {
         const allMessages = [...prev, newAssistantMessage];
         return allMessages.slice(Math.max(0, allMessages.length - MAX_MESSAGES));
       });
+      
+      // Salvar log no Supabase se o usuário estiver autenticado
+      if (user) {
+        saveAthenaLog(currentMessage, assistantMessage, "geral")
+          .catch(err => console.error("Erro ao salvar log de conversa:", err));
+      }
       
     } catch (error) {
       console.error("Erro ao chamar a API da OpenAI:", error);

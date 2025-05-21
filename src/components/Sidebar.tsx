@@ -1,3 +1,4 @@
+
 import {
   LayoutDashboard,
   Settings,
@@ -11,6 +12,7 @@ import {
   LucideIcon,
   Inbox,
   Link as LucideLink,
+  MessageSquare,
 } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -69,6 +71,12 @@ export default function Sidebar() {
           <LucideLink className="h-4 w-4" />
           <span>Mensagens</span>
         </Link>
+        {user && (
+          <Link to="/athena/historico" className={linkClasses("/athena/historico")}>
+            <MessageSquare className="h-4 w-4" />
+            <span>Histórico Athena</span>
+          </Link>
+        )}
         <Link to="/favoritos" className={linkClasses("/favoritos")}>
           <Book className="h-4 w-4" />
           <span>Favoritos</span>

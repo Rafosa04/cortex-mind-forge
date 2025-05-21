@@ -25,6 +25,7 @@ import Configuracoes from "./pages/Configuracoes";
 import Planos from "./pages/Planos";
 import Landing from "./pages/Landing";
 import ChatAthena from "./pages/ChatAthena";
+import AthenaHistorico from "./pages/AthenaHistorico";
 import Connecta from "./pages/Connecta";
 import Insights from "./pages/Insights";
 import AdminDashboard from "./pages/AdminDashboard";
@@ -63,6 +64,7 @@ const App = () => (
                   <Route path="/configuracoes" element={<Configuracoes />} />
                   <Route path="/planos" element={<Planos />} />
                   <Route path="/athena" element={<ChatAthena />} />
+                  <Route path="/athena/historico" element={<AthenaHistorico />} />
                   <Route path="/connecta" element={<Connecta />} />
                   <Route path="/insights" element={<Insights />} />
                 </Route>
