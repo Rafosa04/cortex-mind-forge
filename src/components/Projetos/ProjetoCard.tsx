@@ -94,10 +94,10 @@ export function ProjetoCard({
       
       <div className="flex gap-2 flex-wrap mt-1">
         {projeto.category && (
-          <TagProjeto key={`category-${projeto.category}`}>{projeto.category}</TagProjeto>
+          <TagProjeto key={`category-${projeto.category}`} variant="primary">{projeto.category}</TagProjeto>
         )}
         {projeto.tags && projeto.tags.map((tag) => (
-          <TagProjeto key={`tag-${tag}`}>{tag}</TagProjeto>
+          <TagProjeto key={`tag-${tag}`} variant="secondary">{tag}</TagProjeto>
         ))}
       </div>
       

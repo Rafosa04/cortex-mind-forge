@@ -22,6 +22,8 @@ import {
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { saveAthenaLog } from "@/utils/athenaUtils";
+import { AthenaProjectSuggestion } from "./AthenaProjectSuggestion";
+import { ProjetoModoFoco } from "./ProjetoModoFoco";
 
 type Props = {
   projeto: ProjectWithSteps | null;
@@ -50,7 +52,9 @@ export function DrawerDetalheProjeto({ projeto, open, onOpenChange, onProjectUpd
   const [isTagsDialogOpen, setIsTagsDialogOpen] = useState(false);
   const [tagInput, setTagInput] = useState("");
   const [projetoTags, setProjetoTags] = useState<string[]>([]);
-
+  const [isAthenaDialogOpen, setIsAthenaDialogOpen] = useState(false);
+  const [isModoFocoAtivo, setIsModoFocoAtivo] = useState(false);
+  
   // Update local state when project changes
   useEffect(() => {
     if (projeto) {
@@ -181,32 +185,89 @@ export function DrawerDetalheProjeto({ projeto, open, onOpenChange, onProjectUpd
     }
   };
 
-  const handleSugerirEtapaComAthena = async () => {
+  const handleSugerirEtapaComAthena = () => {
+    setIsAthenaDialogOpen(true);
+  };
+
+  const handleModoFoco = () => {
+    setIsModoFocoAtivo(true);
+  };
+
+  const exportAsPDF = () => {
     toast({
-      title: "Processando...",
-      description: "Solicitando sugestão de etapa para este projeto",
+      title: "Em desenvolvimento",
+      description: "A exportação para PDF estará disponível em breve."
     });
+  };
+  
+  const exportAsMarkdown = () => {
+    // Create markdown content
+    let markdown = `# ${projeto.name}\n\n`;
     
-    // Create a prompt for Athena
-    const prompt = `Sugira uma próxima etapa para o projeto "${projeto.name}" 
-    com a descrição "${projeto.description || 'Sem descrição'}". 
-    Etapas atuais: ${projeto.steps.map(s => `"${s.description}"`).join(", ")}. 
-    Status atual: ${projeto.status}. 
-    Progresso: ${projeto.progress}%.
-    Categoria: ${projeto.category || 'Não especificada'}.
-    Tags: ${projeto.tags?.join(", ") || 'Nenhuma'}.`;
+    if (projeto.description) {
+      markdown += `${projeto.description}\n\n`;
+    }
     
-    // Log the interaction for Athena
-    await saveAthenaLog(
-      prompt,
-      "Solicitação de sugestão de etapa registrada. Acesse o assistente Athena para visualizar a resposta completa.",
-      "projeto",
-      projeto.id
-    );
+    markdown += `**Status:** ${projeto.status}\n`;
+    markdown += `**Progresso:** ${projeto.progress}%\n`;
+    
+    if (projeto.category) {
+      markdown += `**Categoria:** ${projeto.category}\n`;
+    }
+    
+    if (projeto.tags && projeto.tags.length > 0) {
+      markdown += `**Tags:** ${projeto.tags.join(', ')}\n`;
+    }
+    
+    markdown += `**Criado em:** ${formatDate(projeto.created_at)}\n`;
+    
+    if (projeto.deadline) {
+      markdown += `**Prazo:** ${formatDate(projeto.deadline)}\n`;
+    }
+    
+    markdown += '\n## Etapas\n\n';
+    
+    if (projeto.steps && projeto.steps.length > 0) {
+      projeto.steps.forEach(etapa => {
+        markdown += `- [${etapa.done ? 'x' : ' '}] ${etapa.description}\n`;
+      });
+    } else {
+      markdown += 'Nenhuma etapa definida.\n';
+    }
+    
+    if (projeto.content) {
+      markdown += '\n## Conteúdo / Anotações\n\n';
+      markdown += projeto.content + '\n';
+    }
+    
+    // Create a download link
+    const blob = new Blob([markdown], { type: 'text/markdown' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `projeto_${projeto.name.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.md`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
     
     toast({
-      title: "Solicitação enviada",
-      description: "Abra Athena para ver a sugestão de etapa para seu projeto",
+      title: "Exportação concluída",
+      description: "O projeto foi exportado em formato Markdown."
+    });
+  };
+  
+  const handleCloneProjeto = () => {
+    toast({
+      title: "Em desenvolvimento",
+      description: "A funcionalidade de clonar projeto estará disponível em breve."
+    });
+  };
+  
+  const handleShareProjeto = () => {
+    toast({
+      title: "Em desenvolvimento",
+      description: "A funcionalidade de compartilhar projeto estará disponível em breve."
     });
   };
 
@@ -247,10 +308,7 @@ export function DrawerDetalheProjeto({ projeto, open, onOpenChange, onProjectUpd
                   size="icon" 
                   variant="ghost" 
                   title="Clonar"
-                  onClick={() => toast({
-                    title: "Em breve",
-                    description: "Funcionalidade de clonagem em desenvolvimento"
-                  })}
+                  onClick={handleCloneProjeto}
                 >
                   <Copy className="w-4 h-4" />
                 </Button>
@@ -259,10 +317,7 @@ export function DrawerDetalheProjeto({ projeto, open, onOpenChange, onProjectUpd
                   size="icon" 
                   variant="ghost" 
                   title="Exportar"
-                  onClick={() => toast({
-                    title: "Em breve",
-                    description: "Funcionalidade de exportação em desenvolvimento"
-                  })}
+                  onClick={exportAsMarkdown}
                 >
                   <FileText className="w-4 h-4" />
                 </Button>
@@ -271,10 +326,7 @@ export function DrawerDetalheProjeto({ projeto, open, onOpenChange, onProjectUpd
                   size="icon" 
                   variant="ghost" 
                   title="Compartilhar"
-                  onClick={() => toast({
-                    title: "Em breve",
-                    description: "Funcionalidade de compartilhamento em desenvolvimento"
-                  })}
+                  onClick={handleShareProjeto}
                 >
                   <Share2 className="w-4 h-4" />
                 </Button>
@@ -443,10 +495,7 @@ export function DrawerDetalheProjeto({ projeto, open, onOpenChange, onProjectUpd
                   size="sm" 
                   variant="outline" 
                   className="border-[#60B5B5]/40 text-primary gap-1 flex items-center"
-                  onClick={() => toast({
-                    title: "Em breve",
-                    description: "Modo Foco em desenvolvimento"
-                  })}
+                  onClick={handleModoFoco}
                 >
                   <Eye className="w-4 h-4" />Modo Foco
                 </Button>
@@ -465,10 +514,7 @@ export function DrawerDetalheProjeto({ projeto, open, onOpenChange, onProjectUpd
                   size="sm" 
                   variant="outline" 
                   className="border-[#60B5B5]/40 text-primary gap-1 flex items-center"
-                  onClick={() => toast({
-                    title: "Em breve",
-                    description: "Compartilhamento em desenvolvimento"
-                  })}
+                  onClick={handleShareProjeto}
                 >
                   <Share2 className="w-4 h-4" />Compartilhar
                 </Button>
@@ -552,6 +598,24 @@ export function DrawerDetalheProjeto({ projeto, open, onOpenChange, onProjectUpd
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      
+      {/* Athena Suggestion Dialog */}
+      <AthenaProjectSuggestion 
+        open={isAthenaDialogOpen}
+        onOpenChange={setIsAthenaDialogOpen}
+        projectId={projeto.id}
+        projectName={projeto.name}
+        projectDescription={projeto.description}
+      />
+      
+      {/* Modo Foco */}
+      {isModoFocoAtivo && (
+        <ProjetoModoFoco 
+          projeto={projeto}
+          onClose={() => setIsModoFocoAtivo(false)}
+          onToggleEtapa={handleToggleEtapa}
+        />
+      )}
     </>
   );
 }
