@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { FiltroProjetos } from "@/components/Projetos/FiltroProjetos";
@@ -14,6 +15,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useNavigate } from "react-router-dom";
 import { toast } from "@/hooks/use-toast";
 import { ProjetoTimeline } from "@/components/Projetos/ProjetoTimeline";
+import { ProjetoGaleria } from "@/components/Projetos/ProjetoGaleria";
 
 // Modos de visualização possíveis, com type literal
 const modosVisao = ["Lista", "Kanban", "Linha do tempo", "Galeria"] as const;
@@ -287,7 +289,7 @@ export default function Projetos() {
             </div>
           )}
           
-          {/* Linha do tempo - Agora usando o componente real */}
+          {/* Linha do tempo */}
           {modoVisao === "Linha do tempo" && (
             <div className="mt-1 pb-6 fade-in">
               {loading ? (
@@ -308,21 +310,22 @@ export default function Projetos() {
             </div>
           )}
           
-          {/* Galeria */}
+          {/* Galeria - Agora usando o componente real */}
           {modoVisao === "Galeria" && (
-            <div className="rounded-xl bg-[#191933]/60 p-6 sm:p-10 text-secondary/70 flex flex-col items-center justify-center h-[320px] fade-in">
-              <span className="text-xl">[Galeria de células]</span>
-              <div className="mt-4 text-base">Cards em grid de galeria (em breve).</div>
-              <Button 
-                variant="outline" 
-                className="mt-4 border-[#60B5B5]/40"
-                onClick={() => toast({
-                  title: "Em desenvolvimento",
-                  description: "A visualização de galeria estará disponível em breve!"
-                })}
-              >
-                Prévia
-              </Button>
+            <div className="mt-1 pb-6 fade-in">
+              {loading ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                  {[1, 2, 3, 4, 5, 6].map((i) => (
+                    <Skeleton key={i} className="h-60 w-full bg-[#141429]/90 rounded-xl" />
+                  ))}
+                </div>
+              ) : (
+                <ProjetoGaleria 
+                  projetos={projetos}
+                  onVerDetalhes={handleVerDetalhes}
+                  onToggleFavorite={handleToggleFavorite}
+                />
+              )}
             </div>
           )}
         </div>
