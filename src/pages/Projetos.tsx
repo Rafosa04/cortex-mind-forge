@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { FiltroProjetos } from "@/components/Projetos/FiltroProjetos";
@@ -14,6 +13,7 @@ import { ProjectWithSteps } from "@/services/projectsService";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useNavigate } from "react-router-dom";
 import { toast } from "@/hooks/use-toast";
+import { ProjetoTimeline } from "@/components/Projetos/ProjetoTimeline";
 
 // Modos de visualização possíveis, com type literal
 const modosVisao = ["Lista", "Kanban", "Linha do tempo", "Galeria"] as const;
@@ -287,21 +287,24 @@ export default function Projetos() {
             </div>
           )}
           
-          {/* Linha do tempo */}
+          {/* Linha do tempo - Agora usando o componente real */}
           {modoVisao === "Linha do tempo" && (
-            <div className="rounded-xl bg-[#191933]/60 p-6 sm:p-10 text-secondary/70 flex flex-col items-center justify-center h-[320px] fade-in">
-              <span className="text-xl">[Linha do tempo]</span>
-              <div className="mt-4 text-base">Visualização cronológica dos projetos (em breve).</div>
-              <Button 
-                variant="outline" 
-                className="mt-4 border-[#60B5B5]/40"
-                onClick={() => toast({
-                  title: "Em desenvolvimento",
-                  description: "A visualização de linha do tempo estará disponível em breve!"
-                })}
-              >
-                Prévia
-              </Button>
+            <div className="mt-1 pb-6 fade-in">
+              {loading ? (
+                <div className="space-y-6">
+                  <Skeleton className="h-12 w-48 bg-[#191933]/70" />
+                  <div className="space-y-4 ml-6">
+                    <Skeleton className="h-32 w-full bg-[#141429]/90" />
+                    <Skeleton className="h-32 w-full bg-[#141429]/90" />
+                  </div>
+                  <Skeleton className="h-12 w-40 bg-[#191933]/70 mt-8" />
+                </div>
+              ) : (
+                <ProjetoTimeline 
+                  projetos={projetos}
+                  onVerDetalhes={handleVerDetalhes}
+                />
+              )}
             </div>
           )}
           
