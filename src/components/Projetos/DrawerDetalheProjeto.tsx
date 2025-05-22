@@ -23,6 +23,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { saveAthenaLog } from "@/utils/athenaUtils";
 import { AthenaProjectSuggestion } from "./AthenaProjectSuggestion";
 import { ProjetoModoFoco } from "./ProjetoModoFoco";
+import { supabase } from "@/integrations/supabase/client";
+import { enableRealtimeForTable } from "@/utils/supabaseUtils";
 
 type Props = {
   projeto: ProjectWithSteps | null;
@@ -53,15 +55,88 @@ export function DrawerDetalheProjeto({ projeto, open, onOpenChange, onProjectUpd
   const [projetoTags, setProjetoTags] = useState<string[]>([]);
   const [isAthenaDialogOpen, setIsAthenaDialogOpen] = useState(false);
   const [isModoFocoAtivo, setIsModoFocoAtivo] = useState(false);
+  const [localProjeto, setLocalProjeto] = useState<ProjectWithSteps | null>(null);
+  
+  // Set up Realtime subscription when the component mounts
+  useEffect(() => {
+    // Enable realtime for project_steps and projects tables
+    const setupRealtime = async () => {
+      await enableRealtimeForTable('project_steps');
+      await enableRealtimeForTable('projects');
+    };
+    
+    setupRealtime();
+    
+    // Cleanup function for the channel subscription
+    return () => {};
+  }, []);
   
   // Update local state when project changes
   useEffect(() => {
     if (projeto) {
+      setLocalProjeto(projeto);
       setStatusAtual(projeto.status as "ativo" | "pausado" | "concluído");
       setConteudo(projeto.content || "");
       setProjetoTags(projeto.tags || []);
     }
   }, [projeto]);
+  
+  // Set up realtime subscription for project updates
+  useEffect(() => {
+    if (!projeto) return;
+    
+    const projectId = projeto.id;
+    
+    // Subscribe to changes in the project_steps table
+    const channel = supabase
+      .channel('project-changes')
+      .on('postgres_changes', { 
+        event: '*', 
+        schema: 'public', 
+        table: 'project_steps',
+        filter: `project_id=eq.${projectId}`
+      }, (payload) => {
+        console.log('Project steps change received:', payload);
+        if (onProjectUpdated) {
+          onProjectUpdated();
+        }
+      })
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'projects',
+        filter: `id=eq.${projectId}`
+      }, (payload) => {
+        console.log('Project change received:', payload);
+        if (onProjectUpdated) {
+          onProjectUpdated();
+        }
+        
+        // Update local UI immediately for favorite toggle
+        if (payload.eventType === 'UPDATE' && payload.new && localProjeto) {
+          const updatedProject = payload.new as any;
+          
+          // Update local project state to reflect changes
+          setLocalProjeto(prev => {
+            if (!prev) return null;
+            return {
+              ...prev,
+              is_favorite: updatedProject.is_favorite,
+              status: updatedProject.status,
+              tags: updatedProject.tags,
+              content: updatedProject.content,
+              progress: updatedProject.progress
+            };
+          });
+        }
+      })
+      .subscribe();
+    
+    // Cleanup subscription when component unmounts or project changes
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [projeto?.id, onProjectUpdated]);
 
   const formatDate = useCallback((dateString: string | null) => {
     if (!dateString) return "N/A";
@@ -72,21 +147,44 @@ export function DrawerDetalheProjeto({ projeto, open, onOpenChange, onProjectUpd
     }
   }, []);
 
-  if (!projeto) return null;
+  if (!localProjeto) return null;
 
   const handleToggleEtapa = async (etapaId: string, concluida: boolean) => {
     const sucesso = await atualizarEtapa(etapaId, concluida);
-    if (sucesso && onProjectUpdated) {
-      onProjectUpdated();
+    
+    // Immediately update local UI state
+    if (sucesso) {
+      setLocalProjeto(prev => {
+        if (!prev) return null;
+        
+        // Update the specific step
+        const updatedSteps = prev.steps.map(step => 
+          step.id === etapaId ? {...step, done: concluida} : step
+        );
+        
+        // Calculate new progress
+        const totalSteps = updatedSteps.length;
+        const completedSteps = updatedSteps.filter(step => step.done).length;
+        const newProgress = totalSteps > 0 ? Math.round((completedSteps / totalSteps) * 100) : 0;
+        
+        return {
+          ...prev,
+          steps: updatedSteps,
+          progress: newProgress
+        };
+      });
     }
+    
     return sucesso;
   };
 
   const handleChangeStatus = async (novoStatus: "ativo" | "pausado" | "concluído") => {
-    const success = await atualizarStatusProjeto(projeto.id, novoStatus);
+    const success = await atualizarStatusProjeto(localProjeto.id, novoStatus);
+    
     if (success) {
       setStatusAtual(novoStatus);
-      if (onProjectUpdated) onProjectUpdated();
+      setLocalProjeto(prev => prev ? {...prev, status: novoStatus} : null);
+      
       toast({
         title: "Status atualizado",
         description: `Status do projeto alterado para ${novoStatus}`,
@@ -105,7 +203,7 @@ export function DrawerDetalheProjeto({ projeto, open, onOpenChange, onProjectUpd
     }
 
     setAdicionandoEtapa(true);
-    const result = await adicionarEtapa(projeto.id, novaEtapa);
+    const result = await adicionarEtapa(localProjeto.id, novaEtapa);
     setAdicionandoEtapa(false);
 
     if (result) {
@@ -114,7 +212,24 @@ export function DrawerDetalheProjeto({ projeto, open, onOpenChange, onProjectUpd
         description: "Etapa adicionada com sucesso",
       });
       setNovaEtapa("");
-      if (onProjectUpdated) onProjectUpdated();
+      
+      // Update local state
+      setLocalProjeto(prev => {
+        if (!prev) return null;
+        const updatedSteps = [...prev.steps, {
+          id: result.id,
+          project_id: result.project_id,
+          description: result.description,
+          done: result.done,
+          order_index: result.order_index,
+          created_at: result.created_at
+        }];
+        
+        return {
+          ...prev,
+          steps: updatedSteps
+        };
+      });
     }
   };
 
@@ -123,39 +238,59 @@ export function DrawerDetalheProjeto({ projeto, open, onOpenChange, onProjectUpd
     if (!confirmacao) return;
 
     const success = await removerEtapa(etapaId);
-    if (success && onProjectUpdated) {
-      onProjectUpdated();
+    
+    if (success) {
+      // Update local state immediately
+      setLocalProjeto(prev => {
+        if (!prev) return null;
+        
+        const updatedSteps = prev.steps.filter(step => step.id !== etapaId);
+        
+        // Recalculate progress
+        const totalSteps = updatedSteps.length;
+        const completedSteps = updatedSteps.filter(step => step.done).length;
+        const newProgress = totalSteps > 0 ? Math.round((completedSteps / totalSteps) * 100) : 0;
+        
+        return {
+          ...prev,
+          steps: updatedSteps,
+          progress: newProgress
+        };
+      });
     }
   };
 
   const handleToggleFavorite = async () => {
-    const newFavoriteState = !projeto.is_favorite;
-    const success = await toggleFavoritoProjeto(projeto.id, newFavoriteState);
-    if (success && onProjectUpdated) {
-      onProjectUpdated();
+    const newFavoriteState = !localProjeto.is_favorite;
+    const success = await toggleFavoritoProjeto(localProjeto.id, newFavoriteState);
+    
+    if (success) {
+      // Update local state immediately
+      setLocalProjeto(prev => prev ? {...prev, is_favorite: newFavoriteState} : null);
     }
   };
 
   const handleSaveContent = async () => {
-    const success = await atualizarConteudoProjeto(projeto.id, conteudo);
+    const success = await atualizarConteudoProjeto(localProjeto.id, conteudo);
+    
     if (success) {
       setEditandoConteudo(false);
+      setLocalProjeto(prev => prev ? {...prev, content: conteudo} : null);
+      
       toast({
         title: "Conteúdo salvo",
         description: "O conteúdo do projeto foi atualizado",
       });
-      if (onProjectUpdated) onProjectUpdated();
     }
   };
 
   const handleRemoveProject = async () => {
-    const confirmacao = confirm(`Tem certeza que deseja remover o projeto "${projeto.name}"? Esta ação não pode ser desfeita.`);
+    const confirmacao = confirm(`Tem certeza que deseja remover o projeto "${localProjeto.name}"? Esta ação não pode ser desfeita.`);
     if (!confirmacao) return;
 
-    const success = await removerProjeto(projeto.id);
+    const success = await removerProjeto(localProjeto.id);
     if (success) {
       onOpenChange(false);
-      if (onProjectUpdated) onProjectUpdated();
     }
   };
 
@@ -178,10 +313,11 @@ export function DrawerDetalheProjeto({ projeto, open, onOpenChange, onProjectUpd
   };
 
   const handleSaveTags = async () => {
-    const success = await atualizarTagsProjeto(projeto.id, projetoTags);
+    const success = await atualizarTagsProjeto(localProjeto.id, projetoTags);
+    
     if (success) {
       setIsTagsDialogOpen(false);
-      if (onProjectUpdated) onProjectUpdated();
+      setLocalProjeto(prev => prev ? {...prev, tags: projetoTags} : null);
     }
   };
 
@@ -202,42 +338,42 @@ export function DrawerDetalheProjeto({ projeto, open, onOpenChange, onProjectUpd
   
   const exportAsMarkdown = () => {
     // Create markdown content
-    let markdown = `# ${projeto.name}\n\n`;
+    let markdown = `# ${localProjeto.name}\n\n`;
     
-    if (projeto.description) {
-      markdown += `${projeto.description}\n\n`;
+    if (localProjeto.description) {
+      markdown += `${localProjeto.description}\n\n`;
     }
     
-    markdown += `**Status:** ${projeto.status}\n`;
-    markdown += `**Progresso:** ${projeto.progress}%\n`;
+    markdown += `**Status:** ${localProjeto.status}\n`;
+    markdown += `**Progresso:** ${localProjeto.progress}%\n`;
     
-    if (projeto.category) {
-      markdown += `**Categoria:** ${projeto.category}\n`;
+    if (localProjeto.category) {
+      markdown += `**Categoria:** ${localProjeto.category}\n`;
     }
     
-    if (projeto.tags && projeto.tags.length > 0) {
-      markdown += `**Tags:** ${projeto.tags.join(', ')}\n`;
+    if (localProjeto.tags && localProjeto.tags.length > 0) {
+      markdown += `**Tags:** ${localProjeto.tags.join(', ')}\n`;
     }
     
-    markdown += `**Criado em:** ${formatDate(projeto.created_at)}\n`;
+    markdown += `**Criado em:** ${formatDate(localProjeto.created_at)}\n`;
     
-    if (projeto.deadline) {
-      markdown += `**Prazo:** ${formatDate(projeto.deadline)}\n`;
+    if (localProjeto.deadline) {
+      markdown += `**Prazo:** ${formatDate(localProjeto.deadline)}\n`;
     }
     
     markdown += '\n## Etapas\n\n';
     
-    if (projeto.steps && projeto.steps.length > 0) {
-      projeto.steps.forEach(etapa => {
+    if (localProjeto.steps && localProjeto.steps.length > 0) {
+      localProjeto.steps.forEach(etapa => {
         markdown += `- [${etapa.done ? 'x' : ' '}] ${etapa.description}\n`;
       });
     } else {
       markdown += 'Nenhuma etapa definida.\n';
     }
     
-    if (projeto.content) {
+    if (localProjeto.content) {
       markdown += '\n## Conteúdo / Anotações\n\n';
-      markdown += projeto.content + '\n';
+      markdown += localProjeto.content + '\n';
     }
     
     // Create a download link
@@ -245,7 +381,7 @@ export function DrawerDetalheProjeto({ projeto, open, onOpenChange, onProjectUpd
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `projeto_${projeto.name.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.md`;
+    a.download = `projeto_${localProjeto.name.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.md`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -278,7 +414,7 @@ export function DrawerDetalheProjeto({ projeto, open, onOpenChange, onProjectUpd
           <DrawerHeader>
             <div className="flex justify-between items-center">
               <DrawerTitle className="text-2xl font-bold text-primary drop-shadow flex items-center gap-2">
-                {projeto.name}
+                {localProjeto.name}
                 <div className="dropdown-select ml-2">
                   <select 
                     value={statusAtual}
@@ -334,11 +470,11 @@ export function DrawerDetalheProjeto({ projeto, open, onOpenChange, onProjectUpd
                 <Button 
                   size="icon" 
                   variant="ghost" 
-                  title={projeto.is_favorite ? "Remover dos favoritos" : "Adicionar aos favoritos"}
+                  title={localProjeto.is_favorite ? "Remover dos favoritos" : "Adicionar aos favoritos"}
                   onClick={handleToggleFavorite}
-                  className={projeto.is_favorite ? "text-[#993887]" : ""}
+                  className={localProjeto.is_favorite ? "text-[#993887]" : ""}
                 >
-                  <Star className={`w-4 h-4 ${projeto.is_favorite ? "fill-[#993887]" : ""}`} />
+                  <Star className={`w-4 h-4 ${localProjeto.is_favorite ? "fill-[#993887]" : ""}`} />
                 </Button>
                 
                 <Button 
@@ -351,11 +487,11 @@ export function DrawerDetalheProjeto({ projeto, open, onOpenChange, onProjectUpd
                 </Button>
               </div>
             </div>
-            <DrawerDescription className="text-secondary text-sm">{projeto.description || "Sem descrição"}</DrawerDescription>
+            <DrawerDescription className="text-secondary text-sm">{localProjeto.description || "Sem descrição"}</DrawerDescription>
             
             {/* Tags display */}
             <div className="flex flex-wrap gap-1 mt-2">
-              {projeto.tags && projeto.tags.map(tag => (
+              {localProjeto.tags && localProjeto.tags.map(tag => (
                 <Badge key={tag} className="bg-[#993887]/30 text-[#E6E6F0]">{tag}</Badge>
               ))}
               <Button 
@@ -386,8 +522,8 @@ export function DrawerDetalheProjeto({ projeto, open, onOpenChange, onProjectUpd
               </div>
               
               <div className="flex flex-col gap-2">
-                {projeto.steps && projeto.steps.length > 0 ? (
-                  projeto.steps.map((etapa) => (
+                {localProjeto.steps && localProjeto.steps.length > 0 ? (
+                  localProjeto.steps.map((etapa) => (
                     <div key={etapa.id} className={`flex items-center gap-2 p-2 rounded-lg transition ${etapa.done ? "bg-[#60B5B522]" : "bg-[#191933]/40"}`}>
                       <label className="flex items-center gap-2 cursor-pointer flex-grow">
                         <input 
@@ -480,8 +616,8 @@ export function DrawerDetalheProjeto({ projeto, open, onOpenChange, onProjectUpd
             <div className="mt-6">
               <span className="font-semibold text-primary mb-2 block">Histórico Narrativo</span>
               <ul className="text-xs text-secondary/90 space-y-2">
-                <li>[{formatDate(projeto.created_at)}] Projeto criado</li>
-                {projeto.steps && projeto.steps.filter(s => s.done).map((step, i) => (
+                <li>[{formatDate(localProjeto.created_at)}] Projeto criado</li>
+                {localProjeto.steps && localProjeto.steps.filter(s => s.done).map((step, i) => (
                   <li key={i}>[{formatDate(step.created_at)}] Etapa "{step.description}" concluída</li>
                 ))}
               </ul>
@@ -502,12 +638,12 @@ export function DrawerDetalheProjeto({ projeto, open, onOpenChange, onProjectUpd
                 
                 <Button 
                   size="sm" 
-                  variant={projeto.is_favorite ? "secondary" : "outline"} 
-                  className={`${!projeto.is_favorite ? "border-[#993887]/40 text-secondary" : ""} gap-1 flex items-center`}
+                  variant={localProjeto.is_favorite ? "secondary" : "outline"} 
+                  className={`${!localProjeto.is_favorite ? "border-[#993887]/40 text-secondary" : ""} gap-1 flex items-center`}
                   onClick={handleToggleFavorite}
                 >
-                  <Star className={`w-4 h-4 ${projeto.is_favorite ? "fill-white" : ""}`} />
-                  {projeto.is_favorite ? "Favorito" : "Favoritar"}
+                  <Star className={`w-4 h-4 ${localProjeto.is_favorite ? "fill-white" : ""}`} />
+                  {localProjeto.is_favorite ? "Favorito" : "Favoritar"}
                 </Button>
                 
                 <Button 
@@ -525,13 +661,13 @@ export function DrawerDetalheProjeto({ projeto, open, onOpenChange, onProjectUpd
             <div className="mt-8 flex gap-12 items-center">
               <div className="flex-1">
                 <span className="block text-xs text-secondary">Progresso</span>
-                <Progress value={projeto.progress} className="h-2 bg-[#191933]" />
-                <span className="block text-xs mt-1 text-secondary">{projeto.progress}%</span>
+                <Progress value={localProjeto.progress} className="h-2 bg-[#191933]" />
+                <span className="block text-xs mt-1 text-secondary">{localProjeto.progress}%</span>
               </div>
               <div className="space-y-1 text-xs text-secondary/80">
-                <div>Criado: <span>{formatDate(projeto.created_at)}</span></div>
-                <div>Prazo: <span>{formatDate(projeto.deadline)}</span></div>
-                <div>Última At.: <span>{formatDate(projeto.created_at)}</span></div>
+                <div>Criado: <span>{formatDate(localProjeto.created_at)}</span></div>
+                <div>Prazo: <span>{formatDate(localProjeto.deadline)}</span></div>
+                <div>Última At.: <span>{formatDate(localProjeto.created_at)}</span></div>
               </div>
             </div>
           </div>
@@ -603,15 +739,15 @@ export function DrawerDetalheProjeto({ projeto, open, onOpenChange, onProjectUpd
       <AthenaProjectSuggestion 
         open={isAthenaDialogOpen}
         onOpenChange={setIsAthenaDialogOpen}
-        projectId={projeto.id}
-        projectName={projeto.name}
-        projectDescription={projeto.description}
+        projectId={localProjeto.id}
+        projectName={localProjeto.name}
+        projectDescription={localProjeto.description}
       />
       
       {/* Modo Foco */}
       {isModoFocoAtivo && (
         <ProjetoModoFoco 
-          projeto={projeto}
+          projeto={localProjeto}
           onClose={() => setIsModoFocoAtivo(false)}
           onToggleEtapa={handleToggleEtapa}
         />
