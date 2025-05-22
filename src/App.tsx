@@ -33,8 +33,28 @@ import Insights from "./pages/Insights";
 import AdminDashboard from "./pages/AdminDashboard";
 import Integracoes from "./pages/Integracoes";
 import NotFound from "./pages/NotFound";
+import { useEffect } from "react";
+import { enableRealtimeForMultipleTables } from "./utils/supabaseUtils";
+import { ReactNode } from "react";
 
 const queryClient = new QueryClient();
+
+// Component to initialize Supabase realtime subscriptions
+interface InitializeRealtimeProps {
+  children: ReactNode;
+}
+
+function InitializeRealtime({ children }: InitializeRealtimeProps) {
+  useEffect(() => {
+    // Initialize realtime for key tables
+    enableRealtimeForMultipleTables([
+      'projects',
+      'project_steps',
+    ]);
+  }, []);
+
+  return <>{children}</>;
+}
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -44,46 +64,48 @@ const App = () => (
           <Toaster />
           <Sonner />
           <BrowserRouter>
-            <MainLayout>
-              <Routes>
-                {/* Rotas públicas */}
-                <Route path="/login" element={<Login />} />
-                <Route path="/landing" element={<Landing />} />
-                
-                {/* Rota protegida padrão (requer autenticação) */}
-                <Route element={<PrivateRoute />}>
-                  <Route path="/" element={<Home />} />
-                  <Route path="/dashboard" element={<Dashboard />} />
-                  <Route path="/onboarding" element={<Onboarding />} />
-                  <Route path="/projetos" element={<Projetos />} />
-                  <Route path="/habitos" element={<Habitos />} />
-                  <Route path="/subcerebros" element={<Subcerebros />} />
-                  <Route path="/mensagens" element={<Mensagens />} />
-                  <Route path="/favoritos" element={<Favoritos />} />
-                  <Route path="/salvos" element={<Salvos />} />
-                  <Route path="/diario" element={<Diario />} />
-                  <Route path="/agenda" element={<Agenda />} />
-                  <Route path="/notificacoes" element={<Notificacoes />} />
-                  <Route path="/perfil" element={<Perfil />} />
-                  <Route path="/configuracoes" element={<Configuracoes />} />
-                  <Route path="/integracoes" element={<Integracoes />} />
-                  <Route path="/planos" element={<Planos />} />
-                  <Route path="/athena" element={<ChatAthena />} />
-                  <Route path="/athena/historico" element={<AthenaHistorico />} />
-                  <Route path="/athena/contexto/:id" element={<AthenaContexto />} />
-                  <Route path="/connecta" element={<Connecta />} />
-                  <Route path="/insights" element={<Insights />} />
-                </Route>
+            <InitializeRealtime>
+              <MainLayout>
+                <Routes>
+                  {/* Rotas públicas */}
+                  <Route path="/login" element={<Login />} />
+                  <Route path="/landing" element={<Landing />} />
+                  
+                  {/* Rota protegida padrão (requer autenticação) */}
+                  <Route element={<PrivateRoute />}>
+                    <Route path="/" element={<Home />} />
+                    <Route path="/dashboard" element={<Dashboard />} />
+                    <Route path="/onboarding" element={<Onboarding />} />
+                    <Route path="/projetos" element={<Projetos />} />
+                    <Route path="/habitos" element={<Habitos />} />
+                    <Route path="/subcerebros" element={<Subcerebros />} />
+                    <Route path="/mensagens" element={<Mensagens />} />
+                    <Route path="/favoritos" element={<Favoritos />} />
+                    <Route path="/salvos" element={<Salvos />} />
+                    <Route path="/diario" element={<Diario />} />
+                    <Route path="/agenda" element={<Agenda />} />
+                    <Route path="/notificacoes" element={<Notificacoes />} />
+                    <Route path="/perfil" element={<Perfil />} />
+                    <Route path="/configuracoes" element={<Configuracoes />} />
+                    <Route path="/integracoes" element={<Integracoes />} />
+                    <Route path="/planos" element={<Planos />} />
+                    <Route path="/athena" element={<ChatAthena />} />
+                    <Route path="/athena/historico" element={<AthenaHistorico />} />
+                    <Route path="/athena/contexto/:id" element={<AthenaContexto />} />
+                    <Route path="/connecta" element={<Connecta />} />
+                    <Route path="/insights" element={<Insights />} />
+                  </Route>
 
-                {/* Rota protegida de admin */}
-                <Route element={<PrivateRoute requiredRole="admin" />}>
-                  <Route path="/admin/dashboard" element={<AdminDashboard />} />
-                </Route>
-                
-                {/* Rota de captura para URLs não encontradas */}
-                <Route path="*" element={<NotFound />} />
-              </Routes>
-            </MainLayout>
+                  {/* Rota protegida de admin */}
+                  <Route element={<PrivateRoute requiredRole="admin" />}>
+                    <Route path="/admin/dashboard" element={<AdminDashboard />} />
+                  </Route>
+                  
+                  {/* Rota de captura para URLs não encontradas */}
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
+              </MainLayout>
+            </InitializeRealtime>
           </BrowserRouter>
         </TooltipProvider>
       </AuthProvider>

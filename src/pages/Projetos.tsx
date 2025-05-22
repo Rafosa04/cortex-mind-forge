@@ -19,12 +19,17 @@ import { toast } from "@/hooks/use-toast";
 const modosVisao = ["Lista", "Kanban", "Linha do tempo", "Galeria"] as const;
 type ModoVisao = typeof modosVisao[number];
 
+// Status types for projects
+const STATUS_OPTIONS = ["ativo", "pausado", "concluído"] as const;
+type StatusOption = typeof STATUS_OPTIONS[number];
+
 export default function Projetos() {
   const [modalAberto, setModalAberto] = useState(false);
   const [detalheAberto, setDetalheAberto] = useState(false);
   const [projetoSelecionado, setProjetoSelecionado] = useState<ProjectWithSteps | null>(null);
   const [modoVisao, setModoVisao] = useState<ModoVisao>("Lista");
   const [abrirAthena, setAbrirAthena] = useState(false);
+  const [draggingProject, setDraggingProject] = useState<string | null>(null);
   const navigate = useNavigate();
   
   // Get all projects data and functions from the hook
@@ -36,6 +41,7 @@ export default function Projetos() {
     carregarProjetos, 
     removerProjeto,
     toggleFavoritoProjeto,
+    atualizarStatusProjeto,
     filterText,
     setFilterText,
     filterTags,
@@ -88,6 +94,33 @@ export default function Projetos() {
   const handleAthenaAction = (action: string) => {
     if (action === "open_chat") {
       navigate("/athena");
+    }
+  };
+  
+  // Drag and drop handling
+  const handleDragStart = (projectId: string) => {
+    setDraggingProject(projectId);
+  };
+  
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+  };
+
+  const handleDrop = (e: React.DragEvent, newStatus: StatusOption) => {
+    e.preventDefault();
+    
+    if (draggingProject) {
+      const projectToUpdate = projetos.find(p => p.id === draggingProject);
+      
+      if (projectToUpdate && projectToUpdate.status !== newStatus) {
+        atualizarStatusProjeto(draggingProject, newStatus);
+        toast({
+          title: "Status atualizado",
+          description: `Projeto movido para ${newStatus}`
+        });
+      }
+      
+      setDraggingProject(null);
     }
   };
 
@@ -210,8 +243,13 @@ export default function Projetos() {
           {/* Kanban */}
           {modoVisao === "Kanban" && (
             <div className="flex flex-col md:flex-row gap-4 md:gap-6 mt-1 fade-in min-h-[350px] overflow-x-auto pb-4">
-              {["ativo", "pausado", "concluído"].map((status) => (
-                <div key={status} className="flex-1 min-w-[250px] bg-[#191933]/70 rounded-xl p-4">
+              {STATUS_OPTIONS.map((status) => (
+                <div 
+                  key={status} 
+                  className="flex-1 min-w-[250px] bg-[#191933]/70 rounded-xl p-4"
+                  onDragOver={handleDragOver}
+                  onDrop={(e) => handleDrop(e, status as StatusOption)}
+                >
                   <div className="font-bold text-secondary mb-3 capitalize">{status}</div>
                   
                   {loading ? (
@@ -220,18 +258,27 @@ export default function Projetos() {
                       <Skeleton className="h-32 w-full bg-[#141429]/90" />
                     </div>
                   ) : getProjetosPorStatus(status).length === 0 ? (
-                    <div className="text-secondary/60 italic">Sem projetos neste status.</div>
+                    <div className="text-secondary/60 italic text-sm min-h-[100px] flex items-center justify-center border border-dashed border-[#60B5B5]/20 rounded-lg">
+                      Arraste projetos para aqui
+                    </div>
                   ) : (
-                    <div className="flex flex-col gap-4">
+                    <div className="flex flex-col gap-3">
                       {getProjetosPorStatus(status).map((projeto) => (
-                        <ProjetoCard
+                        <div
                           key={projeto.id}
-                          projeto={projeto}
-                          onVerDetalhes={handleVerDetalhes}
-                          onRemoveProjeto={handleRemoveProjeto}
-                          onToggleFavorite={handleToggleFavorite}
-                          onSugerirEtapa={handleSugerirEtapa}
-                        />
+                          draggable
+                          onDragStart={() => handleDragStart(projeto.id)}
+                        >
+                          <ProjetoCard
+                            projeto={projeto}
+                            onVerDetalhes={handleVerDetalhes}
+                            onRemoveProjeto={handleRemoveProjeto}
+                            onToggleFavorite={handleToggleFavorite}
+                            onSugerirEtapa={handleSugerirEtapa}
+                            variant="compact"
+                            isDragging={draggingProject === projeto.id}
+                          />
+                        </div>
                       ))}
                     </div>
                   )}

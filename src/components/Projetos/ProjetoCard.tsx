@@ -22,6 +22,8 @@ type Props = {
   onRemoveProjeto?: (id: string) => Promise<boolean>;
   onToggleFavorite?: (id: string, isFavorite: boolean) => Promise<boolean>;
   onSugerirEtapa?: (projeto: ProjectWithSteps) => void;
+  variant?: "default" | "compact";
+  isDragging?: boolean;
 };
 
 export function ProjetoCard({ 
@@ -29,7 +31,9 @@ export function ProjetoCard({
   onVerDetalhes,
   onRemoveProjeto,
   onToggleFavorite,
-  onSugerirEtapa
+  onSugerirEtapa,
+  variant = "default",
+  isDragging = false,
 }: Props) {
   const handleRemove = async (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -76,7 +80,44 @@ export function ProjetoCard({
       });
     }
   };
+
+  // Compact variant for kanban view
+  if (variant === "compact") {
+    return (
+      <motion.div
+        className={`rounded-xl bg-[#141429]/90 border ${projeto.is_favorite ? 'border-[#993887]' : 'border-[#191933]'} shadow-lg p-4 flex flex-col gap-2 hover:border-[#60B5B5] transition-all cursor-grab ${isDragging ? 'opacity-50 cursor-grabbing' : ''}`}
+        whileHover={{ scale: 1.02, boxShadow: "0 0 8px #60B5B5, 0 0 40px #99388722" }}
+        transition={{ duration: 0.2 }}
+        onClick={() => onVerDetalhes && onVerDetalhes(projeto)}
+      >
+        <div className="flex items-start justify-between">
+          <h3 className="text-base font-bold text-primary drop-shadow-sm line-clamp-1">{projeto.name}</h3>
+          {projeto.is_favorite && <Star className="w-3 h-3 text-[#993887] fill-[#993887]" />}
+        </div>
+        
+        <div className="flex items-center gap-2 mt-1">
+          <Progress 
+            value={projeto.progress} 
+            className="w-[70%] h-2 bg-[#191933] rounded-full" 
+          />
+          <span className="text-xs text-[#E6E6F0]/70">{projeto.progress}%</span>
+        </div>
+        
+        <div className="flex items-center justify-between mt-1">
+          <Button 
+            onClick={() => onVerDetalhes && onVerDetalhes(projeto)} 
+            size="sm" 
+            variant="outline" 
+            className="text-xs flex items-center gap-1 border-primary/50 py-0 h-7"
+          >
+            Ver detalhes <ArrowRight className="w-3 h-3" />
+          </Button>
+        </div>
+      </motion.div>
+    );
+  }
   
+  // Default full card
   return (
     <motion.div
       className={`rounded-2xl bg-[#141429]/90 border ${projeto.is_favorite ? 'border-[#993887]' : 'border-[#191933]'} shadow-xl p-6 flex flex-col gap-3 relative neon-anim hover:scale-[1.025] hover:border-[#60B5B5] transition-transform cursor-pointer group`}
