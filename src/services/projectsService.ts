@@ -1,336 +1,497 @@
+
 import { supabase } from "@/integrations/supabase/client";
-import { Database } from "@/integrations/supabase/types";
 import { toast } from "@/hooks/use-toast";
 
-export type Project = Database['public']['Tables']['projects']['Row'];
-export type ProjectStep = Database['public']['Tables']['project_steps']['Row'];
+export type Project = {
+  id: string;
+  name: string;
+  description: string | null;
+  category: string | null;
+  deadline: string | null;
+  status: "ativo" | "pausado" | "concluído";
+  progress: number;
+  created_at: string;
+  user_id: string;
+  tags: string[] | null;
+  is_favorite: boolean;
+  content: string | null;
+};
+
+export type ProjectStep = {
+  id: string;
+  project_id: string;
+  description: string;
+  done: boolean;
+  order_index: number | null;
+  created_at: string;
+};
 
 export type ProjectWithSteps = Project & {
   steps: ProjectStep[];
 };
 
-const mapProject = (row: any): Project => ({
-  id: row.id,
-  created_at: row.created_at,
-  name: row.name,
-  description: row.description,
-  user_id: row.user_id,
-  status: row.status,
-  progress: row.progress,
-  category: row.category,
-  deadline: row.deadline,
-  content: row.content,
-  is_favorite: row.is_favorite,
-  tags: row.tags
-});
-
-const mapProjectStep = (row: any): ProjectStep => ({
-  id: row.id,
-  created_at: row.created_at,
-  project_id: row.project_id,
-  description: row.description,
-  done: row.done,
-  order_index: row.order_index || 0 // Providing a default of 0 for order_index
-});
-
 export const projectsService = {
-  async getProjetos(): Promise<Project[]> {
-    try {
-      const { data, error } = await supabase
-        .from('projects')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (error) {
-        console.error("Erro ao buscar projetos:", error);
-        throw new Error(error.message);
-      }
-
-      return data ? data.map(mapProject) : [];
-    } catch (error: any) {
-      console.error("Erro inesperado ao buscar projetos:", error);
-      throw new Error(error.message);
-    }
-  },
-
   async getProjetosComEtapas(): Promise<ProjectWithSteps[]> {
     try {
-      const { data, error } = await supabase
-        .from('projects')
-        .select(`
-          *,
-          project_steps (
-            id,
-            created_at,
-            project_id,
-            description,
-            done,
-            order_index
-          )
-        `)
-        .order('created_at', { ascending: false });
-
-      if (error) {
-        console.error("Erro ao buscar projetos com etapas:", error);
-        throw new Error(error.message);
-      }
-
-      return data ? data.map(project => ({
-        ...mapProject(project),
-        steps: (project.project_steps || []).map(mapProjectStep)
-      })) : [];
-    } catch (error: any) {
-      console.error("Erro inesperado ao buscar projetos com etapas:", error);
-      throw new Error(error.message);
-    }
-  },
-
-  async criarProjeto(
-    name: string,
-    description: string,
-    category?: string | null,
-    status: "ativo" | "pausado" | "concluído" = "ativo",
-    deadline?: string | null,
-    tags: string[] = []
-  ): Promise<Project | null> {
-    try {
-      const { data: userData } = await supabase.auth.getUser();
-      const user_id = userData.user?.id;
+      // Get current user
+      const { data: { user } } = await supabase.auth.getUser();
       
-      if (!user_id) {
-        throw new Error("User not authenticated");
+      if (!user) {
+        throw new Error("Usuário não autenticado");
       }
       
-      const { data, error } = await supabase
-        .from('projects')
-        .insert([
-          { name, description, status, category, deadline, tags, user_id }
-        ])
-        .select('*')
-        .single();
+      // Fetch projects for the current user
+      const { data: projects, error: projectsError } = await supabase
+        .from("projects")
+        .select("*")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false });
 
-      if (error) {
-        console.error("Erro ao criar projeto:", error);
-        throw new Error(error.message);
+      if (projectsError) {
+        throw projectsError;
       }
 
-      return data ? mapProject(data) : null;
+      if (!projects || projects.length === 0) {
+        return [];
+      }
+
+      // Fetch steps for all projects
+      const projectIds = projects.map(project => project.id);
+      const { data: steps, error: stepsError } = await supabase
+        .from("project_steps")
+        .select("*")
+        .in("project_id", projectIds)
+        .order("order_index", { ascending: true, nullsFirst: false });
+
+      if (stepsError) {
+        throw stepsError;
+      }
+
+      // Combine projects with their steps and calculate progress
+      const projectsWithSteps = projects.map(project => {
+        const projectSteps = steps?.filter(step => step.project_id === project.id) || [];
+        
+        // Calculate progress based on completed steps if we have steps
+        let calculatedProgress = project.progress || 0;
+        if (projectSteps.length > 0) {
+          const completedSteps = projectSteps.filter(step => step.done).length;
+          calculatedProgress = Math.round((completedSteps / projectSteps.length) * 100);
+        }
+        
+        return {
+          ...project,
+          steps: projectSteps,
+          progress: calculatedProgress,
+          // Ensure status is one of the allowed values
+          status: (project.status as "ativo" | "pausado" | "concluído") || "ativo",
+          // Ensure tags is an array
+          tags: project.tags || []
+        } as ProjectWithSteps;
+      });
+
+      return projectsWithSteps as ProjectWithSteps[];
     } catch (error: any) {
-      console.error("Erro inesperado ao criar projeto:", error);
-      throw new Error(error.message);
+      console.error("Error fetching projects:", error);
+      toast({
+        title: "Erro ao carregar projetos",
+        description: error.message || "Ocorreu um erro ao carregar seus projetos",
+        variant: "destructive",
+      });
+      return [];
     }
   },
 
   async criarProjetoComEtapas(
     name: string,
     description: string,
-    category?: string | null,
+    category: string | null = null,
     status: "ativo" | "pausado" | "concluído" = "ativo",
-    deadline?: string | null,
+    deadline: string | null = null,
     etapas: { texto: string; feita: boolean }[] = [],
     tags: string[] = []
   ): Promise<ProjectWithSteps | null> {
     try {
-      // 1. Create the project
-      const project = await this.criarProjeto(name, description, category, status, deadline, tags);
+      // Get the current user's ID
+      const { data: { user } } = await supabase.auth.getUser();
       
+      if (!user) {
+        throw new Error("Usuário não autenticado");
+      }
+      
+      // Create project first
+      const { data: project, error: projectError } = await supabase
+        .from("projects")
+        .insert({
+          name,
+          description,
+          category,
+          status,
+          deadline,
+          progress: 0, // Will calculate after adding steps
+          user_id: user.id,
+          tags: tags,
+          is_favorite: false
+        })
+        .select()
+        .single();
+
+      if (projectError) {
+        throw projectError;
+      }
+
       if (!project) {
-        console.error("Failed to create project");
-        return null;
+        throw new Error("Falha ao criar projeto");
       }
-      
-      // 2. Create the steps for the project
-      const steps = [];
-      for (const etapa of etapas) {
-        const newStep = await this.adicionarEtapaProjeto(project.id, etapa.texto, etapa.feita);
-        if (newStep) {
-          steps.push(newStep);
+
+      // Create steps if any
+      if (etapas.length > 0) {
+        const stepsToInsert = etapas.map((etapa, index) => ({
+          project_id: project.id,
+          description: etapa.texto,
+          done: etapa.feita,
+          order_index: index,
+        }));
+
+        const { data: steps, error: stepsError } = await supabase
+          .from("project_steps")
+          .insert(stepsToInsert)
+          .select();
+
+        if (stepsError) {
+          throw stepsError;
         }
+
+        // Calculate and update progress
+        const completedSteps = etapas.filter(etapa => etapa.feita).length;
+        const progress = etapas.length > 0 ? Math.round((completedSteps / etapas.length) * 100) : 0;
+
+        // Update project with calculated progress
+        const { error: updateError } = await supabase
+          .from("projects")
+          .update({ progress })
+          .eq("id", project.id);
+
+        if (updateError) {
+          throw updateError;
+        }
+
+        return {
+          ...project,
+          steps: steps || [],
+          progress,
+          // Ensure status is one of the allowed values
+          status: (project.status as "ativo" | "pausado" | "concluído"),
+          tags: project.tags || []
+        } as ProjectWithSteps;
       }
-      
-      // 3. Return the project with its steps
+
       return {
         ...project,
-        steps: steps
-      };
+        steps: [],
+        progress: 0,
+        // Ensure status is one of the allowed values
+        status: (project.status as "ativo" | "pausado" | "concluído"),
+        tags: project.tags || []
+      } as ProjectWithSteps;
     } catch (error: any) {
-      console.error("Error creating project with steps:", error);
-      throw new Error(error.message);
+      console.error("Error creating project:", error);
+      toast({
+        title: "Erro ao criar projeto",
+        description: error.message || "Ocorreu um erro ao criar o projeto",
+        variant: "destructive",
+      });
+      return null;
     }
   },
 
-  async atualizarEtapa(etapaId: string, done: boolean): Promise<boolean> {
+  async atualizarEtapa(stepId: string, done: boolean): Promise<boolean> {
     try {
-      const { error } = await supabase
-        .from('project_steps')
+      const { data: step, error: stepError } = await supabase
+        .from("project_steps")
         .update({ done })
-        .eq('id', etapaId);
+        .eq("id", stepId)
+        .select()
+        .single();
 
-      if (error) {
-        console.error("Erro ao atualizar etapa:", error);
-        throw new Error(error.message);
+      if (stepError) {
+        throw stepError;
+      }
+
+      // Get all steps for this project to recalculate progress
+      const { data: projectSteps, error: stepsError } = await supabase
+        .from("project_steps")
+        .select("*")
+        .eq("project_id", step.project_id);
+
+      if (stepsError) {
+        throw stepsError;
+      }
+
+      // Calculate new progress
+      const completedSteps = projectSteps?.filter(s => s.done).length || 0;
+      const totalSteps = projectSteps?.length || 0;
+      const progress = totalSteps > 0 ? Math.round((completedSteps / totalSteps) * 100) : 0;
+
+      // Update project progress
+      const { error: updateError } = await supabase
+        .from("projects")
+        .update({ progress })
+        .eq("id", step.project_id);
+
+      if (updateError) {
+        throw updateError;
       }
 
       return true;
     } catch (error: any) {
-      console.error("Erro inesperado ao atualizar etapa:", error);
-      throw new Error(error.message);
+      console.error("Error updating step:", error);
+      toast({
+        title: "Erro ao atualizar etapa",
+        description: error.message || "Ocorreu um erro ao atualizar a etapa",
+        variant: "destructive",
+      });
+      return false;
     }
   },
 
-  async atualizarStatusProjeto(projetoId: string, status: "ativo" | "pausado" | "concluído"): Promise<boolean> {
+  async atualizarStatusProjeto(projectId: string, status: "ativo" | "pausado" | "concluído"): Promise<boolean> {
     try {
       const { error } = await supabase
-        .from('projects')
+        .from("projects")
         .update({ status })
-        .eq('id', projetoId);
+        .eq("id", projectId);
 
       if (error) {
-        console.error("Erro ao atualizar status do projeto:", error);
-        throw new Error(error.message);
+        throw error;
       }
 
       return true;
     } catch (error: any) {
-      console.error("Erro inesperado ao atualizar status do projeto:", error);
-      throw new Error(error.message);
+      console.error("Error updating project status:", error);
+      toast({
+        title: "Erro ao atualizar status",
+        description: error.message || "Ocorreu um erro ao atualizar o status do projeto",
+        variant: "destructive",
+      });
+      return false;
     }
   },
 
-  async toggleFavoritoProjeto(projetoId: string, is_favorite: boolean): Promise<boolean> {
+  async toggleFavoritoProjeto(projectId: string, isFavorite: boolean): Promise<boolean> {
     try {
       const { error } = await supabase
-        .from('projects')
-        .update({ is_favorite })
-        .eq('id', projetoId);
+        .from("projects")
+        .update({ is_favorite: isFavorite })
+        .eq("id", projectId);
 
       if (error) {
-        console.error("Erro ao atualizar favorito do projeto:", error);
-        throw new Error(error.message);
+        throw error;
       }
 
       return true;
     } catch (error: any) {
-      console.error("Erro inesperado ao atualizar favorito do projeto:", error);
-      throw new Error(error.message);
+      console.error("Error updating favorite status:", error);
+      toast({
+        title: "Erro ao atualizar favorito",
+        description: error.message || "Ocorreu um erro ao atualizar o status de favorito",
+        variant: "destructive",
+      });
+      return false;
     }
   },
 
-  async atualizarConteudoProjeto(projetoId: string, content: string): Promise<boolean> {
+  async atualizarConteudoProjeto(projectId: string, content: string): Promise<boolean> {
     try {
       const { error } = await supabase
-        .from('projects')
+        .from("projects")
         .update({ content })
-        .eq('id', projetoId);
+        .eq("id", projectId);
 
       if (error) {
-        console.error("Erro ao atualizar conteúdo do projeto:", error);
-        throw new Error(error.message);
+        throw error;
       }
 
       return true;
     } catch (error: any) {
-      console.error("Erro inesperado ao atualizar conteúdo do projeto:", error);
-      throw new Error(error.message);
+      console.error("Error updating project content:", error);
+      toast({
+        title: "Erro ao atualizar conteúdo",
+        description: error.message || "Ocorreu um erro ao atualizar o conteúdo do projeto",
+        variant: "destructive",
+      });
+      return false;
     }
   },
 
-  async adicionarEtapaProjeto(projetoId: string, description: string, done: boolean = false): Promise<ProjectStep | null> {
+  async adicionarEtapaProjeto(projectId: string, description: string): Promise<ProjectStep | null> {
     try {
-      const { data, error } = await supabase
-        .from('project_steps')
-        .insert([{ project_id: projetoId, description, done }])
-        .select('*')
+      // Get current highest order_index
+      const { data: highestStep, error: queryError } = await supabase
+        .from("project_steps")
+        .select("order_index")
+        .eq("project_id", projectId)
+        .order("order_index", { ascending: false })
+        .limit(1);
+
+      const nextIndex = (highestStep && highestStep.length > 0 && highestStep[0].order_index !== null)
+        ? highestStep[0].order_index + 1
+        : 0;
+
+      const { data: step, error } = await supabase
+        .from("project_steps")
+        .insert({
+          project_id: projectId,
+          description,
+          done: false,
+          order_index: nextIndex
+        })
+        .select()
         .single();
 
       if (error) {
-        console.error("Erro ao adicionar etapa ao projeto:", error);
-        throw new Error(error.message);
+        throw error;
       }
 
-      return data ? mapProjectStep(data) : null;
+      // Recalculate project progress
+      await this.recalculateProjectProgress(projectId);
+
+      return step;
     } catch (error: any) {
-      console.error("Erro inesperado ao adicionar etapa ao projeto:", error);
-      throw new Error(error.message);
+      console.error("Error adding step:", error);
+      toast({
+        title: "Erro ao adicionar etapa",
+        description: error.message || "Ocorreu um erro ao adicionar a etapa",
+        variant: "destructive",
+      });
+      return null;
     }
   },
 
-  async removerEtapaProjeto(etapaId: string): Promise<boolean> {
+  async removerEtapaProjeto(stepId: string): Promise<boolean> {
     try {
+      // Get project_id before deleting
+      const { data: step, error: getError } = await supabase
+        .from("project_steps")
+        .select("project_id")
+        .eq("id", stepId)
+        .single();
+
+      if (getError) {
+        throw getError;
+      }
+
+      const projectId = step.project_id;
+
+      // Delete the step
       const { error } = await supabase
-        .from('project_steps')
+        .from("project_steps")
         .delete()
-        .eq('id', etapaId);
+        .eq("id", stepId);
 
       if (error) {
-        console.error("Erro ao remover etapa do projeto:", error);
-        throw new Error(error.message);
+        throw error;
       }
+
+      // Recalculate project progress
+      await this.recalculateProjectProgress(projectId);
 
       return true;
     } catch (error: any) {
-      console.error("Erro inesperado ao remover etapa do projeto:", error);
-      throw new Error(error.message);
+      console.error("Error removing step:", error);
+      toast({
+        title: "Erro ao remover etapa",
+        description: error.message || "Ocorreu um erro ao remover a etapa",
+        variant: "destructive",
+      });
+      return false;
     }
   },
 
-  async removerProjeto(projetoId: string): Promise<boolean> {
+  async removerProjeto(projectId: string): Promise<boolean> {
     try {
-      // First, delete all steps related to the project
+      // First, delete all steps for this project
       const { error: stepsError } = await supabase
-        .from('project_steps')
+        .from("project_steps")
         .delete()
-        .eq('project_id', projetoId);
+        .eq("project_id", projectId);
 
       if (stepsError) {
-        console.error("Erro ao remover etapas do projeto:", stepsError);
-        throw new Error(stepsError.message);
+        throw stepsError;
       }
 
-      // Then, delete the project itself
-      const { error: projectError } = await supabase
-        .from('projects')
-        .delete()
-        .eq('id', projetoId);
-
-      if (projectError) {
-        console.error("Erro ao remover projeto:", projectError);
-        throw new Error(projectError.message);
-      }
-
-      toast({
-        title: "Projeto removido",
-        description: "O projeto foi removido com sucesso"
-      });
-
-      return true;
-    } catch (error: any) {
-      console.error("Erro inesperado ao remover projeto:", error);
-      throw new Error(error.message);
-    }
-  },
-
-  async atualizarTagsProjeto(projetoId: string, tags: string[]): Promise<boolean> {
-    try {
+      // Then delete the project
       const { error } = await supabase
-        .from('projects')
-        .update({ tags: tags })
-        .eq('id', projetoId);
+        .from("projects")
+        .delete()
+        .eq("id", projectId);
 
       if (error) {
-        console.error("Erro ao atualizar tags do projeto:", error);
-        throw new Error(error.message);
+        throw error;
       }
-
-      toast({
-        title: "Tags atualizadas",
-        description: "As tags do projeto foram atualizadas"
-      });
 
       return true;
     } catch (error: any) {
-      console.error("Erro inesperado ao atualizar tags do projeto:", error);
-      throw new Error(error.message);
+      console.error("Error removing project:", error);
+      toast({
+        title: "Erro ao remover projeto",
+        description: error.message || "Ocorreu um erro ao remover o projeto",
+        variant: "destructive",
+      });
+      return false;
     }
   },
+
+  async atualizarTagsProjeto(projectId: string, tags: string[]): Promise<boolean> {
+    try {
+      const { error } = await supabase
+        .from("projects")
+        .update({ tags })
+        .eq("id", projectId);
+
+      if (error) {
+        throw error;
+      }
+
+      return true;
+    } catch (error: any) {
+      console.error("Error updating project tags:", error);
+      toast({
+        title: "Erro ao atualizar tags",
+        description: error.message || "Ocorreu um erro ao atualizar as tags do projeto",
+        variant: "destructive",
+      });
+      return false;
+    }
+  },
+
+  async recalculateProjectProgress(projectId: string): Promise<void> {
+    try {
+      // Get all steps for this project
+      const { data: projectSteps, error: stepsError } = await supabase
+        .from("project_steps")
+        .select("*")
+        .eq("project_id", projectId);
+
+      if (stepsError) {
+        throw stepsError;
+      }
+
+      // Calculate new progress
+      const completedSteps = projectSteps?.filter(s => s.done).length || 0;
+      const totalSteps = projectSteps?.length || 0;
+      const progress = totalSteps > 0 ? Math.round((completedSteps / totalSteps) * 100) : 0;
+
+      // Update project progress
+      const { error: updateError } = await supabase
+        .from("projects")
+        .update({ progress })
+        .eq("id", projectId);
+
+      if (updateError) {
+        throw updateError;
+      }
+    } catch (error: any) {
+      console.error("Error recalculating progress:", error);
+    }
+  }
 };

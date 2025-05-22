@@ -1,169 +1,171 @@
 
-// Use an import statement here to import the necessary components
-// from other files in the project
 import React from "react";
-import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
-import { ProjectWithSteps } from "@/services/projectsService";
-import { Bot, Trash2, Star } from "lucide-react";
-import { TagProjeto } from "./TagProjeto";
+import { ArrowRight, Bot, Star, Trash2 } from "lucide-react";
+import { motion } from "framer-motion";
 import { StatusTag } from "./StatusTag";
-import { useDraggable } from "@dnd-kit/core";
+import { TagProjeto } from "./TagProjeto";
+import { Progress } from "@/components/ui/progress";
+import { Button } from "@/components/ui/button";
+import { ProjectWithSteps } from "@/services/projectsService";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { toast } from "@/hooks/use-toast";
+import { saveAthenaLog } from "@/utils/athenaUtils";
 
-type ProjetoStatus = "ativo" | "pausado" | "concluído";
-
-type ProjetoCardProps = {
+type Props = {
   projeto: ProjectWithSteps;
-  onVerDetalhes: (projeto: ProjectWithSteps) => void;
-  onRemoveProjeto: (projetoId: string) => Promise<boolean>;
-  onToggleFavorite: (projetoId: string, isFavorite: boolean) => Promise<boolean>;
-  onSugerirEtapa: (projeto: ProjectWithSteps) => void;
-  draggable?: boolean;
-  isDragging?: boolean;
+  onVerDetalhes?: (projeto: ProjectWithSteps) => void;
+  onRemoveProjeto?: (id: string) => Promise<boolean>;
+  onToggleFavorite?: (id: string, isFavorite: boolean) => Promise<boolean>;
+  onSugerirEtapa?: (projeto: ProjectWithSteps) => void;
 };
 
-export function ProjetoCard({
-  projeto,
+export function ProjetoCard({ 
+  projeto, 
   onVerDetalhes,
   onRemoveProjeto,
   onToggleFavorite,
-  onSugerirEtapa,
-  draggable = false,
-  isDragging = false
-}: ProjetoCardProps) {
-  // Set up draggable functionality if draggable is true
-  const { attributes, listeners, setNodeRef, transform } = useDraggable({
-    id: projeto.id,
-    disabled: !draggable
-  });
-
+  onSugerirEtapa
+}: Props) {
   const handleRemove = async (e: React.MouseEvent) => {
     e.stopPropagation();
+    if (!onRemoveProjeto) return;
+    
     if (confirm(`Tem certeza que deseja remover o projeto "${projeto.name}"?`)) {
       await onRemoveProjeto(projeto.id);
     }
   };
-
+  
   const handleToggleFavorite = async (e: React.MouseEvent) => {
     e.stopPropagation();
+    if (!onToggleFavorite) return;
+    
     await onToggleFavorite(projeto.id, !projeto.is_favorite);
   };
-
-  const handleSugerirEtapa = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    onSugerirEtapa(projeto);
-  };
-
-  // Calculate if project has any completed steps
-  const hasCompletedSteps = projeto.steps && projeto.steps.some(step => step.done);
-  const completedStepsCount = projeto.steps ? projeto.steps.filter(step => step.done).length : 0;
-  const totalStepsCount = projeto.steps ? projeto.steps.length : 0;
   
-  // Style for draggable element
-  const style = transform ? {
-    transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
-    zIndex: isDragging ? 999 : 'auto',
-    opacity: isDragging ? 0.8 : 1,
-    boxShadow: isDragging ? '0 8px 20px rgba(0, 0, 0, 0.3)' : undefined,
-  } : undefined;
-
-  // Make sure projeto.status is properly typed
-  const projectStatus = (projeto.status || "ativo") as ProjetoStatus;
-
+  const handleSugerirEtapa = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    
+    if (onSugerirEtapa) {
+      onSugerirEtapa(projeto);
+    } else {
+      // Fallback if no handler provided
+      toast({
+        title: "Processando...",
+        description: "Solicitando sugestão de etapa para este projeto",
+      });
+      
+      // Create a prompt for Athena
+      const prompt = `Sugira uma próxima etapa para o projeto "${projeto.name}" com a descrição "${projeto.description || 'Sem descrição'}". Etapas atuais: ${projeto.steps.map(s => `"${s.description}"`).join(", ")}`;
+      
+      // Log the interaction for Athena
+      await saveAthenaLog(
+        prompt,
+        "Solicitação de sugestão de etapa registrada. Acesse o assistente Athena para visualizar a resposta completa.",
+        "projeto",
+        projeto.id
+      );
+      
+      toast({
+        title: "Solicitação enviada",
+        description: "Abra Athena para ver a sugestão de etapa para seu projeto",
+      });
+    }
+  };
+  
   return (
-    <div
-      ref={draggable ? setNodeRef : undefined}
-      style={style}
-      {...(draggable ? { ...attributes, ...listeners } : {})}
-      className={draggable ? "touch-manipulation" : ""}
+    <motion.div
+      className={`rounded-2xl bg-[#141429]/90 border ${projeto.is_favorite ? 'border-[#993887]' : 'border-[#191933]'} shadow-xl p-6 flex flex-col gap-3 relative neon-anim hover:scale-[1.025] hover:border-[#60B5B5] transition-transform cursor-pointer group`}
+      whileHover={{ scale: 1.025, boxShadow: "0 0 8px #60B5B5, 0 0 40px #99388722" }}
+      transition={{ duration: 0.23 }}
+      onClick={() => onVerDetalhes && onVerDetalhes(projeto)}
     >
-      <Card 
-        onClick={() => onVerDetalhes(projeto)}
-        className={`cursor-pointer bg-[#141429]/90 border-[#191933] hover:border-[#60B5B5]/40 ${isDragging ? 'scale-105' : ''}`}
-      >
-        <CardHeader className="p-4 pb-2">
-          <div className="flex justify-between">
-            <CardTitle className="text-lg font-bold text-primary line-clamp-1">{projeto.name}</CardTitle>
-            <button onClick={handleToggleFavorite} className="focus:outline-none">
-              <Star 
-                className={`w-5 h-5 ${projeto.is_favorite ? "fill-[#993887] text-[#993887]" : "text-gray-400"} transition-colors duration-300`}
-              />
-            </button>
-          </div>
-          
-          {projeto.description && (
-            <CardDescription className="text-sm text-secondary/80 line-clamp-2 h-10">
-              {projeto.description}
-            </CardDescription>
-          )}
-        </CardHeader>
+      <div className="flex items-start justify-between">
+        <div className="flex items-center gap-2">
+          <span className="text-lg font-bold text-primary drop-shadow-sm">{projeto.name}</span>
+          {projeto.is_favorite && <Star className="w-4 h-4 text-[#993887] fill-[#993887]" />}
+        </div>
+        <StatusTag status={projeto.status} />
+      </div>
+      
+      <div className="flex gap-2 flex-wrap mt-1">
+        {projeto.category && (
+          <TagProjeto key={`category-${projeto.category}`} variant="primary">{projeto.category}</TagProjeto>
+        )}
+        {projeto.tags && projeto.tags.map((tag) => (
+          <TagProjeto key={`tag-${tag}`} variant="secondary">{tag}</TagProjeto>
+        ))}
+      </div>
+      
+      <div className="flex items-center gap-3 mt-2">
+        <Progress 
+          value={projeto.progress} 
+          className="w-[70%] h-3 bg-[#191933] rounded-full" 
+        />
+        <span className="text-xs text-[#E6E6F0]/70">{projeto.progress}%</span>
+      </div>
+      
+      <div className="flex items-center justify-between mt-2">
+        <Button 
+          onClick={() => onVerDetalhes && onVerDetalhes(projeto)} 
+          size="sm" 
+          variant="outline" 
+          className="group/button text-xs flex items-center gap-1 border-primary/50 shadow-glow transition hover:bg-primary/90 hover:text-[#0C0C1C]"
+        >
+          Ver detalhes <ArrowRight className="w-4 h-4" />
+        </Button>
         
-        <CardContent className="p-4 pt-0">
-          {/* Tags */}
-          {projeto.tags && projeto.tags.length > 0 && (
-            <div className="flex flex-wrap gap-1 mb-3">
-              {projeto.tags.slice(0, 3).map((tag) => (
-                <TagProjeto key={tag}>{tag}</TagProjeto>
-              ))}
-              {projeto.tags.length > 3 && (
-                <span className="text-xs text-secondary/70">+{projeto.tags.length - 3}</span>
-              )}
-            </div>
-          )}
-          
-          {/* Status and Progress */}
-          <div className="flex justify-between items-center mb-3">
-            <StatusTag status={projectStatus} />
-            
-            <div className="text-xs text-secondary/80">
-              {totalStepsCount > 0 ? (
-                <span>{completedStepsCount}/{totalStepsCount} etapas</span>
-              ) : (
-                <span>Sem etapas</span>
-              )}
-            </div>
-          </div>
-          
-          {/* Progress Bar */}
-          <Progress value={projeto.progress} className="h-1.5 mb-3" />
-          
-          {/* Actions */}
-          <div className="flex justify-between items-center mt-3">
-            <Button 
-              size="sm"
-              variant="ghost" 
-              className="text-xs px-2 py-1 h-7 hover:bg-[#60B5B5]/10 hover:text-primary border border-transparent hover:border-[#60B5B5]/20"
-              onClick={(e) => {
-                e.stopPropagation();
-                onVerDetalhes(projeto);
-              }}
-            >
-              Ver detalhes
-            </Button>
-            
-            <div className="flex gap-1">
+        <div className="flex items-center gap-2">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
               <Button 
-                size="icon"
+                size="icon" 
                 variant="ghost" 
-                className="h-7 w-7 hover:bg-[#993887]/10 hover:text-[#993887]"
-                onClick={handleSugerirEtapa}
+                className="text-primary hover:bg-primary/10 h-8 w-8"
+                onClick={(e) => e.stopPropagation()}
               >
-                <Bot className="h-4 w-4" />
+                <span className="sr-only">Opções</span>
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="1" />
+                  <circle cx="12" cy="5" r="1" />
+                  <circle cx="12" cy="19" r="1" />
+                </svg>
               </Button>
-              
-              <Button 
-                size="icon"
-                variant="ghost" 
-                className="h-7 w-7 hover:bg-red-500/10 hover:text-red-400"
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="bg-[#191933] border-[#60B5B5]/40">
+              <DropdownMenuItem 
+                className="flex items-center gap-2 cursor-pointer"
+                onClick={handleToggleFavorite}
+              >
+                <Star className="w-4 h-4" />
+                {projeto.is_favorite ? "Remover dos favoritos" : "Adicionar aos favoritos"}
+              </DropdownMenuItem>
+              <DropdownMenuItem 
+                className="flex items-center gap-2 cursor-pointer text-red-400"
                 onClick={handleRemove}
               >
-                <Trash2 className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
+                <Trash2 className="w-4 h-4" />
+                Remover projeto
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+          
+          <Button 
+            size="icon" 
+            variant="ghost" 
+            className="text-primary hover:bg-primary/10 h-8 w-8" 
+            title="Sugerir nova etapa"
+            onClick={handleSugerirEtapa}
+          >
+            <span className="sr-only">Sugerir nova etapa</span>
+            <Bot className="w-4 h-4" />
+          </Button>
+        </div>
+      </div>
+    </motion.div>
   );
 }

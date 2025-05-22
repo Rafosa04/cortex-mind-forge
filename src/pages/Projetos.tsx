@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { FiltroProjetos } from "@/components/Projetos/FiltroProjetos";
@@ -13,8 +14,6 @@ import { ProjectWithSteps } from "@/services/projectsService";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useNavigate } from "react-router-dom";
 import { toast } from "@/hooks/use-toast";
-import { KanbanView } from "@/components/Projetos/KanbanView";
-import { supabase } from "@/integrations/supabase/client";
 
 // Modos de visualização possíveis, com type literal
 const modosVisao = ["Lista", "Kanban", "Linha do tempo", "Galeria"] as const;
@@ -37,7 +36,6 @@ export default function Projetos() {
     carregarProjetos, 
     removerProjeto,
     toggleFavoritoProjeto,
-    atualizarStatusProjeto,
     filterText,
     setFilterText,
     filterTags,
@@ -48,46 +46,6 @@ export default function Projetos() {
 
   // Extract all unique tags from projects for filtering
   const [availableTags, setAvailableTags] = useState<string[]>([]);
-
-  // Set up realtime subscription for projects updates
-  useEffect(() => {
-    const channel = supabase
-      .channel('project-changes')
-      .on('postgres_changes', 
-        { 
-          event: '*', 
-          schema: 'public', 
-          table: 'projects' 
-        }, 
-        (payload) => {
-          // Refresh projects when changes are detected
-          // Check if the payload has old and new properties
-          const oldData = payload.old as Record<string, any> || {};
-          const newData = payload.new as Record<string, any> || {};
-          
-          // Only refresh if the user_id is different or not comparing the same project
-          if (oldData?.user_id !== newData?.user_id) {
-            carregarProjetos();
-          }
-        }
-      )
-      .on('postgres_changes', 
-        { 
-          event: '*', 
-          schema: 'public', 
-          table: 'project_steps' 
-        }, 
-        () => {
-          // Refresh projects when steps are updated
-          carregarProjetos();
-        }
-      )
-      .subscribe();
-      
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [carregarProjetos]);
 
   useEffect(() => {
     if (allProjetos.length) {
@@ -120,10 +78,6 @@ export default function Projetos() {
 
   const handleToggleFavorite = async (projetoId: string, isFavorite: boolean) => {
     return await toggleFavoritoProjeto(projetoId, isFavorite);
-  };
-
-  const handleUpdateStatus = async (projetoId: string, status: "ativo" | "pausado" | "concluído") => {
-    return await atualizarStatusProjeto(projetoId, status);
   };
 
   const handleSugerirEtapa = (projeto: ProjectWithSteps) => {
@@ -255,15 +209,35 @@ export default function Projetos() {
           
           {/* Kanban */}
           {modoVisao === "Kanban" && (
-            <KanbanView 
-              projetos={projetos}
-              onVerDetalhes={handleVerDetalhes}
-              onRemoveProjeto={handleRemoveProjeto}
-              onToggleFavorite={handleToggleFavorite}
-              onSugerirEtapa={handleSugerirEtapa}
-              onUpdateStatus={handleUpdateStatus}
-              loading={loading}
-            />
+            <div className="flex flex-col md:flex-row gap-4 md:gap-6 mt-1 fade-in min-h-[350px] overflow-x-auto pb-4">
+              {["ativo", "pausado", "concluído"].map((status) => (
+                <div key={status} className="flex-1 min-w-[250px] bg-[#191933]/70 rounded-xl p-4">
+                  <div className="font-bold text-secondary mb-3 capitalize">{status}</div>
+                  
+                  {loading ? (
+                    <div className="space-y-4">
+                      <Skeleton className="h-32 w-full bg-[#141429]/90" />
+                      <Skeleton className="h-32 w-full bg-[#141429]/90" />
+                    </div>
+                  ) : getProjetosPorStatus(status).length === 0 ? (
+                    <div className="text-secondary/60 italic">Sem projetos neste status.</div>
+                  ) : (
+                    <div className="flex flex-col gap-4">
+                      {getProjetosPorStatus(status).map((projeto) => (
+                        <ProjetoCard
+                          key={projeto.id}
+                          projeto={projeto}
+                          onVerDetalhes={handleVerDetalhes}
+                          onRemoveProjeto={handleRemoveProjeto}
+                          onToggleFavorite={handleToggleFavorite}
+                          onSugerirEtapa={handleSugerirEtapa}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
           )}
           
           {/* Linha do tempo */}
