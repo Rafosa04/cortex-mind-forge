@@ -37,12 +37,7 @@ export function NodeTooltip({ node, position, visible, onView, onEdit, onExpand 
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.8, y: 10 }}
         transition={{ duration: 0.2, ease: "easeOut" }}
-        className="fixed z-50 pointer-events-auto"
-        style={{
-          left: position.x + 10,
-          top: position.y - 10,
-          maxWidth: '320px'
-        }}
+        className="pointer-events-auto"
       >
         <div className="bg-background/95 backdrop-blur-md border border-border/50 rounded-lg p-4 shadow-2xl">
           {/* Header */}

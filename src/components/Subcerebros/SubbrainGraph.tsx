@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef, useCallback } from 'react';
 import ForceGraph2D from 'react-force-graph-2d';
 import { motion } from 'framer-motion';
 import { NodeTooltip } from './NodeTooltip';
-import { Maximize } from 'lucide-react';
+import { Maximize, Minimize } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import * as d3 from 'd3-force';
 
@@ -253,14 +253,21 @@ export function SubbrainGraph({ graphData, onNodeClick }: SubbrainGraphProps) {
   
   const handleNodeHover = (node: GraphNode | null, event: any) => {
     if (event && node) {
-      // Get the container position for better tooltip positioning
-      const container = containerRef.current;
-      if (container) {
-        const containerRect = container.getBoundingClientRect();
+      // Get mouse position relative to the viewport for better positioning
+      const rect = event.target.getBoundingClientRect();
+      const canvas = fgRef.current?.canvas();
+      
+      if (canvas) {
+        const canvasRect = canvas.getBoundingClientRect();
         
         setTooltipPosition({
-          x: event.pageX - containerRect.left,
-          y: event.pageY - containerRect.top
+          x: event.clientX - canvasRect.left,
+          y: event.clientY - canvasRect.top
+        });
+      } else {
+        setTooltipPosition({
+          x: event.clientX,
+          y: event.clientY
         });
       }
     }
@@ -284,8 +291,24 @@ export function SubbrainGraph({ graphData, onNodeClick }: SubbrainGraphProps) {
   };
 
   const toggleFullscreen = () => {
-    setIsFullscreen(!isFullscreen);
+    const newFullscreenState = !isFullscreen;
+    setIsFullscreen(newFullscreenState);
+    
+    if (newFullscreenState) {
+      // Enter fullscreen
+      document.body.style.overflow = 'hidden';
+    } else {
+      // Exit fullscreen
+      document.body.style.overflow = 'unset';
+    }
   };
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, []);
   
   // Enhanced neuron paint function with detailed neural structure
   const paintNode = useCallback((node: GraphNode, ctx: CanvasRenderingContext2D, globalScale: number) => {
@@ -524,7 +547,7 @@ export function SubbrainGraph({ graphData, onNodeClick }: SubbrainGraphProps) {
     <div 
       ref={containerRef}
       className={`relative w-full h-full bg-gradient-to-br from-[#0A0A1A] via-[#0C0C1C] to-[#0F0F2A] ${
-        isFullscreen ? 'fixed inset-0 z-50' : ''
+        isFullscreen ? 'fixed inset-0 z-[9999]' : ''
       }`}
     >
       {/* Enhanced cosmic background effect */}
@@ -539,7 +562,7 @@ export function SubbrainGraph({ graphData, onNodeClick }: SubbrainGraphProps) {
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        className="absolute top-4 right-4 z-10"
+        className="absolute top-4 right-4 z-[10000]"
       >
         <Button
           variant="outline"
@@ -547,7 +570,7 @@ export function SubbrainGraph({ graphData, onNodeClick }: SubbrainGraphProps) {
           onClick={toggleFullscreen}
           className="bg-background/80 backdrop-blur-md border-border/50 hover:bg-background/90"
         >
-          <Maximize size={16} className="mr-2" />
+          {isFullscreen ? <Minimize size={16} className="mr-2" /> : <Maximize size={16} className="mr-2" />}
           {isFullscreen ? 'Sair da tela cheia' : 'Tela cheia'}
         </Button>
       </motion.div>
@@ -557,7 +580,7 @@ export function SubbrainGraph({ graphData, onNodeClick }: SubbrainGraphProps) {
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="absolute top-4 left-1/2 transform -translate-x-1/2 z-10"
+          className="absolute top-4 left-1/2 transform -translate-x-1/2 z-[10000]"
         >
           <div className="bg-background/95 backdrop-blur-md border border-border/50 rounded-lg px-4 py-2 flex items-center gap-3 shadow-2xl">
             <span className="text-sm font-medium">
@@ -615,15 +638,26 @@ export function SubbrainGraph({ graphData, onNodeClick }: SubbrainGraphProps) {
         warmupTicks={0}
       />
 
-      {/* Advanced Tooltip */}
-      <NodeTooltip
-        node={hoveredNode}
-        position={tooltipPosition}
-        visible={!!hoveredNode}
-        onView={() => hoveredNode && onNodeClick(hoveredNode)}
-        onEdit={() => hoveredNode && onNodeClick(hoveredNode)}
-        onExpand={() => hoveredNode && handleNodeExpand(hoveredNode)}
-      />
+      {/* Advanced Tooltip with improved positioning */}
+      {hoveredNode && (
+        <div
+          className="fixed z-[10001] pointer-events-none"
+          style={{
+            left: Math.min(tooltipPosition.x + 10, (isFullscreen ? window.innerWidth : dimensions.width) - 340),
+            top: Math.max(10, Math.min(tooltipPosition.y - 10, (isFullscreen ? window.innerHeight : dimensions.height) - 200)),
+            maxWidth: '320px'
+          }}
+        >
+          <NodeTooltip
+            node={hoveredNode}
+            position={tooltipPosition}
+            visible={!!hoveredNode}
+            onView={() => hoveredNode && onNodeClick(hoveredNode)}
+            onEdit={() => hoveredNode && onNodeClick(hoveredNode)}
+            onExpand={() => hoveredNode && handleNodeExpand(hoveredNode)}
+          />
+        </div>
+      )}
     </div>
   );
 }
