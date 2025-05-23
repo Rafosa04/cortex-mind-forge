@@ -221,7 +221,7 @@ export function HabitoDetailModal({ habito, open, onOpenChange }: HabitoDetailMo
 
           {/* Observação da IA */}
           <div className="space-y-2">
-            <div className="text-sm font-medium">Observação da Athena</div>
+            <div className="text-sm font-medium">Minha inspiração diária</div>
             {isEditing ? (
               <Textarea
                 value={editData.observacaoIA}
