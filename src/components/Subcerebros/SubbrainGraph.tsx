@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import ForceGraph2D from 'react-force-graph-2d';
 import { motion } from 'framer-motion';
@@ -117,6 +116,7 @@ export function SubbrainGraph({ graphData, onNodeClick }: SubbrainGraphProps) {
     const athenaNode = graphData.nodes.find(node => node.id === 'athena');
     if (!athenaNode) return;
     
+    // Fix Athena at center
     athenaNode.fx = 0;
     athenaNode.fy = 0;
     
@@ -127,12 +127,13 @@ export function SubbrainGraph({ graphData, onNodeClick }: SubbrainGraphProps) {
       return acc;
     }, {} as Record<string, GraphNode[]>);
     
+    // Define orbital layers with different radii and speeds
     const orbitLayers = {
-      subcerebro: { radius: 180, speed: 0.0006 },
-      projeto: { radius: 280, speed: 0.0004 },
-      habito: { radius: 350, speed: 0.0003 },
-      favorito: { radius: 420, speed: 0.0002 },
-      pensamento: { radius: 490, speed: 0.0001 }
+      subcerebro: { radius: 180, speed: 0.0008 },
+      projeto: { radius: 280, speed: 0.0006 },
+      habito: { radius: 350, speed: 0.0005 },
+      favorito: { radius: 420, speed: 0.0004 },
+      pensamento: { radius: 490, speed: 0.0003 }
     };
     
     Object.entries(nodesByType).forEach(([type, nodes]) => {
@@ -146,46 +147,74 @@ export function SubbrainGraph({ graphData, onNodeClick }: SubbrainGraphProps) {
         
         node.orbitRadius = layer.radius + radiusVariation;
         node.orbitAngle = baseAngle + (Math.random() - 0.5) * 0.3;
-        node.orbitSpeed = layer.speed * (0.9 + Math.random() * 0.2);
+        node.orbitSpeed = layer.speed * (0.8 + Math.random() * 0.4);
         
+        // Set initial positions
         node.fx = Math.cos(node.orbitAngle) * node.orbitRadius;
         node.fy = Math.sin(node.orbitAngle) * node.orbitRadius;
       });
     });
+    
+    // Disable force simulation for smoother orbital movement
+    if (fgRef.current) {
+      const fg = fgRef.current;
+      fg.d3Force('link', null);
+      fg.d3Force('charge', null);
+      fg.d3Force('center', null);
+    }
   }, [graphData.nodes]);
   
+  // Orbital animation loop
   useEffect(() => {
     if (!graphData.nodes.length) return;
     
     const animate = () => {
       const now = Date.now();
+      let hasChanges = false;
       
       graphData.nodes.forEach(node => {
         if (node.id === 'athena' || !node.orbitRadius || !node.orbitSpeed) return;
         
+        // Update orbital angle
         node.orbitAngle = (node.orbitAngle || 0) + node.orbitSpeed;
         
-        const wobble = (node.relevancia || 5) / 100 * Math.sin(now * 0.001);
+        // Add subtle wobble based on relevance
+        const wobble = (node.relevancia || 5) / 200 * Math.sin(now * 0.002 + (node.orbitAngle || 0) * 3);
         const effectiveRadius = node.orbitRadius * (1 + wobble);
         
-        node.fx = Math.cos(node.orbitAngle) * effectiveRadius;
-        node.fy = Math.sin(node.orbitAngle) * effectiveRadius;
+        // Calculate new position
+        const newX = Math.cos(node.orbitAngle) * effectiveRadius;
+        const newY = Math.sin(node.orbitAngle) * effectiveRadius;
+        
+        // Only update if position changed significantly
+        if (Math.abs((node.fx || 0) - newX) > 0.1 || Math.abs((node.fy || 0) - newY) > 0.1) {
+          node.fx = newX;
+          node.fy = newY;
+          hasChanges = true;
+        }
       });
       
-      if (fgRef.current) {
+      // Only refresh if there were changes
+      if (hasChanges && fgRef.current) {
         fgRef.current.refresh();
       }
       
       animationFrameRef.current = requestAnimationFrame(animate);
     };
     
+    // Setup constellation first
     setupConstellation();
-    animationFrameRef.current = requestAnimationFrame(animate);
+    
+    // Start animation after a short delay
+    const timeoutId = setTimeout(() => {
+      animationFrameRef.current = requestAnimationFrame(animate);
+    }, 100);
     
     return () => {
       if (animationFrameRef.current) {
         cancelAnimationFrame(animationFrameRef.current);
       }
+      clearTimeout(timeoutId);
     };
   }, [graphData.nodes, setupConstellation]);
   
@@ -216,7 +245,7 @@ export function SubbrainGraph({ graphData, onNodeClick }: SubbrainGraphProps) {
       
       if (canvas) {
         const canvasRect = canvas.getBoundingClientRect();
-        const headerHeight = 60; // Height of the fixed header
+        const headerHeight = 80; // Increased to avoid fixed header
         const tooltipWidth = 320;
         const tooltipHeight = 200;
         
@@ -227,6 +256,7 @@ export function SubbrainGraph({ graphData, onNodeClick }: SubbrainGraphProps) {
           x = event.clientX;
           y = event.clientY;
           
+          // Ensure tooltip stays within screen bounds
           if (x + tooltipWidth > window.innerWidth) {
             x = window.innerWidth - tooltipWidth - 10;
           }
@@ -245,8 +275,8 @@ export function SubbrainGraph({ graphData, onNodeClick }: SubbrainGraphProps) {
             if (y + tooltipHeight > containerRect.height) {
               y = containerRect.height - tooltipHeight - 10;
             }
-            if (y < 10) {
-              y = 10;
+            if (y < headerHeight) {
+              y = headerHeight + 10;
             }
           }
         }
@@ -314,6 +344,7 @@ export function SubbrainGraph({ graphData, onNodeClick }: SubbrainGraphProps) {
         isFullscreen ? 'fixed inset-0 z-[9999] cursor-none' : ''
       }`}
     >
+      {/* Background Effects */}
       <div className="absolute inset-0 opacity-40">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_50%,rgba(120,119,198,0.15),transparent_50%)]" />
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_20%,rgba(255,215,0,0.08),transparent_50%)]" />
@@ -321,6 +352,7 @@ export function SubbrainGraph({ graphData, onNodeClick }: SubbrainGraphProps) {
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_60%_30%,rgba(16,185,129,0.06),transparent_50%)]" />
       </div>
 
+      {/* Fullscreen Toggle Button */}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -339,6 +371,7 @@ export function SubbrainGraph({ graphData, onNodeClick }: SubbrainGraphProps) {
         </Button>
       </motion.div>
 
+      {/* Node Tooltip */}
       {hoveredNode && (
         <div
           className={`${isFullscreen ? 'fixed' : 'absolute'} z-[10001] pointer-events-none`}
@@ -359,6 +392,7 @@ export function SubbrainGraph({ graphData, onNodeClick }: SubbrainGraphProps) {
         </div>
       )}
 
+      {/* Force Graph */}
       <ForceGraph2D
         ref={fgRef}
         graphData={graphData}
@@ -374,12 +408,14 @@ export function SubbrainGraph({ graphData, onNodeClick }: SubbrainGraphProps) {
         onNodeHover={handleNodeHover}
         backgroundColor="transparent"
         onEngineStop={handleEngineStop}
-        cooldownTicks={100}
+        cooldownTicks={0}
         onNodeDragEnd={(node) => {
           if (node.id === 'athena') {
+            // Keep Athena at center
             node.fx = 0;
             node.fy = 0;
           } else {
+            // Update orbital parameters when node is dragged
             const distance = Math.sqrt((node.x || 0) ** 2 + (node.y || 0) ** 2);
             const angle = Math.atan2(node.y || 0, node.x || 0);
             node.orbitRadius = distance;
