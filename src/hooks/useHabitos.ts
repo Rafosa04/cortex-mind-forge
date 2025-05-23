@@ -155,6 +155,36 @@ export function useHabitos() {
     }
   };
 
+  const updateHabit = async (habitId: string, updates: any) => {
+    try {
+      const { error } = await supabase
+        .from('habits')
+        .update(updates)
+        .eq('id', habitId);
+
+      if (error) {
+        toast({
+          title: "Erro ao atualizar hábito",
+          description: error.message,
+          variant: "destructive"
+        });
+        return;
+      }
+
+      toast({
+        title: "Hábito atualizado",
+        description: "Alterações salvas com sucesso",
+      });
+    } catch (error) {
+      console.error("Erro ao atualizar hábito:", error);
+      toast({
+        title: "Erro ao atualizar hábito",
+        description: "Ocorreu um erro inesperado",
+        variant: "destructive"
+      });
+    }
+  };
+
   const checkInHabit = async (habitId: string) => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -252,6 +282,7 @@ export function useHabitos() {
     habitos,
     loading,
     addHabit,
+    updateHabit,
     checkInHabit,
     deleteHabit,
     refetch: fetchHabits
