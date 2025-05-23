@@ -2,6 +2,8 @@ import React, { useEffect, useState, useRef, useCallback } from 'react';
 import ForceGraph2D from 'react-force-graph-2d';
 import { motion } from 'framer-motion';
 import { NodeTooltip } from './NodeTooltip';
+import { Maximize } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import * as d3 from 'd3-force';
 
 interface GraphNode {
@@ -39,12 +41,14 @@ export interface SubbrainGraphProps {
 
 export function SubbrainGraph({ graphData, onNodeClick }: SubbrainGraphProps) {
   const fgRef = useRef<any>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const [dimensions, setDimensions] = useState({ width: 800, height: 600 });
   const [nodePositions, setNodePositions] = useState<Map<string, {x: number, y: number}>>(new Map());
   const [impulses, setImpulses] = useState<Map<string, number>>(new Map());
   const [hoveredNode, setHoveredNode] = useState<GraphNode | null>(null);
   const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
   const [focusedNode, setFocusedNode] = useState<GraphNode | null>(null);
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const animationFrameRef = useRef<number>();
   
   // Enhanced constellation color system for neurons
@@ -220,17 +224,24 @@ export function SubbrainGraph({ graphData, onNodeClick }: SubbrainGraphProps) {
   
   useEffect(() => {
     const updateDimensions = () => {
-      setDimensions({
-        width: window.innerWidth,
-        height: Math.max(window.innerHeight - 120, 600)
-      });
+      if (isFullscreen) {
+        setDimensions({
+          width: window.innerWidth,
+          height: window.innerHeight
+        });
+      } else {
+        setDimensions({
+          width: window.innerWidth,
+          height: Math.max(window.innerHeight - 120, 600)
+        });
+      }
     };
     
     updateDimensions();
     window.addEventListener('resize', updateDimensions);
     
     return () => window.removeEventListener('resize', updateDimensions);
-  }, []);
+  }, [isFullscreen]);
   
   const handleEngineStop = useCallback(() => {
     if (fgRef.current && graphData.nodes.length) {
@@ -242,13 +253,16 @@ export function SubbrainGraph({ graphData, onNodeClick }: SubbrainGraphProps) {
   
   const handleNodeHover = (node: GraphNode | null, event: any) => {
     if (event && node) {
-      const canvas = event.target;
-      const canvasRect = canvas.getBoundingClientRect();
-      
-      setTooltipPosition({
-        x: event.clientX - canvasRect.left,
-        y: event.clientY - canvasRect.top
-      });
+      // Get the container position for better tooltip positioning
+      const container = containerRef.current;
+      if (container) {
+        const containerRect = container.getBoundingClientRect();
+        
+        setTooltipPosition({
+          x: event.pageX - containerRect.left,
+          y: event.pageY - containerRect.top
+        });
+      }
     }
     
     setHoveredNode(node);
@@ -267,6 +281,10 @@ export function SubbrainGraph({ graphData, onNodeClick }: SubbrainGraphProps) {
     if (fgRef.current) {
       fgRef.current.zoomToFit(400, 100);
     }
+  };
+
+  const toggleFullscreen = () => {
+    setIsFullscreen(!isFullscreen);
   };
   
   // Enhanced neuron paint function with detailed neural structure
@@ -503,7 +521,12 @@ export function SubbrainGraph({ graphData, onNodeClick }: SubbrainGraphProps) {
   }, [graphData.nodes, impulses, focusedNode]);
   
   return (
-    <div className="relative w-full h-full bg-gradient-to-br from-[#0A0A1A] via-[#0C0C1C] to-[#0F0F2A]">
+    <div 
+      ref={containerRef}
+      className={`relative w-full h-full bg-gradient-to-br from-[#0A0A1A] via-[#0C0C1C] to-[#0F0F2A] ${
+        isFullscreen ? 'fixed inset-0 z-50' : ''
+      }`}
+    >
       {/* Enhanced cosmic background effect */}
       <div className="absolute inset-0 opacity-40">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_50%,rgba(120,119,198,0.15),transparent_50%)]" />
@@ -511,6 +534,23 @@ export function SubbrainGraph({ graphData, onNodeClick }: SubbrainGraphProps) {
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_40%_80%,rgba(139,92,246,0.12),transparent_50%)]" />
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_60%_30%,rgba(16,185,129,0.06),transparent_50%)]" />
       </div>
+
+      {/* Fullscreen toggle button */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        className="absolute top-4 right-4 z-10"
+      >
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={toggleFullscreen}
+          className="bg-background/80 backdrop-blur-md border-border/50 hover:bg-background/90"
+        >
+          <Maximize size={16} className="mr-2" />
+          {isFullscreen ? 'Sair da tela cheia' : 'Tela cheia'}
+        </Button>
+      </motion.div>
 
       {/* Focus mode controls */}
       {focusedNode && (
@@ -532,21 +572,6 @@ export function SubbrainGraph({ graphData, onNodeClick }: SubbrainGraphProps) {
           </div>
         </motion.div>
       )}
-
-      {/* Enhanced constellation motto */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 1 }}
-        className="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-10"
-      >
-        <div className="text-center text-sm text-foreground/60 italic">
-          <span className="text-primary">"</span>
-          Cada subcérebro é uma constelação da sua consciência digital
-          <span className="text-primary">"</span>
-          <div className="text-xs text-primary/50 mt-1">— Rede Neural CÓRTEX</div>
-        </div>
-      </motion.div>
 
       <ForceGraph2D
         ref={fgRef}
