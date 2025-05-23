@@ -1,6 +1,8 @@
+
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import ForceGraph2D from 'react-force-graph-2d';
 import { motion } from 'framer-motion';
+import { NodeTooltip } from './NodeTooltip';
 
 interface GraphNode {
   id: string;
@@ -39,8 +41,9 @@ export function SubbrainGraph({ graphData, onNodeClick }: SubbrainGraphProps) {
   const [impulses, setImpulses] = useState<Map<string, number>>(new Map());
   const [hoveredNode, setHoveredNode] = useState<GraphNode | null>(null);
   const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
+  const [focusedNode, setFocusedNode] = useState<GraphNode | null>(null);
   
-  // Get color based on node type
+  // Get enhanced color based on node type with better gradients
   const getNodeColor = (node: GraphNode) => {
     switch (node.type) {
       case 'athena':
@@ -88,7 +91,7 @@ export function SubbrainGraph({ graphData, onNodeClick }: SubbrainGraphProps) {
           return newImpulses;
         });
       });
-    }, 600); // Create new impulses every 600ms
+    }, 800); // Slightly slower for better visual impact
     
     // Animation loop for impulse movement
     const animationInterval = setInterval(() => {
@@ -102,13 +105,13 @@ export function SubbrainGraph({ graphData, onNodeClick }: SubbrainGraphProps) {
             newImpulses.delete(linkId);
           } else {
             // Move impulses along their paths
-            newImpulses.set(linkId, progress + 0.04); // Speed of impulse movement
+            newImpulses.set(linkId, progress + 0.035); // Slightly slower movement
           }
         }
         
         return newImpulses;
       });
-    }, 30); // Update animation frames every 30ms for smooth movement
+    }, 35); // Smoother animation
     
     return () => {
       clearInterval(interval);
@@ -134,119 +137,162 @@ export function SubbrainGraph({ graphData, onNodeClick }: SubbrainGraphProps) {
   // Fit the graph after it's loaded
   const handleEngineStop = useCallback(() => {
     if (fgRef.current && graphData.nodes.length) {
-      fgRef.current.zoomToFit(400, 50);
+      fgRef.current.zoomToFit(400, 80);
     }
   }, [graphData.nodes.length]);
   
-  // Handle node hover
+  // Enhanced node hover with tooltip positioning
   const handleNodeHover = (node: GraphNode | null, event: any) => {
     if (event && node) {
-      // Get mouse position for tooltip
-      const containerRect = event.target.getBoundingClientRect();
+      // Get canvas container for accurate positioning
+      const canvas = event.target;
+      const canvasRect = canvas.getBoundingClientRect();
+      
       setTooltipPosition({
-        x: event.clientX - containerRect.left + 10,
-        y: event.clientY - containerRect.top + 10
+        x: event.clientX - canvasRect.left,
+        y: event.clientY - canvasRect.top
       });
     }
     
     setHoveredNode(node);
   };
+
+  // Handle node expansion (focus mode)
+  const handleNodeExpand = (node: GraphNode) => {
+    setFocusedNode(node);
+    if (fgRef.current) {
+      // Center the focused node
+      fgRef.current.centerAt(node.x, node.y, 1000);
+      fgRef.current.zoom(2, 1000);
+    }
+  };
+
+  // Reset focus mode
+  const resetFocus = () => {
+    setFocusedNode(null);
+    if (fgRef.current) {
+      fgRef.current.zoomToFit(400, 80);
+    }
+  };
   
-  // Custom node paint function for improved pulsating effect
+  // Enhanced custom node paint function
   const paintNode = useCallback((node: GraphNode, ctx: CanvasRenderingContext2D, globalScale: number) => {
     const label = node.label;
     const fontSize = 12;
     const color = getNodeColor(node);
     
-    // Node size based on relevance
-    let nodeSize = (3 + (node.relevancia || 1) / 2) / globalScale;
-    if (node.id === 'athena') nodeSize *= 1.5; // Make Athena larger
+    // Enhanced node size based on relevance and type
+    let baseNodeSize = (4 + (node.relevancia || 1) / 1.5) / globalScale;
+    if (node.id === 'athena') baseNodeSize *= 1.8; // Make Athena significantly larger
+    if (node.type === 'subcerebro') baseNodeSize *= 1.4; // Make subcérebros larger
     
-    // Enhanced pulsating effect with combination of sine waves
+    // Enhanced pulsating effect with better timing
     const now = Date.now();
     const nodeNum = parseInt(node.id.substring(node.id.length - 1)) || 1;
-    const primaryFrequency = node.id === 'athena' ? 600 : 1000 + (nodeNum * 100);
-    const secondaryFrequency = primaryFrequency * 2.5;
+    const primaryFrequency = node.id === 'athena' ? 800 : 1200 + (nodeNum * 150);
+    const secondaryFrequency = primaryFrequency * 1.8;
     
-    // Combine two sine waves for a more organic pulsing effect
+    // More organic pulsing with triple wave combination
     const primaryWave = Math.sin(now / primaryFrequency);
-    const secondaryWave = Math.sin(now / secondaryFrequency) * 0.5;
-    const combinedWave = (primaryWave + secondaryWave) / 1.5;
+    const secondaryWave = Math.sin(now / secondaryFrequency) * 0.4;
+    const tertiaryWave = Math.sin(now / (primaryFrequency * 0.7)) * 0.2;
+    const combinedWave = (primaryWave + secondaryWave + tertiaryWave) / 1.6;
     
-    // Apply a more subtle pulse (keeping node size more consistent)
+    // Enhanced pulse effects based on relevance
+    const relevanceMultiplier = (node.relevancia || 5) / 10;
     const pulseFactor = node.id === 'athena' ? 
-      1 + 0.08 * combinedWave : 
-      1 + 0.06 * combinedWave;
+      1 + (0.12 * combinedWave * relevanceMultiplier) : 
+      1 + (0.08 * combinedWave * relevanceMultiplier);
     
-    // Keep node size consistent but let glow pulse
-    const glowSize = nodeSize * 1.5 * pulseFactor;
-    const baseGlowOpacity = 0.25;
-    const glowOpacity = baseGlowOpacity + (0.05 * combinedWave);
+    // Multi-layer glow effect for more impact
+    const innerGlowSize = baseNodeSize * 1.2;
+    const outerGlowSize = baseNodeSize * 2.2 * pulseFactor;
     
+    // Outer glow (larger, more transparent)
     ctx.beginPath();
-    ctx.arc(node.x || 0, node.y || 0, glowSize, 0, 2 * Math.PI);
-    ctx.fillStyle = `${color}${Math.round(glowOpacity * 255).toString(16).padStart(2, '0')}`;
+    ctx.arc(node.x || 0, node.y || 0, outerGlowSize, 0, 2 * Math.PI);
+    const outerGlowOpacity = 0.08 + (0.04 * combinedWave * relevanceMultiplier);
+    ctx.fillStyle = `${color}${Math.round(outerGlowOpacity * 255).toString(16).padStart(2, '0')}`;
     ctx.fill();
     
-    // Draw main node with subtle shadow
+    // Inner glow (medium size, medium transparency)
+    ctx.beginPath();
+    ctx.arc(node.x || 0, node.y || 0, innerGlowSize * pulseFactor, 0, 2 * Math.PI);
+    const innerGlowOpacity = 0.2 + (0.1 * combinedWave * relevanceMultiplier);
+    ctx.fillStyle = `${color}${Math.round(innerGlowOpacity * 255).toString(16).padStart(2, '0')}`;
+    ctx.fill();
+    
+    // Main node with enhanced shadow and gradient effect
     ctx.beginPath();
     ctx.shadowColor = color;
-    ctx.shadowBlur = 10 * pulseFactor;
-    ctx.arc(node.x || 0, node.y || 0, nodeSize, 0, 2 * Math.PI);
-    ctx.fillStyle = color;
-    ctx.fill();
-    ctx.shadowBlur = 0; // Reset shadow after drawing node
+    ctx.shadowBlur = 15 * pulseFactor * relevanceMultiplier;
+    ctx.arc(node.x || 0, node.y || 0, baseNodeSize, 0, 2 * Math.PI);
     
-    // Edge outline for contrast
-    ctx.strokeStyle = '#000810';
-    ctx.lineWidth = 0.5 / globalScale;
+    // Create radial gradient for the main node
+    const gradient = ctx.createRadialGradient(
+      node.x || 0, node.y || 0, 0,
+      node.x || 0, node.y || 0, baseNodeSize
+    );
+    gradient.addColorStop(0, color);
+    gradient.addColorStop(1, `${color}CC`); // Slightly transparent at edges
+    
+    ctx.fillStyle = gradient;
+    ctx.fill();
+    ctx.shadowBlur = 0; // Reset shadow
+    
+    // Enhanced edge outline with better contrast
+    ctx.strokeStyle = focusedNode?.id === node.id ? '#ffffff' : '#000814';
+    ctx.lineWidth = focusedNode?.id === node.id ? 1.5 / globalScale : 0.8 / globalScale;
     ctx.stroke();
     
-    // Only draw labels for important nodes or when zoomed in
-    if (node.id === 'athena' || globalScale > 1) {
-      ctx.font = `${fontSize / globalScale}px Sans-Serif`;
+    // Enhanced label rendering with better visibility
+    if (node.id === 'athena' || globalScale > 1.2 || focusedNode?.id === node.id) {
+      ctx.font = `${Math.max(fontSize / globalScale, 8)}px Inter, sans-serif`;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
+      
+      // Text shadow for better readability
+      ctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
+      ctx.shadowBlur = 4;
       ctx.fillStyle = 'white';
       
-      // Draw text below node
-      ctx.fillText(
-        label, 
-        node.x || 0, 
-        (node.y || 0) + nodeSize + (fontSize / globalScale) / 2
-      );
+      // Draw text below node with better positioning
+      const textY = (node.y || 0) + baseNodeSize + (fontSize / globalScale) + 4;
+      ctx.fillText(label, node.x || 0, textY);
+      ctx.shadowBlur = 0; // Reset shadow
     }
-  }, []);
+  }, [focusedNode]);
   
-  // Custom link paint function for enhanced animated links
+  // Enhanced custom link paint function
   const paintLink = useCallback((link: any, ctx: CanvasRenderingContext2D) => {
     const source = typeof link.source === 'object' ? link.source : graphData.nodes.find(n => n.id === link.source);
     const target = typeof link.target === 'object' ? link.target : graphData.nodes.find(n => n.id === link.target);
     
     if (!source || !target || !source.x || !source.y || !target.x || !target.y) return;
     
-    // Get colors for gradient based on node types
+    // Enhanced colors for gradient based on node types
     const sourceColor = getNodeColor(source);
     const targetColor = getNodeColor(target);
     
-    // Get link ID
+    // Get link ID for impulse tracking
     const linkId = `${source.id}-${target.id}`;
     const reverseLinkId = `${target.id}-${source.id}`;
     const hasImpulse = impulses.has(linkId) || impulses.has(reverseLinkId);
     const impulseValue = impulses.get(linkId) || impulses.get(reverseLinkId) || 0;
     
-    // Set line width and opacity
-    const lineWidth = 1.0;
-    const opacity = 0.4;
+    // Enhanced line styling
+    const lineWidth = focusedNode && (focusedNode.id === source.id || focusedNode.id === target.id) ? 2.0 : 1.2;
+    const opacity = focusedNode && (focusedNode.id === source.id || focusedNode.id === target.id) ? 0.8 : 0.5;
     
-    // Create gradient
+    // Create enhanced gradient
     const gradient = ctx.createLinearGradient(
       source.x, source.y, target.x, target.y
     );
     gradient.addColorStop(0, sourceColor);
+    gradient.addColorStop(0.5, `${sourceColor}80`); // Semi-transparent middle
     gradient.addColorStop(1, targetColor);
     
-    // Draw link with gradient
+    // Draw link with enhanced gradient
     ctx.beginPath();
     ctx.moveTo(source.x, source.y);
     ctx.lineTo(target.x, target.y);
@@ -255,15 +301,14 @@ export function SubbrainGraph({ graphData, onNodeClick }: SubbrainGraphProps) {
     ctx.lineWidth = lineWidth;
     ctx.stroke();
     
-    // If there's an impulse, draw animated dot
+    // Enhanced impulse visualization with comet effect
     if (hasImpulse) {
-      // Calculate position along the line from source to target
       const dotX = source.x + (target.x - source.x) * impulseValue;
       const dotY = source.y + (target.y - source.y) * impulseValue;
       
-      // Draw multiple pulse dots to create a comet-like effect
-      const dotSizes = [2.5, 2.0, 1.6, 1.2];
-      const tailPositions = [0, 0.03, 0.06, 0.09]; // Offset for tail dots
+      // Enhanced pulse dots with more dramatic comet effect
+      const dotSizes = [3.5, 2.8, 2.2, 1.8, 1.4];
+      const tailPositions = [0, 0.04, 0.08, 0.12, 0.16];
       
       for (let i = 0; i < dotSizes.length; i++) {
         const tailOffset = tailPositions[i];
@@ -273,47 +318,70 @@ export function SubbrainGraph({ graphData, onNodeClick }: SubbrainGraphProps) {
           const tailX = source.x + (target.x - source.x) * tailPosition;
           const tailY = source.y + (target.y - source.y) * tailPosition;
           
-          // Draw the pulse dot with glowing effect
+          // Enhanced pulse dot with better glow
           ctx.beginPath();
           ctx.arc(tailX, tailY, dotSizes[i], 0, Math.PI * 2);
           
-          // Gradient for the dot to create glow effect
+          // Enhanced gradient for better glow effect
           const dotGlow = ctx.createRadialGradient(
             tailX, tailY, 0, 
-            tailX, tailY, dotSizes[i] * 2
+            tailX, tailY, dotSizes[i] * 3
           );
           
           dotGlow.addColorStop(0, 'rgba(255, 255, 255, 1)');
-          dotGlow.addColorStop(0.4, `${sourceColor}Ec`);
+          dotGlow.addColorStop(0.3, `${sourceColor}FF`);
+          dotGlow.addColorStop(0.6, `${sourceColor}80`);
           dotGlow.addColorStop(1, 'rgba(255, 255, 255, 0)');
           
           ctx.fillStyle = dotGlow;
-          ctx.globalAlpha = 0.9 - (i * 0.2); // Fade for tail
+          ctx.globalAlpha = 1.0 - (i * 0.15); // Better fade for tail
           ctx.fill();
         }
       }
     }
     
     ctx.globalAlpha = 1; // Reset alpha
-  }, [graphData.nodes, impulses]);
+  }, [graphData.nodes, impulses, focusedNode]);
   
   return (
     <div className="relative w-full h-full bg-[#0C0C1C]">
+      {/* Focus mode controls */}
+      {focusedNode && (
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="absolute top-4 left-1/2 transform -translate-x-1/2 z-10"
+        >
+          <div className="bg-background/90 backdrop-blur-md border border-border/50 rounded-lg px-4 py-2 flex items-center gap-3">
+            <span className="text-sm font-medium">
+              Focado em: <span className="text-primary">{focusedNode.label}</span>
+            </span>
+            <button
+              onClick={resetFocus}
+              className="text-xs bg-secondary hover:bg-secondary/80 px-2 py-1 rounded transition-colors"
+            >
+              Sair do foco
+            </button>
+          </div>
+        </motion.div>
+      )}
+
       <ForceGraph2D
         ref={fgRef}
         graphData={graphData}
-        nodeRelSize={8}
+        nodeRelSize={10}
         nodeVal={(node) => (node as GraphNode).relevancia || 1}
         nodeCanvasObject={paintNode}
         linkCanvasObject={paintLink}
         linkDirectionalParticles={0}
-        nodeLabel={null} // No tooltip
+        nodeLabel={null} // No default tooltip
         onNodeClick={(node) => {
           if (node) onNodeClick(node);
         }}
+        onNodeHover={handleNodeHover}
         backgroundColor="#0C0C1C"
         onEngineStop={handleEngineStop}
-        cooldownTicks={100}
+        cooldownTicks={150}
         onNodeDragEnd={(node) => {
           node.fx = node.x;
           node.fy = node.y;
@@ -323,21 +391,20 @@ export function SubbrainGraph({ graphData, onNodeClick }: SubbrainGraphProps) {
         enablePanInteraction={true}
         width={dimensions.width}
         height={dimensions.height}
+        // Enhanced zoom and pan settings
+        minZoom={0.1}
+        maxZoom={8}
+      />
+
+      {/* Advanced Tooltip */}
+      <NodeTooltip
+        node={hoveredNode}
+        position={tooltipPosition}
+        visible={!!hoveredNode}
+        onView={() => hoveredNode && onNodeClick(hoveredNode)}
+        onEdit={() => hoveredNode && onNodeClick(hoveredNode)}
+        onExpand={() => hoveredNode && handleNodeExpand(hoveredNode)}
       />
     </div>
   );
-}
-
-// Helper functions
-function formatNodeType(type: string): string {
-  const types: Record<string, string> = {
-    athena: "Athena IA",
-    subcerebro: "Subcérebro",
-    projeto: "Projeto",
-    habito: "Hábito",
-    favorito: "Favorito",
-    pensamento: "Pensamento"
-  };
-  
-  return types[type] || "Desconhecido";
 }
