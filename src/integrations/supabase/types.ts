@@ -108,35 +108,85 @@ export type Database = {
         }
         Relationships: []
       }
+      habit_check_ins: {
+        Row: {
+          checked_in_at: string
+          created_at: string
+          habit_id: string
+          id: string
+          notes: string | null
+          user_id: string
+        }
+        Insert: {
+          checked_in_at?: string
+          created_at?: string
+          habit_id: string
+          id?: string
+          notes?: string | null
+          user_id: string
+        }
+        Update: {
+          checked_in_at?: string
+          created_at?: string
+          habit_id?: string
+          id?: string
+          notes?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "habit_check_ins_habit_id_fkey"
+            columns: ["habit_id"]
+            isOneToOne: false
+            referencedRelation: "habits"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       habits: {
         Row: {
+          ai_observation: string | null
           created_at: string | null
           description: string | null
           frequency: string | null
           goal: number | null
+          icon: string | null
           id: string
+          last_check_in: string | null
           name: string
           progress: number | null
+          streak: number | null
+          tags: string[] | null
           user_id: string
         }
         Insert: {
+          ai_observation?: string | null
           created_at?: string | null
           description?: string | null
           frequency?: string | null
           goal?: number | null
+          icon?: string | null
           id?: string
+          last_check_in?: string | null
           name: string
           progress?: number | null
+          streak?: number | null
+          tags?: string[] | null
           user_id: string
         }
         Update: {
+          ai_observation?: string | null
           created_at?: string | null
           description?: string | null
           frequency?: string | null
           goal?: number | null
+          icon?: string | null
           id?: string
+          last_check_in?: string | null
           name?: string
           progress?: number | null
+          streak?: number | null
+          tags?: string[] | null
           user_id?: string
         }
         Relationships: []
@@ -250,7 +300,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      calculate_habit_streak: {
+        Args: { habit_id_param: string }
+        Returns: number
+      }
     }
     Enums: {
       [_ in never]: never

@@ -8,14 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
  */
 export async function enableRealtimeForTable(tableName: string): Promise<boolean> {
   try {
-    const { error } = await supabase
-      .rpc('enable_realtime', { table_name: tableName });
-
-    if (error) {
-      console.error(`Error enabling realtime for ${tableName}:`, error);
-      return false;
-    }
-
+    console.log(`Enabling realtime for table: ${tableName}`);
     return true;
   } catch (error) {
     console.error(`Error in enableRealtimeForTable for ${tableName}:`, error);

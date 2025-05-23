@@ -1,8 +1,20 @@
+
 import { motion } from "framer-motion";
-import { Brain, Check, Pen, Link } from "lucide-react";
+import { Brain, Check, Pen, Link, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 export type Habito = {
   id?: string;
@@ -17,7 +29,15 @@ export type Habito = {
   tags: string[];
 };
 
-export function HabitoCard({ habito, onCheckIn }: { habito: Habito; onCheckIn?: () => void }) {
+export function HabitoCard({ 
+  habito, 
+  onCheckIn, 
+  onDelete 
+}: { 
+  habito: Habito; 
+  onCheckIn?: () => void;
+  onDelete?: () => void;
+}) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 18 }}
@@ -28,13 +48,16 @@ export function HabitoCard({ habito, onCheckIn }: { habito: Habito; onCheckIn?: 
     >
       {/* Header */}
       <div className="flex items-center justify-between gap-2">
-        <div>
+        <div className="flex-1">
           <h4 className="text-xl font-bold text-primary mb-1">{habito.nome}</h4>
           <span className="text-xs text-foreground/80">{habito.proposito}</span>
         </div>
-        <span className="rounded bg-secondary/20 text-xs px-3 py-1 font-semibold text-secondary whitespace-nowrap">
-          {habito.frequencia}
-        </span>
+        <div className="flex items-center gap-2">
+          <span className="rounded bg-secondary/20 text-xs px-3 py-1 font-semibold text-secondary whitespace-nowrap">
+            {habito.frequencia}
+          </span>
+          <span className="text-2xl">{habito.icone}</span>
+        </div>
       </div>
 
       {/* Progresso & Streak */}
@@ -102,6 +125,33 @@ export function HabitoCard({ habito, onCheckIn }: { habito: Habito; onCheckIn?: 
           >
             <Pen className="w-4 h-4 mr-1" /> Editar
           </Button>
+          {onDelete && (
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="text-red-400 hover:text-red-300 hover:bg-red-400/10"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Deletar Hábito</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Tem certeza que deseja deletar o hábito "{habito.nome}"? Esta ação não pode ser desfeita.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                  <AlertDialogAction onClick={onDelete} className="bg-red-600 hover:bg-red-700">
+                    Deletar
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          )}
         </div>
       </div>
     </motion.div>
