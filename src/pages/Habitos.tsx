@@ -3,15 +3,16 @@ import { useState } from "react";
 import { Plus, Loader2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { HabitoCard } from "@/components/Habitos/HabitoCard";
 import { NovoHabitoModal } from "@/components/Habitos/NovoHabitoModal";
-import { HabitosViewSwitcher } from "@/components/Habitos/HabitosViewSwitcher";
 import { HabitosCalendarView } from "@/components/Habitos/HabitosCalendarView";
+import { HabitosRelatorioView } from "@/components/Habitos/HabitosRelatorioView";
 import { useHabitos } from "@/hooks/useHabitos";
 
 export default function Habitos() {
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [activeView, setActiveView] = useState("grid");
+  const [activeTab, setActiveTab] = useState("grid");
   const { habitos, loading, addHabit, checkInHabit, deleteHabit } = useHabitos();
 
   const handleCheckIn = (habitId?: string) => {
@@ -48,13 +49,10 @@ export default function Habitos() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold">Meus Hábitos</h1>
-        <div className="flex items-center gap-4">
-          <HabitosViewSwitcher active={activeView} setActive={setActiveView} />
-          <Button onClick={() => setIsModalOpen(true)}>
-            <Plus className="w-4 h-4 mr-2" />
-            Novo Hábito
-          </Button>
-        </div>
+        <Button onClick={() => setIsModalOpen(true)}>
+          <Plus className="w-4 h-4 mr-2" />
+          Novo Hábito
+        </Button>
       </div>
 
       {/* Modal de Novo Hábito */}
@@ -64,19 +62,15 @@ export default function Habitos() {
         onSubmit={addHabit}
       />
 
-      {/* Conteúdo baseado na visualização ativa */}
-      {activeView === "calendar" ? (
-        <HabitosCalendarView habitos={habitos} />
-      ) : activeView === "relatorio" ? (
-        <div className="text-center text-muted-foreground py-12">
-          <div className="mb-4">
-            <span className="text-6xl">📊</span>
-          </div>
-          <h3 className="text-lg font-semibold mb-2">Relatórios em desenvolvimento</h3>
-          <p className="text-sm">Esta funcionalidade será implementada em breve!</p>
-        </div>
-      ) : (
-        <>
+      {/* Tabs para visualizações */}
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="grid">Grade</TabsTrigger>
+          <TabsTrigger value="calendar">Calendário</TabsTrigger>
+          <TabsTrigger value="relatorio">Relatório</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="grid" className="space-y-4">
           {/* Grid de Hábitos */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {habitos.map((habito) => (
@@ -103,8 +97,16 @@ export default function Habitos() {
               </Button>
             </div>
           )}
-        </>
-      )}
+        </TabsContent>
+
+        <TabsContent value="calendar" className="space-y-4">
+          <HabitosCalendarView habitos={habitos} />
+        </TabsContent>
+
+        <TabsContent value="relatorio" className="space-y-4">
+          <HabitosRelatorioView habitos={habitos} />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

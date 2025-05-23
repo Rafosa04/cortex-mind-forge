@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -28,7 +28,7 @@ export function HabitoDetailModal({ habito, open, onOpenChange }: HabitoDetailMo
   const { updateHabit } = useHabitos();
 
   // Sincronizar dados quando o hábito muda
-  useState(() => {
+  useEffect(() => {
     if (habito) {
       setEditData({
         nome: habito.nome,
@@ -152,6 +152,8 @@ export function HabitoDetailModal({ habito, open, onOpenChange }: HabitoDetailMo
                   <option>Diário</option>
                   <option>3x semana</option>
                   <option>Semanal</option>
+                  <option>Seg/Qua/Sex</option>
+                  <option>Ter/Qui/Sáb</option>
                 </select>
               ) : (
                 <Badge variant="secondary">{habito.frequencia}</Badge>

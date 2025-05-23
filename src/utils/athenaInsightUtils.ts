@@ -1,5 +1,116 @@
 
 import { supabase } from "@/integrations/supabase/client";
+import { Habito } from "@/components/Habitos/HabitoCard";
+
+// Função para gerar insights para um hábito específico
+export function generateHabitInsight(habit: Habito): string {
+  // Verificar streak
+  if (habit.streak === 0) {
+    return "Vamos começar! O primeiro passo é sempre o mais importante.";
+  }
+  
+  if (habit.streak === 1) {
+    return "Bom começo! Consistência é a chave para formar hábitos duradouros.";
+  }
+  
+  if (habit.streak >= 30) {
+    return `Impressionante! ${habit.streak} dias seguidos. Este hábito está se tornando parte de quem você é.`;
+  }
+  
+  if (habit.streak >= 21) {
+    return `Excelente! Com ${habit.streak} dias seguidos, este hábito está se consolidando no seu cérebro.`;
+  }
+  
+  if (habit.streak >= 14) {
+    return `Ótimo trabalho! ${habit.streak} dias consecutivos mostram seu comprometimento.`;
+  }
+  
+  if (habit.streak >= 7) {
+    return `Uma semana completa! ${habit.streak} dias de constância são um ótimo sinal.`;
+  }
+  
+  if (habit.streak >= 3) {
+    return `${habit.streak} dias seguidos! Continue assim para fortalecer este hábito.`;
+  }
+  
+  // Verificar progresso
+  if (habit.progresso >= 90) {
+    return "Você está dominando este hábito! Considere aumentar o desafio ou adicionar uma variação.";
+  }
+  
+  if (habit.progresso >= 70) {
+    return "Progresso excelente! Continue mantendo a consistência.";
+  }
+  
+  if (habit.progresso >= 50) {
+    return "Você está no caminho certo! Continue construindo seu momentum.";
+  }
+  
+  if (habit.progresso >= 30) {
+    return "Bom progresso! Mantenha o foco nos próximos dias para aumentar sua consistência.";
+  }
+  
+  if (habit.progresso < 30) {
+    return "Que tal fazer deste hábito uma prioridade? Pequenos passos diários levam a grandes resultados.";
+  }
+  
+  // Insights padrão se nenhum dos anteriores se aplicar
+  const insights = [
+    "Lembre-se: pequenas ações consistentes levam a grandes transformações.",
+    "Tente associar este hábito a algo que você já faz todos os dias.",
+    "Celebre seu progresso, mesmo que pareça pequeno.",
+    "Considere ajustar o horário deste hábito para quando você tem mais energia.",
+    "A consistência é mais importante que a perfeição."
+  ];
+  
+  return insights[Math.floor(Math.random() * insights.length)];
+}
+
+// Função para atualizar insights da IA para todos os hábitos do usuário
+export async function updateAllHabitsInsights(): Promise<void> {
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (!user) return;
+    
+    // Buscar todos os hábitos do usuário
+    const { data: habits, error } = await supabase
+      .from('habits')
+      .select('*')
+      .eq('user_id', user.id);
+      
+    if (error) throw error;
+    if (!habits || habits.length === 0) return;
+    
+    // Para cada hábito, gerar um insight e atualizar
+    for (const habit of habits) {
+      const habitoFormatado: Habito = {
+        id: habit.id,
+        nome: habit.name,
+        proposito: habit.description || '',
+        frequencia: habit.frequency || 'Diário',
+        progresso: habit.progress || 0,
+        streak: habit.streak || 0,
+        ultimoCheck: habit.last_check_in 
+          ? new Date(habit.last_check_in).toLocaleDateString('pt-BR')
+          : 'Nunca',
+        observacaoIA: habit.ai_observation || 'Continue assim!',
+        tags: habit.tags || [],
+        icone: habit.icon || '💪',
+      };
+      
+      const insight = generateHabitInsight(habitoFormatado);
+      
+      // Atualizar o hábito com o novo insight
+      await supabase
+        .from('habits')
+        .update({ ai_observation: insight })
+        .eq('id', habit.id);
+    }
+  } catch (error) {
+    console.error("Erro ao atualizar insights dos hábitos:", error);
+  }
+}
 
 interface Project {
   id: string;

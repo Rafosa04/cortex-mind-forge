@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/components/ui/use-toast";
 import { Habito } from "@/components/Habitos/HabitoCard";
+import { generateHabitInsight } from "@/utils/athenaInsightUtils";
 
 export function useHabitos() {
   const [habitos, setHabitos] = useState<Habito[]>([]);
@@ -84,7 +85,13 @@ export function useHabitos() {
           progresso: habit.progress || 0,
           streak: habit.streak || 0,
           ultimoCheck: habit.last_check_in 
-            ? new Date(habit.last_check_in).toLocaleDateString('pt-BR')
+            ? new Date(habit.last_check_in).toLocaleDateString('pt-BR', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+              })
             : 'Nunca',
           observacaoIA: habit.ai_observation || 'Continue assim!',
           tags: habit.tags || [],
@@ -117,6 +124,21 @@ export function useHabitos() {
         return;
       }
 
+      // Criar hábito formatado para gerar insight
+      const newHabitFormatted: Habito = {
+        nome: nome,
+        proposito: proposito,
+        frequencia: frequencia,
+        progresso: 0,
+        streak: 0,
+        ultimoCheck: 'Nunca',
+        tags: ['novo'],
+        observacaoIA: ''
+      };
+
+      // Gerar insight personalizado
+      const insight = generateHabitInsight(newHabitFormatted);
+
       const newHabit = {
         name: nome,
         description: proposito,
@@ -127,7 +149,7 @@ export function useHabitos() {
         streak: 0,
         icon: '💪',
         tags: ['novo'],
-        ai_observation: 'Novo hábito criado! Vamos começar!'
+        ai_observation: insight
       };
 
       const { error } = await supabase.from('habits').insert(newHabit);
@@ -233,6 +255,41 @@ export function useHabitos() {
         });
         return;
       }
+
+      // Buscar o hábito atualizado após o check-in para gerar novo insight
+      setTimeout(async () => {
+        const { data: updatedHabit } = await supabase
+          .from('habits')
+          .select('*')
+          .eq('id', habitId)
+          .single();
+          
+        if (updatedHabit) {
+          const habitoFormatado: Habito = {
+            id: updatedHabit.id,
+            nome: updatedHabit.name,
+            proposito: updatedHabit.description || '',
+            frequencia: updatedHabit.frequency || 'Diário',
+            progresso: updatedHabit.progress || 0,
+            streak: updatedHabit.streak || 0,
+            ultimoCheck: updatedHabit.last_check_in 
+              ? new Date(updatedHabit.last_check_in).toLocaleDateString('pt-BR')
+              : 'Nunca',
+            observacaoIA: updatedHabit.ai_observation || 'Continue assim!',
+            tags: updatedHabit.tags || [],
+            icone: updatedHabit.icon || '💪',
+          };
+          
+          // Gerar novo insight baseado no estado atualizado
+          const newInsight = generateHabitInsight(habitoFormatado);
+          
+          // Atualizar o insight no banco de dados
+          await supabase
+            .from('habits')
+            .update({ ai_observation: newInsight })
+            .eq('id', habitId);
+        }
+      }, 1000); // Esperar 1 segundo para o trigger do banco atualizar o streak e progresso
 
       toast({
         title: "Check-in realizado!",
