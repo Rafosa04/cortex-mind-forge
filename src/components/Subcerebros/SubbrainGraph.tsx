@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import ForceGraph2D from 'react-force-graph-2d';
 import { motion } from 'framer-motion';
@@ -48,21 +47,20 @@ export function SubbrainGraph({ graphData, onNodeClick }: SubbrainGraphProps) {
   const [focusedNode, setFocusedNode] = useState<GraphNode | null>(null);
   const animationFrameRef = useRef<number>();
   
-  // Enhanced constellation color system
+  // Enhanced constellation color system for neurons
   const getNodeColor = (node: GraphNode) => {
     const colors = {
-      athena: '#FFD700', // Golden sun
-      subcerebro: '#8B5CF6', // Deep purple
-      projeto: '#0EA5E9', // Cyan blue
-      habito: '#10B981', // Emerald green
-      favorito: '#F59E0B', // Amber
-      pensamento: '#EC4899', // Pink
+      athena: '#FFD700', // Central golden neuron
+      subcerebro: '#8B5CF6', // Deep purple neurons
+      projeto: '#0EA5E9', // Cyan blue neurons
+      habito: '#10B981', // Emerald green neurons
+      favorito: '#F59E0B', // Amber neurons
+      pensamento: '#EC4899', // Pink neurons
       default: '#9CA3AF'
     };
     return colors[node.type as keyof typeof colors] || colors.default;
   };
   
-  // Enhanced constellation setup with orbital mechanics
   const setupConstellation = useCallback(() => {
     if (!graphData.nodes.length || !fgRef.current) return;
     
@@ -81,13 +79,13 @@ export function SubbrainGraph({ graphData, onNodeClick }: SubbrainGraphProps) {
       return acc;
     }, {} as Record<string, GraphNode[]>);
     
-    // Define orbital layers by type
+    // Define orbital layers by type with smoother speeds
     const orbitLayers = {
-      subcerebro: { radius: 180, speed: 0.0008 },
-      projeto: { radius: 280, speed: 0.0006 },
-      habito: { radius: 350, speed: 0.0005 },
-      favorito: { radius: 420, speed: 0.0004 },
-      pensamento: { radius: 490, speed: 0.0003 }
+      subcerebro: { radius: 180, speed: 0.0006 },
+      projeto: { radius: 280, speed: 0.0004 },
+      habito: { radius: 350, speed: 0.0003 },
+      favorito: { radius: 420, speed: 0.0002 },
+      pensamento: { radius: 490, speed: 0.0001 }
     };
     
     // Position nodes in their orbital layers
@@ -98,11 +96,11 @@ export function SubbrainGraph({ graphData, onNodeClick }: SubbrainGraphProps) {
       nodes.forEach((node, index) => {
         const angleStep = (2 * Math.PI) / nodes.length;
         const baseAngle = index * angleStep;
-        const radiusVariation = (Math.random() - 0.5) * 40; // Add some variation
+        const radiusVariation = (Math.random() - 0.5) * 30; // Smoother variation
         
         node.orbitRadius = layer.radius + radiusVariation;
-        node.orbitAngle = baseAngle + (Math.random() - 0.5) * 0.5; // Small random offset
-        node.orbitSpeed = layer.speed * (0.8 + Math.random() * 0.4); // Speed variation
+        node.orbitAngle = baseAngle + (Math.random() - 0.5) * 0.3; // Smaller random offset
+        node.orbitSpeed = layer.speed * (0.9 + Math.random() * 0.2); // Less speed variation
         
         // Initial position
         node.fx = Math.cos(node.orbitAngle) * node.orbitRadius;
@@ -111,7 +109,6 @@ export function SubbrainGraph({ graphData, onNodeClick }: SubbrainGraphProps) {
     });
   }, [graphData.nodes]);
   
-  // Orbital animation system
   useEffect(() => {
     if (!graphData.nodes.length) return;
     
@@ -121,11 +118,11 @@ export function SubbrainGraph({ graphData, onNodeClick }: SubbrainGraphProps) {
       graphData.nodes.forEach(node => {
         if (node.id === 'athena' || !node.orbitRadius || !node.orbitSpeed) return;
         
-        // Update orbital position
+        // Update orbital position with smoother movement
         node.orbitAngle = (node.orbitAngle || 0) + node.orbitSpeed;
         
-        // Apply gravitational wobble based on relevance
-        const wobble = (node.relevancia || 5) / 50 * Math.sin(now * 0.002);
+        // Apply gentle gravitational wobble
+        const wobble = (node.relevancia || 5) / 100 * Math.sin(now * 0.001);
         const effectiveRadius = node.orbitRadius * (1 + wobble);
         
         node.fx = Math.cos(node.orbitAngle) * effectiveRadius;
@@ -150,7 +147,6 @@ export function SubbrainGraph({ graphData, onNodeClick }: SubbrainGraphProps) {
     };
   }, [graphData.nodes, setupConstellation]);
   
-  // Enhanced synaptic impulse system
   useEffect(() => {
     if (graphData.links.length === 0) return;
     
@@ -197,7 +193,7 @@ export function SubbrainGraph({ graphData, onNodeClick }: SubbrainGraphProps) {
           return newImpulses;
         });
       });
-    }, 600); // Slightly faster impulse generation
+    }, 800); // Slightly slower for smoother feel
     
     // Smoother impulse animation
     const animationInterval = setInterval(() => {
@@ -208,13 +204,13 @@ export function SubbrainGraph({ graphData, onNodeClick }: SubbrainGraphProps) {
           if (progress >= 1) {
             newImpulses.delete(linkId);
           } else {
-            newImpulses.set(linkId, progress + 0.025); // Smoother movement
+            newImpulses.set(linkId, progress + 0.02); // Slower, smoother movement
           }
         }
         
         return newImpulses;
       });
-    }, 30); // Higher frame rate for smoother animation
+    }, 40); // Slightly lower frame rate for smoothness
     
     return () => {
       clearInterval(interval);
@@ -222,7 +218,6 @@ export function SubbrainGraph({ graphData, onNodeClick }: SubbrainGraphProps) {
     };
   }, [graphData.links, graphData.nodes]);
   
-  // Initialize dimensions
   useEffect(() => {
     const updateDimensions = () => {
       setDimensions({
@@ -237,7 +232,6 @@ export function SubbrainGraph({ graphData, onNodeClick }: SubbrainGraphProps) {
     return () => window.removeEventListener('resize', updateDimensions);
   }, []);
   
-  // Fit the constellation after it's loaded
   const handleEngineStop = useCallback(() => {
     if (fgRef.current && graphData.nodes.length) {
       setTimeout(() => {
@@ -246,7 +240,6 @@ export function SubbrainGraph({ graphData, onNodeClick }: SubbrainGraphProps) {
     }
   }, [graphData.nodes.length]);
   
-  // Enhanced node hover with tooltip positioning
   const handleNodeHover = (node: GraphNode | null, event: any) => {
     if (event && node) {
       const canvas = event.target;
@@ -261,7 +254,6 @@ export function SubbrainGraph({ graphData, onNodeClick }: SubbrainGraphProps) {
     setHoveredNode(node);
   };
 
-  // Handle node expansion (focus mode)
   const handleNodeExpand = (node: GraphNode) => {
     setFocusedNode(node);
     if (fgRef.current) {
@@ -270,7 +262,6 @@ export function SubbrainGraph({ graphData, onNodeClick }: SubbrainGraphProps) {
     }
   };
 
-  // Reset focus mode
   const resetFocus = () => {
     setFocusedNode(null);
     if (fgRef.current) {
@@ -278,114 +269,137 @@ export function SubbrainGraph({ graphData, onNodeClick }: SubbrainGraphProps) {
     }
   };
   
-  // Enhanced celestial body paint function
+  // Enhanced neuron paint function with detailed neural structure
   const paintNode = useCallback((node: GraphNode, ctx: CanvasRenderingContext2D, globalScale: number) => {
     const label = node.label;
     const color = getNodeColor(node);
     
-    // Enhanced size system for celestial bodies
+    // Enhanced size system for neurons
     let baseNodeSize;
     if (node.id === 'athena') {
-      baseNodeSize = 25 / globalScale; // Central star
+      baseNodeSize = 30 / globalScale; // Central Athena neuron (larger)
     } else if (node.type === 'subcerebro') {
-      baseNodeSize = (12 + (node.relevancia || 1) * 0.8) / globalScale; // Large planets
+      baseNodeSize = (15 + (node.relevancia || 1) * 1.2) / globalScale; // Large neurons
     } else {
-      baseNodeSize = (8 + (node.relevancia || 1) * 0.6) / globalScale; // Smaller celestial bodies
+      baseNodeSize = (10 + (node.relevancia || 1) * 0.8) / globalScale; // Smaller neurons
     }
     
-    // Enhanced celestial pulsing with realistic orbital influence
+    // Enhanced neural pulsing
     const now = Date.now();
     const nodeHash = node.id.split('').reduce((a, b) => a + b.charCodeAt(0), 0);
     
     let pulseFactor = 1;
     if (node.id === 'athena') {
-      // Central star intense pulsing
-      const primaryPulse = Math.sin(now * 0.003) * 0.15;
-      const secondaryPulse = Math.sin(now * 0.005) * 0.08;
+      // Central Athena intense neural activity
+      const primaryPulse = Math.sin(now * 0.004) * 0.2;
+      const secondaryPulse = Math.sin(now * 0.006) * 0.1;
       pulseFactor = 1 + primaryPulse + secondaryPulse;
     } else {
-      // Orbital bodies subtle pulsing based on relevance and distance
+      // Neural activity based on relevance and position
       const distanceFromCenter = Math.sqrt((node.x || 0) ** 2 + (node.y || 0) ** 2);
       const relevanceMultiplier = (node.relevancia || 5) / 10;
-      const distanceInfluence = Math.max(0.3, 1 - distanceFromCenter / 500);
+      const proximityInfluence = Math.max(0.2, 1 - distanceFromCenter / 600);
       
-      const pulse = Math.sin(now * 0.002 + nodeHash * 0.1) * 0.1 * relevanceMultiplier * distanceInfluence;
-      pulseFactor = 1 + pulse;
+      const neuralPulse = Math.sin(now * 0.003 + nodeHash * 0.15) * 0.15 * relevanceMultiplier * proximityInfluence;
+      pulseFactor = 1 + neuralPulse;
     }
     
-    // Multi-layer cosmic glow system
-    const glowLayers = node.id === 'athena' ? 4 : 3;
+    // Neural glow layers (synaptic field)
+    const glowLayers = node.id === 'athena' ? 5 : 4;
     for (let i = glowLayers; i > 0; i--) {
-      const glowSize = baseNodeSize * (1.5 + i * 0.8) * pulseFactor;
-      const glowOpacity = (0.15 / i) * pulseFactor;
+      const glowSize = baseNodeSize * (1.2 + i * 0.6) * pulseFactor;
+      const glowOpacity = (0.08 / i) * pulseFactor;
       
       ctx.beginPath();
       ctx.arc(node.x || 0, node.y || 0, glowSize, 0, 2 * Math.PI);
       
-      // Enhanced gradient for cosmic effect
-      const glowGradient = ctx.createRadialGradient(
+      // Neural field gradient
+      const neuralGradient = ctx.createRadialGradient(
         node.x || 0, node.y || 0, 0,
         node.x || 0, node.y || 0, glowSize
       );
       
       if (node.id === 'athena') {
-        glowGradient.addColorStop(0, `${color}${Math.round(glowOpacity * 255).toString(16).padStart(2, '0')}`);
-        glowGradient.addColorStop(0.7, `#FFE55C${Math.round(glowOpacity * 0.6 * 255).toString(16).padStart(2, '0')}`);
-        glowGradient.addColorStop(1, 'rgba(255, 229, 92, 0)');
+        neuralGradient.addColorStop(0, `${color}${Math.round(glowOpacity * 255).toString(16).padStart(2, '0')}`);
+        neuralGradient.addColorStop(0.6, `#FFE55C${Math.round(glowOpacity * 0.7 * 255).toString(16).padStart(2, '0')}`);
+        neuralGradient.addColorStop(1, 'rgba(255, 229, 92, 0)');
       } else {
-        glowGradient.addColorStop(0, `${color}${Math.round(glowOpacity * 255).toString(16).padStart(2, '0')}`);
-        glowGradient.addColorStop(0.8, `${color}${Math.round(glowOpacity * 0.3 * 255).toString(16).padStart(2, '0')}`);
-        glowGradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
+        neuralGradient.addColorStop(0, `${color}${Math.round(glowOpacity * 255).toString(16).padStart(2, '0')}`);
+        neuralGradient.addColorStop(0.7, `${color}${Math.round(glowOpacity * 0.4 * 255).toString(16).padStart(2, '0')}`);
+        neuralGradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
       }
       
-      ctx.fillStyle = glowGradient;
+      ctx.fillStyle = neuralGradient;
       ctx.fill();
     }
     
-    // Enhanced main celestial body with texture
+    // Main neuron body (soma)
     ctx.beginPath();
     ctx.arc(node.x || 0, node.y || 0, baseNodeSize * pulseFactor, 0, 2 * Math.PI);
     
-    // Create celestial body gradient
-    const bodyGradient = ctx.createRadialGradient(
-      (node.x || 0) - baseNodeSize * 0.3, (node.y || 0) - baseNodeSize * 0.3, 0,
+    // Neuron body gradient with depth
+    const neuronGradient = ctx.createRadialGradient(
+      (node.x || 0) - baseNodeSize * 0.4, (node.y || 0) - baseNodeSize * 0.4, 0,
       node.x || 0, node.y || 0, baseNodeSize * pulseFactor
     );
     
     if (node.id === 'athena') {
-      bodyGradient.addColorStop(0, '#FFFFFF');
-      bodyGradient.addColorStop(0.3, color);
-      bodyGradient.addColorStop(1, '#FFA500');
+      neuronGradient.addColorStop(0, '#FFFFFF');
+      neuronGradient.addColorStop(0.3, color);
+      neuronGradient.addColorStop(0.7, '#FFA500');
+      neuronGradient.addColorStop(1, '#FF6B35');
     } else {
-      bodyGradient.addColorStop(0, `${color}FF`);
-      bodyGradient.addColorStop(0.7, `${color}DD`);
-      bodyGradient.addColorStop(1, `${color}88`);
+      neuronGradient.addColorStop(0, `${color}FF`);
+      neuronGradient.addColorStop(0.5, `${color}DD`);
+      neuronGradient.addColorStop(0.8, `${color}AA`);
+      neuronGradient.addColorStop(1, `${color}66`);
     }
     
-    ctx.fillStyle = bodyGradient;
+    ctx.fillStyle = neuronGradient;
     ctx.fill();
     
-    // Enhanced cosmic edge with shimmer
-    ctx.strokeStyle = focusedNode?.id === node.id ? '#FFFFFF' : `${color}AA`;
-    ctx.lineWidth = focusedNode?.id === node.id ? 2 / globalScale : 1 / globalScale;
+    // Neuron membrane (cell boundary)
+    ctx.strokeStyle = focusedNode?.id === node.id ? '#FFFFFF' : `${color}CC`;
+    ctx.lineWidth = focusedNode?.id === node.id ? 2.5 / globalScale : 1.5 / globalScale;
     ctx.stroke();
     
-    // Enhanced label rendering for celestial bodies
-    if (node.id === 'athena' || globalScale > 1.0 || focusedNode?.id === node.id) {
+    // Neural dendrites (small extensions for larger neurons)
+    if (baseNodeSize * globalScale > 12 && node.id !== 'athena') {
+      const dendriteCount = Math.floor(3 + (node.relevancia || 5) / 3);
+      for (let i = 0; i < dendriteCount; i++) {
+        const angle = (i / dendriteCount) * Math.PI * 2 + now * 0.0005;
+        const dendriteLength = baseNodeSize * 0.6 * (0.8 + Math.random() * 0.4);
+        
+        const startX = (node.x || 0) + Math.cos(angle) * baseNodeSize * 0.9;
+        const startY = (node.y || 0) + Math.sin(angle) * baseNodeSize * 0.9;
+        const endX = startX + Math.cos(angle) * dendriteLength;
+        const endY = startY + Math.sin(angle) * dendriteLength;
+        
+        ctx.beginPath();
+        ctx.moveTo(startX, startY);
+        ctx.lineTo(endX, endY);
+        ctx.strokeStyle = `${color}60`;
+        ctx.lineWidth = 0.8 / globalScale;
+        ctx.stroke();
+      }
+    }
+    
+    // Enhanced label rendering for neurons
+    if (node.id === 'athena' || globalScale > 1.2 || focusedNode?.id === node.id) {
       const fontSize = node.id === 'athena' ? 16 : 12;
       ctx.font = `${Math.max(fontSize / globalScale, 8)}px Inter, sans-serif`;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       
-      // Enhanced text shadow for cosmic readability
+      // Enhanced text shadow for neural readability
       ctx.shadowColor = 'rgba(0, 0, 0, 0.9)';
-      ctx.shadowBlur = 6;
+      ctx.shadowBlur = 8;
       ctx.shadowOffsetX = 1;
       ctx.shadowOffsetY = 1;
       
-      ctx.fillStyle = node.id === 'athena' ? '#FFFFFF' : '#E2E8F0';
+      ctx.fillStyle = node.id === 'athena' ? '#FFFFFF' : '#F1F5F9';
       
-      const textY = (node.y || 0) + baseNodeSize * pulseFactor + (fontSize / globalScale) + 6;
+      const textY = (node.y || 0) + baseNodeSize * pulseFactor + (fontSize / globalScale) + 8;
       ctx.fillText(label, node.x || 0, textY);
       ctx.shadowBlur = 0;
       ctx.shadowOffsetX = 0;
@@ -393,7 +407,6 @@ export function SubbrainGraph({ graphData, onNodeClick }: SubbrainGraphProps) {
     }
   }, [focusedNode]);
   
-  // Enhanced synaptic connection paint function
   const paintLink = useCallback((link: any, ctx: CanvasRenderingContext2D) => {
     const source = typeof link.source === 'object' ? link.source : graphData.nodes.find(n => n.id === link.source);
     const target = typeof link.target === 'object' ? link.target : graphData.nodes.find(n => n.id === link.target);
@@ -451,8 +464,8 @@ export function SubbrainGraph({ graphData, onNodeClick }: SubbrainGraphProps) {
       const impulseY = source.y + (target.y - source.y) * impulseValue;
       
       // Multiple impulse particles with trailing effect
-      const particleSizes = [4, 3.2, 2.6, 2, 1.6];
-      const trailOffsets = [0, 0.03, 0.06, 0.09, 0.12];
+      const particleSizes = [5, 4, 3.2, 2.6, 2];
+      const trailOffsets = [0, 0.04, 0.08, 0.12, 0.16];
       
       for (let i = 0; i < particleSizes.length; i++) {
         const trailProgress = Math.max(0, impulseValue - trailOffsets[i]);
@@ -468,7 +481,7 @@ export function SubbrainGraph({ graphData, onNodeClick }: SubbrainGraphProps) {
           // Dynamic impulse glow based on connection importance
           const impulseGlow = ctx.createRadialGradient(
             trailX, trailY, 0,
-            trailX, trailY, particleSizes[i] * 4
+            trailX, trailY, particleSizes[i] * 5
           );
           
           const impulseIntensity = connectionStrength;
@@ -480,7 +493,7 @@ export function SubbrainGraph({ graphData, onNodeClick }: SubbrainGraphProps) {
           impulseGlow.addColorStop(1, 'rgba(255, 255, 255, 0)');
           
           ctx.fillStyle = impulseGlow;
-          ctx.globalAlpha = 1.0 - (i * 0.12);
+          ctx.globalAlpha = 1.0 - (i * 0.15);
           ctx.fill();
         }
       }
@@ -491,11 +504,12 @@ export function SubbrainGraph({ graphData, onNodeClick }: SubbrainGraphProps) {
   
   return (
     <div className="relative w-full h-full bg-gradient-to-br from-[#0A0A1A] via-[#0C0C1C] to-[#0F0F2A]">
-      {/* Cosmic background effect */}
-      <div className="absolute inset-0 opacity-30">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_50%,rgba(120,119,198,0.1),transparent_50%)]" />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_20%,rgba(255,215,0,0.05),transparent_50%)]" />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_40%_80%,rgba(139,92,246,0.08),transparent_50%)]" />
+      {/* Enhanced cosmic background effect */}
+      <div className="absolute inset-0 opacity-40">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_50%,rgba(120,119,198,0.15),transparent_50%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_20%,rgba(255,215,0,0.08),transparent_50%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_40%_80%,rgba(139,92,246,0.12),transparent_50%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_60%_30%,rgba(16,185,129,0.06),transparent_50%)]" />
       </div>
 
       {/* Focus mode controls */}
@@ -519,15 +533,18 @@ export function SubbrainGraph({ graphData, onNodeClick }: SubbrainGraphProps) {
         </motion.div>
       )}
 
-      {/* Constellation motto */}
+      {/* Enhanced constellation motto */}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 1 }}
         className="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-10"
       >
-        <div className="text-center text-xs text-foreground/50 italic">
-          "Cada subcérebro é uma constelação da sua consciência digital"
+        <div className="text-center text-sm text-foreground/60 italic">
+          <span className="text-primary">"</span>
+          Cada subcérebro é uma constelação da sua consciência digital
+          <span className="text-primary">"</span>
+          <div className="text-xs text-primary/50 mt-1">— Rede Neural CÓRTEX</div>
         </div>
       </motion.div>
 
