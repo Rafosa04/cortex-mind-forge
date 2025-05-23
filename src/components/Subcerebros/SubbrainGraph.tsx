@@ -1,3 +1,4 @@
+
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import ForceGraph2D from 'react-force-graph-2d';
 import { motion } from 'framer-motion';
@@ -62,6 +63,52 @@ export function SubbrainGraph({ graphData, onNodeClick }: SubbrainGraphProps) {
       default: '#9CA3AF'
     };
     return colors[node.type as keyof typeof colors] || colors.default;
+  };
+
+  const paintNode = (node: any, ctx: any) => {
+    const label = node.label;
+    const fontSize = 12;
+    const nodeRadius = Math.sqrt(node.relevancia || 1) * 8;
+    
+    ctx.beginPath();
+    ctx.arc(node.x, node.y, nodeRadius, 0, 2 * Math.PI, false);
+    ctx.fillStyle = getNodeColor(node);
+    ctx.fill();
+    
+    if (node.id === 'athena') {
+      ctx.strokeStyle = '#FFD700';
+      ctx.lineWidth = 3;
+      ctx.stroke();
+    }
+    
+    ctx.font = `${fontSize}px Arial`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = '#ffffff';
+    ctx.fillText(label, node.x, node.y + nodeRadius + 15);
+  };
+
+  const paintLink = (link: any, ctx: any) => {
+    const source = typeof link.source === 'object' ? link.source : null;
+    const target = typeof link.target === 'object' ? link.target : null;
+    
+    if (!source || !target) return;
+
+    ctx.beginPath();
+    ctx.moveTo(source.x, source.y);
+    ctx.lineTo(target.x, target.y);
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+  };
+
+  const handleEngineStop = () => {
+    console.log('Force simulation stopped');
+  };
+
+  const handleNodeExpand = (node: GraphNode) => {
+    console.log('Expanding node:', node.id);
+    // Future implementation for node expansion
   };
   
   const setupConstellation = useCallback(() => {
