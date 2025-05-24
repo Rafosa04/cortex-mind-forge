@@ -23,6 +23,7 @@ export interface SubbrainGraphProps {
 export function SubbrainGraph({ graphData, onNodeClick }: SubbrainGraphProps) {
   const fgRef = useRef<any>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const animationTimeRef = useRef<number>(0);
   
   const { isFullscreen, toggleFullscreen } = useFullscreen(containerRef);
   const dimensions = useDimensions(isFullscreen);
@@ -39,14 +40,28 @@ export function SubbrainGraph({ graphData, onNodeClick }: SubbrainGraphProps) {
   
   useGraphAnimation(graphData, fgRef);
   
-  // Enhanced paint functions with time parameter
-  const paintNodeWithTime = (node: any, ctx: any) => {
-    paintNode(node, ctx, Date.now());
-  };
+  // Continuous animation functions with real-time updates
+  const paintNodeWithTime = useCallback((node: any, ctx: any) => {
+    animationTimeRef.current = Date.now();
+    paintNode(node, ctx, animationTimeRef.current);
+  }, []);
 
-  const paintLinkWithTime = (link: any, ctx: any) => {
-    paintLink(link, ctx, Date.now());
-  };
+  const paintLinkWithTime = useCallback((link: any, ctx: any) => {
+    paintLink(link, ctx, animationTimeRef.current);
+  }, []);
+  
+  // Force continuous re-rendering for smooth animations
+  useEffect(() => {
+    if (!fgRef.current) return;
+    
+    const interval = setInterval(() => {
+      if (fgRef.current) {
+        fgRef.current.refresh();
+      }
+    }, 32); // ~30fps refresh rate for smooth animations
+    
+    return () => clearInterval(interval);
+  }, []);
   
   return (
     <div 
@@ -129,6 +144,7 @@ export function SubbrainGraph({ graphData, onNodeClick }: SubbrainGraphProps) {
         d3AlphaDecay={0}
         d3VelocityDecay={0}
         warmupTicks={0}
+        autoPauseRedraw={false}
       />
     </div>
   );

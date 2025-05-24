@@ -6,16 +6,17 @@ export const paintNode = (node: GraphNode, ctx: CanvasRenderingContext2D, time: 
   const fontSize = 12;
   const baseRadius = Math.sqrt(node.relevancia || 1) * 8;
   
-  // Enhanced pulsating effect based on relevance - more dramatic for higher relevance
+  // Continuous pulsating effect based on relevance with smooth timing
   const relevanceIntensity = (node.relevancia || 5) / 10;
-  const pulseFreq = 0.003 + (relevanceIntensity * 0.002); // Faster pulse for more relevant nodes
-  const pulseAmplitude = 0.2 + (relevanceIntensity * 0.3); // Bigger pulse for more relevant nodes
+  const pulseFreq = 0.001 + (relevanceIntensity * 0.002); // Slower, more visible pulse
+  const pulseAmplitude = 0.15 + (relevanceIntensity * 0.25); // Varied amplitude based on relevance
   const pulse = Math.sin(time * pulseFreq + (node.pulsePhase || 0)) * pulseAmplitude + 1;
   const nodeRadius = baseRadius * pulse;
   
-  // Enhanced glow effect that also pulses
-  const glowIntensity = 0.3 + (relevanceIntensity * 0.5);
-  const glowRadius = nodeRadius * (2 + pulse * 0.5);
+  // Enhanced glow effect that pulses with the node
+  const glowIntensity = 0.2 + (relevanceIntensity * 0.4);
+  const glowPulse = Math.sin(time * pulseFreq * 1.5 + (node.pulsePhase || 0)) * 0.3 + 1;
+  const glowRadius = nodeRadius * (2 + glowPulse * 0.5);
   
   const gradient = ctx.createRadialGradient(
     node.x || 0, node.y || 0, 0,
@@ -24,7 +25,7 @@ export const paintNode = (node: GraphNode, ctx: CanvasRenderingContext2D, time: 
   
   const nodeColor = getNodeColor(node);
   gradient.addColorStop(0, nodeColor);
-  gradient.addColorStop(0.4, nodeColor + Math.floor(255 * glowIntensity).toString(16).padStart(2, '0'));
+  gradient.addColorStop(0.4, nodeColor + Math.floor(255 * glowIntensity * glowPulse).toString(16).padStart(2, '0'));
   gradient.addColorStop(0.8, nodeColor + '40');
   gradient.addColorStop(1, nodeColor + '00');
   
@@ -50,18 +51,18 @@ export const paintNode = (node: GraphNode, ctx: CanvasRenderingContext2D, time: 
   
   // Special enhanced styling for Athena (the sun)
   if (node.id === 'athena') {
-    // Athena's enhanced corona effect with multiple layers
+    // Athena's enhanced corona effect with multiple animated layers
     for (let i = 1; i <= 3; i++) {
-      const coronaRadius = nodeRadius * (2 + i);
-      const coronaIntensity = 0.6 / i;
-      const coronaPulse = Math.sin(time * 0.002 * i) * 0.2 + 1;
+      const coronaRadius = nodeRadius * (1.8 + i * 0.4);
+      const coronaIntensity = 0.5 / i;
+      const coronaPulse = Math.sin(time * 0.0008 * i + (i * Math.PI / 3)) * 0.3 + 1;
       
       const coronaGradient = ctx.createRadialGradient(
         node.x || 0, node.y || 0, nodeRadius,
         node.x || 0, node.y || 0, coronaRadius * coronaPulse
       );
-      coronaGradient.addColorStop(0, `#FFD700${Math.floor(255 * coronaIntensity).toString(16).padStart(2, '0')}`);
-      coronaGradient.addColorStop(0.5, `#FFD700${Math.floor(255 * coronaIntensity * 0.5).toString(16).padStart(2, '0')}`);
+      coronaGradient.addColorStop(0, `#FFD700${Math.floor(255 * coronaIntensity * coronaPulse).toString(16).padStart(2, '0')}`);
+      coronaGradient.addColorStop(0.5, `#FFD700${Math.floor(255 * coronaIntensity * coronaPulse * 0.5).toString(16).padStart(2, '0')}`);
       coronaGradient.addColorStop(1, '#FFD70000');
       
       ctx.beginPath();
@@ -70,10 +71,10 @@ export const paintNode = (node: GraphNode, ctx: CanvasRenderingContext2D, time: 
       ctx.fill();
     }
     
-    // Athena's pulsating border
-    const borderPulse = Math.sin(time * 0.004) * 0.5 + 1;
+    // Athena's continuously pulsating border
+    const borderPulse = Math.sin(time * 0.002) * 0.8 + 1.2;
     ctx.strokeStyle = '#FFD700';
-    ctx.lineWidth = 2 + borderPulse;
+    ctx.lineWidth = 2 * borderPulse;
     ctx.beginPath();
     ctx.arc(node.x || 0, node.y || 0, nodeRadius, 0, 2 * Math.PI, false);
     ctx.stroke();
@@ -109,14 +110,17 @@ export const paintLink = (link: GraphLink, ctx: CanvasRenderingContext2D, time: 
   const dy = (target.y || 0) - (source.y || 0);
   const distance = Math.sqrt(dx * dx + dy * dy);
   
-  // Enhanced base connection line with gradient
+  // Enhanced base connection line with animated gradient
   const gradient = ctx.createLinearGradient(
     source.x || 0, source.y || 0,
     target.x || 0, target.y || 0
   );
-  gradient.addColorStop(0, 'rgba(255, 255, 255, 0.3)');
-  gradient.addColorStop(0.5, 'rgba(96, 181, 181, 0.4)');
-  gradient.addColorStop(1, 'rgba(255, 255, 255, 0.3)');
+  
+  // Animated gradient colors
+  const colorIntensity = Math.sin(time * 0.002) * 0.2 + 0.4;
+  gradient.addColorStop(0, `rgba(255, 255, 255, ${colorIntensity * 0.8})`);
+  gradient.addColorStop(0.5, `rgba(96, 181, 181, ${colorIntensity})`);
+  gradient.addColorStop(1, `rgba(255, 255, 255, ${colorIntensity * 0.8})`);
   
   ctx.beginPath();
   ctx.moveTo(source.x || 0, source.y || 0);
@@ -125,34 +129,35 @@ export const paintLink = (link: GraphLink, ctx: CanvasRenderingContext2D, time: 
   ctx.lineWidth = 1.5;
   ctx.stroke();
   
-  // Enhanced synapse pulse effect with multiple pulses
+  // Continuous synapse pulse effect with multiple traveling pulses
   if (!link.pulsePosition) link.pulsePosition = Math.random();
-  if (!link.pulseSpeed) link.pulseSpeed = 0.002 + Math.random() * 0.004;
+  if (!link.pulseSpeed) link.pulseSpeed = 0.0015 + Math.random() * 0.003;
   
-  // Update pulse position continuously
-  link.pulsePosition += link.pulseSpeed;
+  // Update pulse position continuously based on real time
+  const pulseIncrement = link.pulseSpeed * 16; // Assuming ~60fps
+  link.pulsePosition += pulseIncrement;
   if (link.pulsePosition > 1) link.pulsePosition = 0;
   
-  // Draw multiple pulses along the line for synapse effect
-  const numPulses = 2;
+  // Draw multiple traveling pulses for enhanced synapse effect
+  const numPulses = 3;
   for (let i = 0; i < numPulses; i++) {
     const pulseOffset = i / numPulses;
     const pulsePos = (link.pulsePosition + pulseOffset) % 1;
     const pulseX = (source.x || 0) + dx * pulsePos;
     const pulseY = (source.y || 0) + dy * pulsePos;
     
-    // Enhanced pulse intensity with easing
-    const intensity = Math.sin(pulsePos * Math.PI) * 0.9 + 0.3;
-    const pulseSize = 6 + intensity * 4;
+    // Enhanced pulse intensity with smooth easing
+    const intensity = Math.sin(pulsePos * Math.PI) * 0.8 + 0.4;
+    const pulseSize = 4 + intensity * 6;
     
-    // Gradient for enhanced pulse
+    // Animated pulse gradient
     const pulseGradient = ctx.createRadialGradient(
       pulseX, pulseY, 0,
       pulseX, pulseY, pulseSize
     );
     pulseGradient.addColorStop(0, `rgba(96, 181, 181, ${intensity})`);
-    pulseGradient.addColorStop(0.3, `rgba(96, 181, 181, ${intensity * 0.8})`);
-    pulseGradient.addColorStop(0.7, `rgba(96, 181, 181, ${intensity * 0.4})`);
+    pulseGradient.addColorStop(0.3, `rgba(96, 181, 181, ${intensity * 0.9})`);
+    pulseGradient.addColorStop(0.7, `rgba(96, 181, 181, ${intensity * 0.5})`);
     pulseGradient.addColorStop(1, 'rgba(96, 181, 181, 0)');
     
     ctx.beginPath();
@@ -160,10 +165,11 @@ export const paintLink = (link: GraphLink, ctx: CanvasRenderingContext2D, time: 
     ctx.fillStyle = pulseGradient;
     ctx.fill();
     
-    // Add a bright core to the pulse
+    // Add a bright animated core to the pulse
+    const coreIntensity = intensity * Math.sin(time * 0.01 + pulsePos * Math.PI * 2) * 0.5 + 0.7;
     ctx.beginPath();
     ctx.arc(pulseX, pulseY, pulseSize * 0.3, 0, 2 * Math.PI, false);
-    ctx.fillStyle = `rgba(255, 255, 255, ${intensity * 0.8})`;
+    ctx.fillStyle = `rgba(255, 255, 255, ${coreIntensity})`;
     ctx.fill();
   }
 };

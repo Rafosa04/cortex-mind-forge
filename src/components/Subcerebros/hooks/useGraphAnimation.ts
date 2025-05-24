@@ -8,48 +8,69 @@ export const useGraphAnimation = (
   const animationFrameRef = useRef<number>();
   const startTimeRef = useRef<number>(Date.now());
   const isAnimatingRef = useRef<boolean>(false);
+  const lastUpdateRef = useRef<number>(0);
   
   const setupConstellation = useCallback(() => {
     if (!graphData.nodes.length || !fgRef.current) return;
     
     setupConstellationLayout(graphData.nodes);
     
-    // Disable force simulation for smoother orbital movement
+    // Disable all force simulation for smooth orbital movement
     if (fgRef.current) {
       const fg = fgRef.current;
       fg.d3Force('link', null);
       fg.d3Force('charge', null);
       fg.d3Force('center', null);
       fg.d3Force('collide', null);
+      fg.d3Force('x', null);
+      fg.d3Force('y', null);
     }
   }, [graphData.nodes, fgRef]);
   
   const animate = useCallback(() => {
-    if (!fgRef.current || !graphData.nodes.length) {
-      animationFrameRef.current = requestAnimationFrame(animate);
+    if (!fgRef.current || !graphData.nodes.length || !isAnimatingRef.current) {
+      if (isAnimatingRef.current) {
+        animationFrameRef.current = requestAnimationFrame(animate);
+      }
       return;
     }
 
     const now = Date.now();
     const elapsed = now - startTimeRef.current;
     
+    // Throttle updates to 60fps for better performance
+    if (now - lastUpdateRef.current < 16) {
+      animationFrameRef.current = requestAnimationFrame(animate);
+      return;
+    }
+    lastUpdateRef.current = now;
+    
     // Update orbital positions for all non-Athena nodes
+    let needsUpdate = false;
     graphData.nodes.forEach(node => {
       if (node.id === 'athena') {
         // Keep Athena fixed at center
-        node.fx = 0;
-        node.fy = 0;
+        if (node.fx !== 0 || node.fy !== 0) {
+          node.fx = 0;
+          node.fy = 0;
+          needsUpdate = true;
+        }
         return;
       }
       
       // Calculate new orbital position
       const newPos = calculateOrbitPosition(node, elapsed);
-      node.fx = newPos.x;
-      node.fy = newPos.y;
+      
+      // Only update if position changed significantly
+      if (Math.abs((node.fx || 0) - newPos.x) > 0.1 || Math.abs((node.fy || 0) - newPos.y) > 0.1) {
+        node.fx = newPos.x;
+        node.fy = newPos.y;
+        needsUpdate = true;
+      }
     });
     
-    // Force refresh to show smooth movement
-    if (fgRef.current) {
+    // Force refresh only if positions changed
+    if (needsUpdate && fgRef.current) {
       fgRef.current.refresh();
     }
     
@@ -58,36 +79,33 @@ export const useGraphAnimation = (
   }, [graphData.nodes, fgRef]);
   
   useEffect(() => {
-    if (!graphData.nodes.length || isAnimatingRef.current) return;
+    if (!graphData.nodes.length) return;
     
     // Setup constellation layout
     setupConstellation();
     
-    // Start continuous animation
-    isAnimatingRef.current = true;
-    startTimeRef.current = Date.now();
-    
-    // Small delay to allow initial setup
-    const timeoutId = setTimeout(() => {
+    // Start continuous animation if not already running
+    if (!isAnimatingRef.current) {
+      isAnimatingRef.current = true;
+      startTimeRef.current = Date.now();
+      lastUpdateRef.current = 0;
+      
+      // Start animation immediately
       animationFrameRef.current = requestAnimationFrame(animate);
-    }, 100);
+    }
     
     return () => {
-      isAnimatingRef.current = false;
-      if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current);
-      }
-      clearTimeout(timeoutId);
+      // Don't stop animation on dependency changes, only on unmount
     };
   }, [graphData.nodes, setupConstellation, animate]);
   
   // Cleanup on unmount
   useEffect(() => {
     return () => {
+      isAnimatingRef.current = false;
       if (animationFrameRef.current) {
         cancelAnimationFrame(animationFrameRef.current);
       }
-      isAnimatingRef.current = false;
     };
   }, []);
   
