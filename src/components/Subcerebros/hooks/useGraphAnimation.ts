@@ -1,4 +1,3 @@
-
 import { useEffect, useRef, useCallback } from 'react';
 import { GraphNode, calculateOrbitPosition, setupConstellationLayout } from '../utils/graphUtils';
 
@@ -37,12 +36,11 @@ export const useGraphAnimation = (
     }
 
     const now = Date.now();
+    const elapsed = (now - startTimeRef.current) * 0.001; // Convert to seconds immediately
     
     // Throttle updates to 60fps for better performance
     if (now - lastUpdateRef.current < 16) {
-      if (isAnimatingRef.current) {
-        animationFrameRef.current = requestAnimationFrame(animate);
-      }
+      animationFrameRef.current = requestAnimationFrame(animate);
       return;
     }
     lastUpdateRef.current = now;
@@ -64,7 +62,7 @@ export const useGraphAnimation = (
       
       // Calculate orbital movement for non-Athena nodes
       if (node.orbitRadius && node.orbitSpeed) {
-        const elapsed = (now - startTimeRef.current) * 0.001; // Convert to seconds
+        // Calculate current angle based on elapsed time and orbital speed
         const currentAngle = (node.orbitAngle || 0) + (elapsed * node.orbitSpeed);
         
         // Add subtle wobble for organic movement
@@ -77,7 +75,7 @@ export const useGraphAnimation = (
         const newX = Math.cos(currentAngle) * node.orbitRadius + wobbleX;
         const newY = Math.sin(currentAngle) * node.orbitRadius + wobbleY;
         
-        // Update position for smooth movement
+        // Always update position for smooth movement
         node.fx = newX;
         node.fy = newY;
         node.x = newX;

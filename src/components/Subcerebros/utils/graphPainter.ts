@@ -108,6 +108,7 @@ export const paintLink = (link: GraphLink, ctx: CanvasRenderingContext2D, time: 
 
   const dx = (target.x || 0) - (source.x || 0);
   const dy = (target.y || 0) - (source.y || 0);
+  const distance = Math.sqrt(dx * dx + dy * dy);
   
   // Enhanced base connection line with animated gradient
   const gradient = ctx.createLinearGradient(
@@ -128,11 +129,11 @@ export const paintLink = (link: GraphLink, ctx: CanvasRenderingContext2D, time: 
   ctx.lineWidth = 1.5;
   ctx.stroke();
   
-  // Single synapse pulse effect - muito mais lenta
-  if (!link.pulsePosition) link.pulsePosition = 0;
-  if (!link.pulseSpeed) link.pulseSpeed = 0.0008; // Velocidade muito mais lenta
+  // Single synapse pulse effect - uma por vez, completando todo o caminho
+  if (!link.pulsePosition) link.pulsePosition = Math.random();
+  if (!link.pulseSpeed) link.pulseSpeed = 0.003 + Math.random() * 0.002; // Velocidade ainda mais lenta
   if (!link.lastPulseTime) link.lastPulseTime = 0;
-  if (!link.pulseDuration) link.pulseDuration = 8000; // 8 segundos para completar
+  if (!link.pulseDuration) link.pulseDuration = 2000 + Math.random() * 3000; // 2-5 segundos para completar
   
   // Controla quando a próxima sinapse deve aparecer
   const currentTime = Date.now();
