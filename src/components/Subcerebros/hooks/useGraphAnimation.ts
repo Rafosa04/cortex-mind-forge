@@ -58,14 +58,29 @@ export const useGraphAnimation = (
         return;
       }
       
-      // Calculate new orbital position
-      const newPos = calculateOrbitPosition(node, elapsed);
-      
-      // Only update if position changed significantly
-      if (Math.abs((node.fx || 0) - newPos.x) > 0.1 || Math.abs((node.fy || 0) - newPos.y) > 0.1) {
-        node.fx = newPos.x;
-        node.fy = newPos.y;
-        needsUpdate = true;
+      // Calculate real orbital movement
+      if (node.orbitRadius && node.orbitSpeed) {
+        const timeInSeconds = elapsed * 0.001; // Convert to seconds
+        const currentAngle = (node.orbitAngle || 0) + (timeInSeconds * node.orbitSpeed);
+        
+        // Add subtle wobble for organic movement
+        const wobbleFreq = 0.5 + (node.relevancia || 5) * 0.1;
+        const wobbleAmplitude = 5 + (node.relevancia || 5) * 2;
+        const wobbleX = Math.sin(timeInSeconds * wobbleFreq) * wobbleAmplitude;
+        const wobbleY = Math.cos(timeInSeconds * wobbleFreq * 1.3) * wobbleAmplitude;
+        
+        // Calculate new orbital position
+        const newX = Math.cos(currentAngle) * node.orbitRadius + wobbleX;
+        const newY = Math.sin(currentAngle) * node.orbitRadius + wobbleY;
+        
+        // Only update if position changed significantly
+        if (Math.abs((node.fx || 0) - newX) > 0.1 || Math.abs((node.fy || 0) - newY) > 0.1) {
+          node.fx = newX;
+          node.fy = newY;
+          node.x = newX;
+          node.y = newY;
+          needsUpdate = true;
+        }
       }
     });
     
