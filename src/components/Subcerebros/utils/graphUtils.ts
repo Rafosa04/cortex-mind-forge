@@ -1,4 +1,3 @@
-
 import * as d3 from 'd3-force';
 
 export interface GraphNode {
@@ -27,6 +26,8 @@ export interface GraphLink {
   impulse?: number;
   pulsePosition?: number;
   pulseSpeed?: number;
+  lastPulseTime?: number;
+  pulseDuration?: number;
 }
 
 export const getNodeColor = (node: GraphNode) => {
