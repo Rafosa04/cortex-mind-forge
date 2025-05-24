@@ -1,4 +1,3 @@
-
 import { useEffect, useRef, useCallback } from 'react';
 import { GraphNode, calculateOrbitPosition, setupConstellationLayout } from '../utils/graphUtils';
 
@@ -29,7 +28,7 @@ export const useGraphAnimation = (
   }, [graphData.nodes, fgRef]);
   
   const animate = useCallback(() => {
-    if (!fgRef.current || !graphData.nodes.length) {
+    if (!fgRef.current || !graphData.nodes.length || !isAnimatingRef.current) {
       if (isAnimatingRef.current) {
         animationFrameRef.current = requestAnimationFrame(animate);
       }
@@ -37,12 +36,11 @@ export const useGraphAnimation = (
     }
 
     const now = Date.now();
+    const elapsed = now - startTimeRef.current;
     
     // Throttle updates to 60fps for better performance
     if (now - lastUpdateRef.current < 16) {
-      if (isAnimatingRef.current) {
-        animationFrameRef.current = requestAnimationFrame(animate);
-      }
+      animationFrameRef.current = requestAnimationFrame(animate);
       return;
     }
     lastUpdateRef.current = now;
@@ -55,46 +53,44 @@ export const useGraphAnimation = (
         if (node.fx !== 0 || node.fy !== 0) {
           node.fx = 0;
           node.fy = 0;
-          node.x = 0;
-          node.y = 0;
           needsUpdate = true;
         }
         return;
       }
       
-      // Calculate orbital movement for non-Athena nodes
+      // Calculate real orbital movement
       if (node.orbitRadius && node.orbitSpeed) {
-        const elapsed = (now - startTimeRef.current) * 0.001; // Convert to seconds
-        const currentAngle = (node.orbitAngle || 0) + (elapsed * node.orbitSpeed);
+        const timeInSeconds = elapsed * 0.001; // Convert to seconds
+        const currentAngle = (node.orbitAngle || 0) + (timeInSeconds * node.orbitSpeed);
         
         // Add subtle wobble for organic movement
         const wobbleFreq = 0.5 + (node.relevancia || 5) * 0.1;
-        const wobbleAmplitude = 3 + (node.relevancia || 5) * 1;
-        const wobbleX = Math.sin(elapsed * wobbleFreq) * wobbleAmplitude;
-        const wobbleY = Math.cos(elapsed * wobbleFreq * 1.3) * wobbleAmplitude;
+        const wobbleAmplitude = 5 + (node.relevancia || 5) * 2;
+        const wobbleX = Math.sin(timeInSeconds * wobbleFreq) * wobbleAmplitude;
+        const wobbleY = Math.cos(timeInSeconds * wobbleFreq * 1.3) * wobbleAmplitude;
         
         // Calculate new orbital position
         const newX = Math.cos(currentAngle) * node.orbitRadius + wobbleX;
         const newY = Math.sin(currentAngle) * node.orbitRadius + wobbleY;
         
-        // Update position for smooth movement
-        node.fx = newX;
-        node.fy = newY;
-        node.x = newX;
-        node.y = newY;
-        needsUpdate = true;
+        // Only update if position changed significantly
+        if (Math.abs((node.fx || 0) - newX) > 0.1 || Math.abs((node.fy || 0) - newY) > 0.1) {
+          node.fx = newX;
+          node.fy = newY;
+          node.x = newX;
+          node.y = newY;
+          needsUpdate = true;
+        }
       }
     });
     
-    // Force refresh if positions changed
+    // Force refresh only if positions changed
     if (needsUpdate && fgRef.current) {
       fgRef.current.refresh();
     }
     
     // Continue animation loop
-    if (isAnimatingRef.current) {
-      animationFrameRef.current = requestAnimationFrame(animate);
-    }
+    animationFrameRef.current = requestAnimationFrame(animate);
   }, [graphData.nodes, fgRef]);
   
   useEffect(() => {
@@ -103,15 +99,19 @@ export const useGraphAnimation = (
     // Setup constellation layout
     setupConstellation();
     
-    // Start continuous animation
+    // Start continuous animation if not already running
     if (!isAnimatingRef.current) {
       isAnimatingRef.current = true;
       startTimeRef.current = Date.now();
       lastUpdateRef.current = 0;
       
       // Start animation immediately
-      animate();
+      animationFrameRef.current = requestAnimationFrame(animate);
     }
+    
+    return () => {
+      // Don't stop animation on dependency changes, only on unmount
+    };
   }, [graphData.nodes, setupConstellation, animate]);
   
   // Cleanup on unmount

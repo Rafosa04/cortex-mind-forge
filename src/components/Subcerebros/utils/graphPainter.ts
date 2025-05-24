@@ -108,6 +108,7 @@ export const paintLink = (link: GraphLink, ctx: CanvasRenderingContext2D, time: 
 
   const dx = (target.x || 0) - (source.x || 0);
   const dy = (target.y || 0) - (source.y || 0);
+  const distance = Math.sqrt(dx * dx + dy * dy);
   
   // Enhanced base connection line with animated gradient
   const gradient = ctx.createLinearGradient(
@@ -128,31 +129,26 @@ export const paintLink = (link: GraphLink, ctx: CanvasRenderingContext2D, time: 
   ctx.lineWidth = 1.5;
   ctx.stroke();
   
-  // Single synapse pulse effect - muito mais lenta
-  if (!link.pulsePosition) link.pulsePosition = 0;
-  if (!link.pulseSpeed) link.pulseSpeed = 0.0008; // Velocidade muito mais lenta
-  if (!link.lastPulseTime) link.lastPulseTime = 0;
-  if (!link.pulseDuration) link.pulseDuration = 8000; // 8 segundos para completar
-  
-  // Controla quando a próxima sinapse deve aparecer
-  const currentTime = Date.now();
-  if (currentTime - link.lastPulseTime > link.pulseDuration) {
-    link.pulsePosition = 0;
-    link.lastPulseTime = currentTime;
-  }
+  // Continuous synapse pulse effect with multiple traveling pulses - VELOCIDADE MUITO REDUZIDA
+  if (!link.pulsePosition) link.pulsePosition = Math.random();
+  if (!link.pulseSpeed) link.pulseSpeed = 0.00005 + Math.random() * 0.0001; // Velocidade drasticamente reduzida
   
   // Update pulse position continuously based on real time
-  const timeElapsed = currentTime - link.lastPulseTime;
-  link.pulsePosition = Math.min(timeElapsed / link.pulseDuration, 1);
+  const pulseIncrement = link.pulseSpeed * 16; // Assuming ~60fps
+  link.pulsePosition += pulseIncrement;
+  if (link.pulsePosition > 1) link.pulsePosition = 0;
   
-  // Draw single traveling pulse only if active
-  if (link.pulsePosition < 1) {
-    const pulseX = (source.x || 0) + dx * link.pulsePosition;
-    const pulseY = (source.y || 0) + dy * link.pulsePosition;
+  // Draw multiple traveling pulses for enhanced synapse effect
+  const numPulses = 3;
+  for (let i = 0; i < numPulses; i++) {
+    const pulseOffset = i / numPulses;
+    const pulsePos = (link.pulsePosition + pulseOffset) % 1;
+    const pulseX = (source.x || 0) + dx * pulsePos;
+    const pulseY = (source.y || 0) + dy * pulsePos;
     
     // Enhanced pulse intensity with smooth easing
-    const intensity = Math.sin(link.pulsePosition * Math.PI) * 0.9 + 0.5;
-    const pulseSize = 6 + intensity * 8;
+    const intensity = Math.sin(pulsePos * Math.PI) * 0.8 + 0.4;
+    const pulseSize = 4 + intensity * 6;
     
     // Animated pulse gradient
     const pulseGradient = ctx.createRadialGradient(
@@ -170,7 +166,7 @@ export const paintLink = (link: GraphLink, ctx: CanvasRenderingContext2D, time: 
     ctx.fill();
     
     // Add a bright animated core to the pulse
-    const coreIntensity = intensity * Math.sin(time * 0.01 + link.pulsePosition * Math.PI * 2) * 0.5 + 0.7;
+    const coreIntensity = intensity * Math.sin(time * 0.01 + pulsePos * Math.PI * 2) * 0.5 + 0.7;
     ctx.beginPath();
     ctx.arc(pulseX, pulseY, pulseSize * 0.3, 0, 2 * Math.PI, false);
     ctx.fillStyle = `rgba(255, 255, 255, ${coreIntensity})`;
