@@ -47,15 +47,23 @@ export const calculateOrbitPosition = (node: GraphNode, time: number) => {
     return { x: node.fx || 0, y: node.fy || 0 };
   }
 
-  const currentAngle = (node.orbitAngle || 0) + (time * node.orbitSpeed);
+  // Smooth orbital movement with time-based rotation
+  const timeInSeconds = time * 0.001; // Convert to seconds
+  const currentAngle = (node.orbitAngle || 0) + (timeInSeconds * node.orbitSpeed);
   
-  // Add subtle wobble based on relevance
-  const wobble = (node.relevancia || 5) / 200 * Math.sin(time * 0.002 + currentAngle * 3);
-  const effectiveRadius = node.orbitRadius * (1 + wobble);
+  // Add subtle wobble based on relevance for organic movement
+  const wobbleFreq = 0.5 + (node.relevancia || 5) * 0.1;
+  const wobbleAmplitude = 5 + (node.relevancia || 5) * 2;
+  const wobbleX = Math.sin(timeInSeconds * wobbleFreq) * wobbleAmplitude;
+  const wobbleY = Math.cos(timeInSeconds * wobbleFreq * 1.3) * wobbleAmplitude;
+  
+  // Calculate orbital position with wobble
+  const baseX = Math.cos(currentAngle) * node.orbitRadius;
+  const baseY = Math.sin(currentAngle) * node.orbitRadius;
   
   return {
-    x: Math.cos(currentAngle) * effectiveRadius,
-    y: Math.sin(currentAngle) * effectiveRadius
+    x: baseX + wobbleX,
+    y: baseY + wobbleY
   };
 };
 
@@ -74,13 +82,33 @@ export const setupConstellationLayout = (nodes: GraphNode[]) => {
     return acc;
   }, {} as Record<string, GraphNode[]>);
   
-  // Define orbital layers with different radii and speeds
+  // Define orbital layers with different radii and speeds for variety
   const orbitLayers = {
-    subcerebro: { radius: 180, speed: 0.0008 },
-    projeto: { radius: 280, speed: 0.0006 },
-    habito: { radius: 350, speed: 0.0005 },
-    favorito: { radius: 420, speed: 0.0004 },
-    pensamento: { radius: 490, speed: 0.0003 }
+    subcerebro: { 
+      radius: 200, 
+      speed: 0.3,  // Slower, more stable orbit
+      radiusVariation: 40 
+    },
+    projeto: { 
+      radius: 300, 
+      speed: 0.25, 
+      radiusVariation: 50 
+    },
+    habito: { 
+      radius: 380, 
+      speed: 0.2, 
+      radiusVariation: 30 
+    },
+    favorito: { 
+      radius: 450, 
+      speed: 0.15, 
+      radiusVariation: 40 
+    },
+    pensamento: { 
+      radius: 520, 
+      speed: 0.1, 
+      radiusVariation: 60 
+    }
   };
   
   Object.entries(nodesByType).forEach(([type, nodes]) => {
@@ -90,11 +118,15 @@ export const setupConstellationLayout = (nodes: GraphNode[]) => {
     nodes.forEach((node, index) => {
       const angleStep = (2 * Math.PI) / nodes.length;
       const baseAngle = index * angleStep;
-      const radiusVariation = (Math.random() - 0.5) * 30;
+      
+      // Add some randomness for natural distribution
+      const radiusVariation = (Math.random() - 0.5) * layer.radiusVariation;
+      const angleVariation = (Math.random() - 0.5) * 0.5;
+      const speedVariation = (Math.random() - 0.5) * 0.1;
       
       node.orbitRadius = layer.radius + radiusVariation;
-      node.orbitAngle = baseAngle + (Math.random() - 0.5) * 0.3;
-      node.orbitSpeed = layer.speed * (0.8 + Math.random() * 0.4);
+      node.orbitAngle = baseAngle + angleVariation;
+      node.orbitSpeed = layer.speed + speedVariation;
       node.pulsePhase = Math.random() * Math.PI * 2;
       
       // Set initial positions
