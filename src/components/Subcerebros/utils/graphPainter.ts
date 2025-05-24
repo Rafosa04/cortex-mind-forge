@@ -1,4 +1,3 @@
-
 import { GraphNode, GraphLink, getNodeColor } from './graphUtils';
 
 export const paintNode = (node: GraphNode, ctx: CanvasRenderingContext2D, time: number) => {
@@ -129,9 +128,9 @@ export const paintLink = (link: GraphLink, ctx: CanvasRenderingContext2D, time: 
   ctx.lineWidth = 1.5;
   ctx.stroke();
   
-  // Continuous synapse pulse effect with multiple traveling pulses
+  // Continuous synapse pulse effect with multiple traveling pulses - VELOCIDADE REDUZIDA
   if (!link.pulsePosition) link.pulsePosition = Math.random();
-  if (!link.pulseSpeed) link.pulseSpeed = 0.0015 + Math.random() * 0.003;
+  if (!link.pulseSpeed) link.pulseSpeed = 0.0003 + Math.random() * 0.0007; // Velocidade reduzida de 0.0015-0.0045 para 0.0003-0.001
   
   // Update pulse position continuously based on real time
   const pulseIncrement = link.pulseSpeed * 16; // Assuming ~60fps
