@@ -1,5 +1,5 @@
 
-import React, { useRef } from 'react';
+import React, { useRef, useCallback, useEffect } from 'react';
 import ForceGraph2D from 'react-force-graph-2d';
 import { motion } from 'framer-motion';
 import { NodeTooltip } from './NodeTooltip';
