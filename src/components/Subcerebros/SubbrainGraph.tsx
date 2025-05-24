@@ -62,6 +62,27 @@ export function SubbrainGraph({ graphData, onNodeClick }: SubbrainGraphProps) {
     
     return () => clearInterval(interval);
   }, []);
+
+  // Add console log to debug data
+  useEffect(() => {
+    console.log('SubbrainGraph received data:', { 
+      nodes: graphData.nodes.length, 
+      links: graphData.links.length,
+      nodesData: graphData.nodes.slice(0, 3) // First 3 nodes for debugging
+    });
+  }, [graphData]);
+  
+  // Check if we have valid data
+  if (!graphData || !graphData.nodes || graphData.nodes.length === 0) {
+    console.log('No graph data available');
+    return (
+      <div className="flex items-center justify-center h-full text-center">
+        <div className="text-foreground/70">
+          <p>Carregando dados do grafo...</p>
+        </div>
+      </div>
+    );
+  }
   
   return (
     <div 
