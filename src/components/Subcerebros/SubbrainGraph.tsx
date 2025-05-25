@@ -42,9 +42,21 @@ export function SubbrainGraph({ graphData, onNodeClick }: SubbrainGraphProps) {
   const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
   const [focusedNode, setFocusedNode] = useState<GraphNode | null>(null);
   const [isGraphReady, setIsGraphReady] = useState(false);
+  const [showInitialLabels, setShowInitialLabels] = useState(true);
   
   // Enable orbital animation
   useOrbitalAnimation(graphData.nodes, fgRef, isGraphReady);
+  
+  // Hide initial labels after a few seconds
+  useEffect(() => {
+    if (isGraphReady) {
+      const timer = setTimeout(() => {
+        setShowInitialLabels(false);
+      }, 3000); // Show labels for 3 seconds after graph is ready
+      
+      return () => clearTimeout(timer);
+    }
+  }, [isGraphReady]);
   
   // Get enhanced color based on node type
   const getNodeColor = (node: GraphNode) => {
@@ -276,8 +288,10 @@ export function SubbrainGraph({ graphData, onNodeClick }: SubbrainGraphProps) {
     ctx.lineWidth = focusedNode?.id === node.id ? 1.5 / globalScale : 0.8 / globalScale;
     ctx.stroke();
     
-    // Enhanced label rendering
-    if (node.id === 'athena' || globalScale > 1.2 || focusedNode?.id === node.id) {
+    // Enhanced label rendering - only show during initial period or on hover
+    const shouldShowLabel = showInitialLabels || hoveredNode?.id === node.id || focusedNode?.id === node.id;
+    
+    if (shouldShowLabel && (node.id === 'athena' || globalScale > 1.2 || hoveredNode?.id === node.id || focusedNode?.id === node.id)) {
       ctx.font = `${Math.max(fontSize / globalScale, 8)}px Inter, sans-serif`;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
@@ -290,7 +304,7 @@ export function SubbrainGraph({ graphData, onNodeClick }: SubbrainGraphProps) {
       ctx.fillText(label, node.x || 0, textY);
       ctx.shadowBlur = 0;
     }
-  }, [focusedNode]);
+  }, [focusedNode, hoveredNode, showInitialLabels]);
   
   // Keep existing link paint function - no changes needed as requested
   const paintLink = useCallback((link: any, ctx: CanvasRenderingContext2D) => {

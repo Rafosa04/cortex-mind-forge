@@ -1,3 +1,4 @@
+
 import { useEffect, useRef } from 'react';
 
 interface GraphNode {
@@ -61,6 +62,7 @@ export function useOrbitalAnimation(
         }
       });
 
+      // Continue animation infinitely
       animationRef.current = requestAnimationFrame(animate);
     };
 
