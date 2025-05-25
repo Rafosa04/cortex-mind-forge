@@ -38,6 +38,7 @@ export interface SubbrainGraphProps {
 
 export function SubbrainGraph({ graphData, onNodeClick }: SubbrainGraphProps) {
   const fgRef = useRef<any>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const [dimensions, setDimensions] = useState({ width: 800, height: 600 });
   const [impulses, setImpulses] = useState<Map<string, number>>(new Map());
   const [hoveredNode, setHoveredNode] = useState<GraphNode | null>(null);
@@ -135,7 +136,7 @@ export function SubbrainGraph({ graphData, onNodeClick }: SubbrainGraphProps) {
     };
   }, [graphData.links]);
   
-  // Initialize dimensions with fullscreen support
+  // Initialize dimensions with real fullscreen support
   useEffect(() => {
     const updateDimensions = () => {
       if (isFullscreen) {
@@ -174,14 +175,14 @@ export function SubbrainGraph({ graphData, onNodeClick }: SubbrainGraphProps) {
     }
   }, [graphData.nodes]);
   
-  // Fixed node hover with proper global positioning - definitive fix
+  // Fixed node hover with proper global positioning using document coordinates
   const handleNodeHover = useCallback((node: GraphNode | null, event: any) => {
     if (node && event) {
-      // Use global mouse coordinates directly for fixed positioning
-      const mouseX = event.clientX || event.pageX;
-      const mouseY = event.clientY || event.pageY;
+      // Get the exact mouse position from the event
+      const mouseX = event.pageX || event.clientX + window.scrollX;
+      const mouseY = event.pageY || event.clientY + window.scrollY;
       
-      // Calculate tooltip position with proper offsets
+      // Calculate tooltip position with offsets
       let tooltipX = mouseX + 15; // Small offset from cursor
       let tooltipY = mouseY - 10; // Small offset from cursor
       
@@ -189,19 +190,23 @@ export function SubbrainGraph({ graphData, onNodeClick }: SubbrainGraphProps) {
       const tooltipWidth = 320;
       const tooltipHeight = 200;
       
+      // Get current viewport dimensions
+      const viewportWidth = window.innerWidth;
+      const viewportHeight = window.innerHeight;
+      
       // Prevent tooltip from going off-screen horizontally
-      if (tooltipX + tooltipWidth > window.innerWidth) {
+      if (tooltipX + tooltipWidth > viewportWidth) {
         tooltipX = mouseX - tooltipWidth - 15; // Show on left side of cursor
       }
       
       // Prevent tooltip from going off-screen vertically
-      if (tooltipY + tooltipHeight > window.innerHeight) {
+      if (tooltipY + tooltipHeight > viewportHeight) {
         tooltipY = mouseY - tooltipHeight + 10; // Show above cursor
       }
       
       // Ensure minimum margins from screen edges
-      tooltipX = Math.max(10, Math.min(tooltipX, window.innerWidth - tooltipWidth - 10));
-      tooltipY = Math.max(10, Math.min(tooltipY, window.innerHeight - tooltipHeight - 10));
+      tooltipX = Math.max(10, Math.min(tooltipX, viewportWidth - tooltipWidth - 10));
+      tooltipY = Math.max(10, Math.min(tooltipY, viewportHeight - tooltipHeight - 10));
       
       setTooltipPosition({ x: tooltipX, y: tooltipY });
     }
@@ -226,16 +231,77 @@ export function SubbrainGraph({ graphData, onNodeClick }: SubbrainGraphProps) {
     }
   }, []);
   
+  // Enter real fullscreen mode using Fullscreen API
+  const enterFullscreen = useCallback(async () => {
+    if (containerRef.current) {
+      try {
+        if (containerRef.current.requestFullscreen) {
+          await containerRef.current.requestFullscreen();
+        } else if ((containerRef.current as any).webkitRequestFullscreen) {
+          await (containerRef.current as any).webkitRequestFullscreen();
+        } else if ((containerRef.current as any).msRequestFullscreen) {
+          await (containerRef.current as any).msRequestFullscreen();
+        }
+        setIsFullscreen(true);
+      } catch (error) {
+        console.warn('Fullscreen API not supported, falling back to CSS fullscreen');
+        setIsFullscreen(true);
+      }
+    }
+  }, []);
+  
+  // Exit fullscreen mode
+  const exitFullscreen = useCallback(async () => {
+    try {
+      if (document.exitFullscreen) {
+        await document.exitFullscreen();
+      } else if ((document as any).webkitExitFullscreen) {
+        await (document as any).webkitExitFullscreen();
+      } else if ((document as any).msExitFullscreen) {
+        await (document as any).msExitFullscreen();
+      }
+    } catch (error) {
+      console.warn('Fullscreen API exit failed');
+    }
+    setIsFullscreen(false);
+  }, []);
+  
   // Toggle fullscreen mode
   const toggleFullscreen = useCallback(() => {
-    setIsFullscreen(prev => !prev);
+    if (isFullscreen) {
+      exitFullscreen();
+    } else {
+      enterFullscreen();
+    }
+  }, [isFullscreen, enterFullscreen, exitFullscreen]);
+  
+  // Handle fullscreen change events
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      const isCurrentlyFullscreen = !!(
+        document.fullscreenElement ||
+        (document as any).webkitFullscreenElement ||
+        (document as any).msFullscreenElement
+      );
+      setIsFullscreen(isCurrentlyFullscreen);
+    };
+    
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+    document.addEventListener('msfullscreenchange', handleFullscreenChange);
+    
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+      document.removeEventListener('webkitfullscreenchange', handleFullscreenChange);
+      document.removeEventListener('msfullscreenchange', handleFullscreenChange);
+    };
   }, []);
   
   // Handle escape key for fullscreen exit
   useEffect(() => {
     const handleEscapeKey = (event: KeyboardEvent) => {
       if (event.key === 'Escape' && isFullscreen) {
-        setIsFullscreen(false);
+        exitFullscreen();
       }
     };
     
@@ -243,7 +309,7 @@ export function SubbrainGraph({ graphData, onNodeClick }: SubbrainGraphProps) {
       document.addEventListener('keydown', handleEscapeKey);
       return () => document.removeEventListener('keydown', handleEscapeKey);
     }
-  }, [isFullscreen]);
+  }, [isFullscreen, exitFullscreen]);
   
   // Enhanced custom node paint function
   const paintNode = useCallback((node: GraphNode, ctx: CanvasRenderingContext2D, globalScale: number) => {
@@ -428,7 +494,18 @@ export function SubbrainGraph({ graphData, onNodeClick }: SubbrainGraphProps) {
   }, [graphData.nodes, impulses, focusedNode]);
   
   return (
-    <div className={`relative w-full h-full bg-[#0C0C1C] ${isFullscreen ? 'fixed inset-0 z-50' : ''}`}>
+    <div 
+      ref={containerRef}
+      className={`relative w-full h-full bg-[#0C0C1C] ${isFullscreen ? 'fixed inset-0 z-[9999]' : ''}`}
+      style={isFullscreen ? { 
+        position: 'fixed', 
+        top: 0, 
+        left: 0, 
+        width: '100vw', 
+        height: '100vh',
+        zIndex: 9999 
+      } : {}}
+    >
       {/* Fullscreen Toggle Button */}
       <div className="absolute top-4 right-4 z-20">
         <Button
@@ -506,7 +583,7 @@ export function SubbrainGraph({ graphData, onNodeClick }: SubbrainGraphProps) {
         d3VelocityDecay={0.3}
       />
 
-      {/* Advanced Tooltip with proper global positioning */}
+      {/* Advanced Tooltip with fixed positioning using pageX/pageY coordinates */}
       <NodeTooltip
         node={hoveredNode}
         position={tooltipPosition}
