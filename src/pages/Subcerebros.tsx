@@ -328,7 +328,7 @@ export default function Subcerebros() {
             <span className="text-primary">"</span>
             Cada subcérebro é uma constelação da sua consciência digital. Conecte, expanda, evolua.
             <span className="text-primary">"</span>
-            <div className="text-xs text-primary/60 mt-1">— Rede Neural CÓRTEX</div>
+            <div className="text-xs text-primary/60 mt-1">— CÓRTEX Neural Graph v2.0</div>
           </motion.div>
         </div>
       </motion.div>
