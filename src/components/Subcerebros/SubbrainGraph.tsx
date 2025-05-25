@@ -3,7 +3,7 @@ import React, { useRef, useCallback, useEffect } from 'react';
 import ForceGraph2D from 'react-force-graph-2d';
 import { motion } from 'framer-motion';
 import { NodeTooltip } from './NodeTooltip';
-import { Maximize, Minimize, Eye, Focus, Grid3X3 } from 'lucide-react';
+import { Maximize, Minimize } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { GraphNode, GraphLink } from './utils/graphUtils';
 import { paintNode, paintLink } from './utils/graphPainter';
@@ -18,16 +18,9 @@ export interface SubbrainGraphProps {
     links: GraphLink[];
   };
   onNodeClick: (node: any) => void;
-  viewMode?: 'orbital' | 'radial' | 'focus';
-  onViewModeChange?: (mode: 'orbital' | 'radial' | 'focus') => void;
 }
 
-export function SubbrainGraph({ 
-  graphData, 
-  onNodeClick, 
-  viewMode = 'orbital',
-  onViewModeChange 
-}: SubbrainGraphProps) {
+export function SubbrainGraph({ graphData, onNodeClick }: SubbrainGraphProps) {
   const fgRef = useRef<any>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const animationTimeRef = useRef<number>(0);
@@ -47,7 +40,7 @@ export function SubbrainGraph({
   
   useGraphAnimation(graphData, fgRef);
   
-  // Pintura dos nós com timestamp em tempo real
+  // Continuous animation functions with real-time updates
   const paintNodeWithTime = useCallback((node: any, ctx: any) => {
     animationTimeRef.current = Date.now();
     paintNode(node, ctx, animationTimeRef.current);
@@ -57,7 +50,7 @@ export function SubbrainGraph({
     paintLink(link, ctx, animationTimeRef.current);
   }, []);
   
-  // Refresh contínuo para animações fluidas
+  // Force continuous re-rendering for smooth animations
   useEffect(() => {
     if (!fgRef.current) return;
     
@@ -65,10 +58,31 @@ export function SubbrainGraph({
       if (fgRef.current) {
         fgRef.current.refresh();
       }
-    }, 33); // ~30fps para suavidade otimizada
+    }, 32); // ~30fps refresh rate for smooth animations
     
     return () => clearInterval(interval);
   }, []);
+
+  // Add console log to debug data
+  useEffect(() => {
+    console.log('SubbrainGraph received data:', { 
+      nodes: graphData.nodes.length, 
+      links: graphData.links.length,
+      nodesData: graphData.nodes.slice(0, 3) // First 3 nodes for debugging
+    });
+  }, [graphData]);
+  
+  // Check if we have valid data
+  if (!graphData || !graphData.nodes || graphData.nodes.length === 0) {
+    console.log('No graph data available');
+    return (
+      <div className="flex items-center justify-center h-full text-center">
+        <div className="text-foreground/70">
+          <p>Carregando dados do grafo...</p>
+        </div>
+      </div>
+    );
+  }
   
   return (
     <div 
@@ -77,54 +91,15 @@ export function SubbrainGraph({
         isFullscreen ? 'fixed inset-0 z-[9999] cursor-none' : ''
       }`}
     >
-      {/* Fundo galáctico sutil */}
-      <div className="absolute inset-0 opacity-30">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_50%,rgba(155,135,245,0.1),transparent_50%)]" />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_20%,rgba(96,181,181,0.08),transparent_50%)]" />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_40%_80%,rgba(139,92,246,0.06),transparent_50%)]" />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_60%_30%,rgba(16,185,129,0.04),transparent_50%)]" />
+      {/* Background Effects */}
+      <div className="absolute inset-0 opacity-40">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_50%,rgba(120,119,198,0.15),transparent_50%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_20%,rgba(255,215,0,0.08),transparent_50%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_40%_80%,rgba(139,92,246,0.12),transparent_50%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_60%_30%,rgba(16,185,129,0.06),transparent_50%)]" />
       </div>
 
-      {/* Controles de visualização */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        className={`absolute z-[10000] ${
-          isFullscreen ? 'top-4 left-4' : 'top-4 left-4'
-        }`}
-      >
-        <div className="flex items-center gap-2">
-          <Button
-            variant={viewMode === 'orbital' ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => onViewModeChange?.('orbital')}
-            className="flex items-center gap-2 bg-background/80 backdrop-blur-md"
-          >
-            <Eye size={16} />
-            Orbital
-          </Button>
-          <Button
-            variant={viewMode === 'radial' ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => onViewModeChange?.('radial')}
-            className="flex items-center gap-2 bg-background/80 backdrop-blur-md"
-          >
-            <Grid3X3 size={16} />
-            Radial
-          </Button>
-          <Button
-            variant={viewMode === 'focus' ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => onViewModeChange?.('focus')}
-            className="flex items-center gap-2 bg-background/80 backdrop-blur-md"
-          >
-            <Focus size={16} />
-            Foco
-          </Button>
-        </div>
-      </motion.div>
-
-      {/* Botão fullscreen */}
+      {/* Fullscreen Toggle Button */}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -136,30 +111,14 @@ export function SubbrainGraph({
           variant="outline"
           size="sm"
           onClick={toggleFullscreen}
-          className="bg-background/80 backdrop-blur-md border-border/50 hover:bg-background/90"
+          className="bg-background/80 backdrop-blur-md border-border/50 hover:bg-background/90 transition-all duration-200"
         >
           {isFullscreen ? <Minimize size={16} className="mr-2" /> : <Maximize size={16} className="mr-2" />}
           {isFullscreen ? 'Sair da tela cheia' : 'Tela cheia'}
         </Button>
       </motion.div>
 
-      {/* Frase de identidade */}
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.8, delay: 0.5 }}
-        className={`absolute z-[10000] ${
-          isFullscreen ? 'bottom-8 left-1/2 transform -translate-x-1/2' : 'bottom-4 left-1/2 transform -translate-x-1/2'
-        }`}
-      >
-        <div className="text-center">
-          <p className="text-sm text-primary/80 font-medium italic bg-background/60 backdrop-blur-md px-4 py-2 rounded-full border border-primary/20">
-            "Visualizando a inteligência conectada da sua mente digital."
-          </p>
-        </div>
-      </motion.div>
-
-      {/* Tooltip do nó */}
+      {/* Node Tooltip */}
       {hoveredNode && (
         <div
           className={`${isFullscreen ? 'fixed' : 'absolute'} z-[10001] pointer-events-none`}
@@ -180,7 +139,7 @@ export function SubbrainGraph({
         </div>
       )}
 
-      {/* Grafo Force */}
+      {/* Force Graph */}
       <ForceGraph2D
         ref={fgRef}
         graphData={graphData}
@@ -201,8 +160,8 @@ export function SubbrainGraph({
         enablePanInteraction={true}
         width={dimensions.width}
         height={dimensions.height}
-        minZoom={0.2}
-        maxZoom={8}
+        minZoom={0.1}
+        maxZoom={10}
         d3AlphaDecay={0}
         d3VelocityDecay={0}
         warmupTicks={0}

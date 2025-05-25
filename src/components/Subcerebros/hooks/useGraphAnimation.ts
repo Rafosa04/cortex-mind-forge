@@ -16,7 +16,7 @@ export const useGraphAnimation = (
     
     setupConstellationLayout(graphData.nodes);
     
-    // Desabilitar forças de simulação para movimento orbital puro
+    // Disable all force simulation for smooth orbital movement
     if (fgRef.current) {
       const fg = fgRef.current;
       fg.d3Force('link', null);
@@ -29,7 +29,7 @@ export const useGraphAnimation = (
   }, [graphData.nodes, fgRef]);
   
   const animate = useCallback(() => {
-    if (!fgRef.current || !graphData.nodes.length || !isAnimatingRef.current) {
+    if (!fgRef.current || !graphData.nodes.length) {
       if (isAnimatingRef.current) {
         animationFrameRef.current = requestAnimationFrame(animate);
       }
@@ -37,83 +37,84 @@ export const useGraphAnimation = (
     }
 
     const now = Date.now();
-    const elapsed = now - startTimeRef.current;
     
-    // Throttle para 60fps otimizado
+    // Throttle updates to 60fps for better performance
     if (now - lastUpdateRef.current < 16) {
-      animationFrameRef.current = requestAnimationFrame(animate);
+      if (isAnimatingRef.current) {
+        animationFrameRef.current = requestAnimationFrame(animate);
+      }
       return;
     }
     lastUpdateRef.current = now;
     
-    // Atualizar posições orbitais com movimento suave
+    // Update orbital positions for all non-Athena nodes
     let needsUpdate = false;
     graphData.nodes.forEach(node => {
       if (node.id === 'athena') {
-        // Manter Athena fixa no centro
+        // Keep Athena fixed at center
         if (node.fx !== 0 || node.fy !== 0) {
           node.fx = 0;
           node.fy = 0;
+          node.x = 0;
+          node.y = 0;
           needsUpdate = true;
         }
         return;
       }
       
-      // Movimento orbital translacional contínuo
+      // Calculate orbital movement for non-Athena nodes
       if (node.orbitRadius && node.orbitSpeed) {
-        const timeInSeconds = elapsed * 0.001;
-        const currentAngle = (node.orbitAngle || 0) + (timeInSeconds * node.orbitSpeed);
+        const elapsed = (now - startTimeRef.current) * 0.001; // Convert to seconds
+        const currentAngle = (node.orbitAngle || 0) + (elapsed * node.orbitSpeed);
         
-        // Movimento orbital com sin/cos e variação orgânica
-        const wobbleFreq = 0.3 + (node.relevancia || 5) * 0.05;
-        const wobbleAmplitude = 2 + (node.relevancia || 5) * 1;
-        const wobbleX = Math.sin(timeInSeconds * wobbleFreq) * wobbleAmplitude;
-        const wobbleY = Math.cos(timeInSeconds * wobbleFreq * 1.2) * wobbleAmplitude;
+        // Add subtle wobble for organic movement
+        const wobbleFreq = 0.5 + (node.relevancia || 5) * 0.1;
+        const wobbleAmplitude = 3 + (node.relevancia || 5) * 1;
+        const wobbleX = Math.sin(elapsed * wobbleFreq) * wobbleAmplitude;
+        const wobbleY = Math.cos(elapsed * wobbleFreq * 1.3) * wobbleAmplitude;
         
+        // Calculate new orbital position
         const newX = Math.cos(currentAngle) * node.orbitRadius + wobbleX;
         const newY = Math.sin(currentAngle) * node.orbitRadius + wobbleY;
         
-        // Atualizar apenas se mudança significativa
-        if (Math.abs((node.fx || 0) - newX) > 0.1 || Math.abs((node.fy || 0) - newY) > 0.1) {
-          node.fx = newX;
-          node.fy = newY;
-          node.x = newX;
-          node.y = newY;
-          needsUpdate = true;
-        }
+        // Update position for smooth movement
+        node.fx = newX;
+        node.fy = newY;
+        node.x = newX;
+        node.y = newY;
+        needsUpdate = true;
       }
     });
     
-    // Refresh apenas quando necessário
+    // Force refresh if positions changed
     if (needsUpdate && fgRef.current) {
       fgRef.current.refresh();
     }
     
-    // Continuar loop de animação
-    animationFrameRef.current = requestAnimationFrame(animate);
+    // Continue animation loop
+    if (isAnimatingRef.current) {
+      animationFrameRef.current = requestAnimationFrame(animate);
+    }
   }, [graphData.nodes, fgRef]);
   
   useEffect(() => {
     if (!graphData.nodes.length) return;
     
-    // Setup da constelação
+    // Setup constellation layout
     setupConstellation();
     
-    // Iniciar animação contínua
+    // Start continuous animation
     if (!isAnimatingRef.current) {
       isAnimatingRef.current = true;
       startTimeRef.current = Date.now();
       lastUpdateRef.current = 0;
       
-      animationFrameRef.current = requestAnimationFrame(animate);
+      // Start animation immediately
+      animate();
     }
-    
-    return () => {
-      // Não parar animação em mudanças de dependência
-    };
   }, [graphData.nodes, setupConstellation, animate]);
   
-  // Cleanup no unmount
+  // Cleanup on unmount
   useEffect(() => {
     return () => {
       isAnimatingRef.current = false;
