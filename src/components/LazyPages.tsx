@@ -39,7 +39,7 @@ function PageLoadingSkeleton() {
 }
 
 // Higher-order component for lazy loading with error boundary
-export function withLazyLoading<P extends object>(
+export function withLazyLoading<P extends Record<string, any>>(
   LazyComponent: React.LazyExoticComponent<React.ComponentType<P>>,
   displayName?: string
 ) {
@@ -51,7 +51,7 @@ export function withLazyLoading<P extends object>(
     </ErrorBoundary>
   );
   
-  WrappedComponent.displayName = displayName || `LazyWrapper(${LazyComponent.displayName || 'Component'})`;
+  WrappedComponent.displayName = displayName || `LazyWrapper(${LazyComponent.name || 'Component'})`;
   
   return WrappedComponent;
 }

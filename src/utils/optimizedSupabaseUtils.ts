@@ -1,6 +1,5 @@
-
 import { supabase } from "@/integrations/supabase/client";
-import { RealtimeChannel } from '@supabase/supabase-js';
+import type { RealtimeChannel } from '@supabase/supabase-js';
 
 /**
  * Optimized realtime management for Supabase
@@ -34,7 +33,7 @@ class RealtimeManager {
       const channel = supabase
         .channel(`realtime-${channelKey}`)
         .on(
-          'postgres_changes',
+          'postgres_changes' as any,
           {
             event,
             schema: 'public',

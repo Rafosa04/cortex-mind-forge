@@ -1,4 +1,3 @@
-
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState, useMemo, useCallback } from 'react';
 import { projectsService, ProjectWithSteps } from '@/services/projectsService';
@@ -79,7 +78,7 @@ export function useOptimizedProjetos() {
       
       const previousProjects = queryClient.getQueryData(QUERY_KEYS.projects);
       
-      // Optimistic update
+      // Optimistic update - fix the mapping to use 'done' instead of 'completed'
       const optimisticProject: ProjectWithSteps = {
         id: `temp-${Date.now()}`,
         name: newProject.nome,
@@ -92,7 +91,7 @@ export function useOptimizedProjetos() {
           id: `temp-step-${index}`,
           project_id: `temp-${Date.now()}`,
           description: etapa.texto,
-          completed: etapa.feita,
+          done: etapa.feita, // Changed from 'completed' to 'done'
           order_index: index,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
