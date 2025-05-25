@@ -1,3 +1,4 @@
+
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState, useMemo, useCallback } from 'react';
 import { projectsService, ProjectWithSteps } from '@/services/projectsService';
@@ -94,14 +95,10 @@ export function useOptimizedProjetos() {
           done: etapa.feita, // Changed from 'completed' to 'done'
           order_index: index,
           created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
         })) || [],
         progress: 0,
-        total_steps: newProject.etapas?.length || 0,
-        completed_steps: newProject.etapas?.filter(e => e.feita).length || 0,
         is_favorite: false,
         created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
         user_id: user?.id || '',
         content: null,
       };

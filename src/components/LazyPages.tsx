@@ -39,11 +39,11 @@ function PageLoadingSkeleton() {
 }
 
 // Higher-order component for lazy loading with error boundary
-export function withLazyLoading<P extends Record<string, any>>(
-  LazyComponent: React.LazyExoticComponent<React.ComponentType<P>>,
+export function withLazyLoading<T extends React.ComponentType<any>>(
+  LazyComponent: React.LazyExoticComponent<T>,
   displayName?: string
 ) {
-  const WrappedComponent = (props: P) => (
+  const WrappedComponent = (props: React.ComponentProps<T>) => (
     <ErrorBoundary>
       <Suspense fallback={<PageLoadingSkeleton />}>
         <LazyComponent {...props} />
