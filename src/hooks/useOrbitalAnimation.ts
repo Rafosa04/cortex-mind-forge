@@ -21,59 +21,81 @@ export function useOrbitalAnimation(
   const timeRef = useRef(0);
 
   useEffect(() => {
-    if (!isActive || !nodes.length) return;
+    if (!isActive || !nodes.length) {
+      if (animationRef.current) {
+        cancelAnimationFrame(animationRef.current);
+      }
+      return;
+    }
 
     const animate = () => {
-      timeRef.current += 0.008; // Slow, smooth animation speed
+      timeRef.current += 0.01; // Velocidade constante e suave
 
       const athenaNode = nodes.find(node => node.id === 'athena');
-      if (!athenaNode || !athenaNode.x || !athenaNode.y) {
+      if (!athenaNode) {
         animationRef.current = requestAnimationFrame(animate);
         return;
       }
 
-      const athenaX = athenaNode.x;
-      const athenaY = athenaNode.y;
+      // Garantir que Athena sempre fique no centro
+      if (athenaNode.x !== 0 || athenaNode.y !== 0) {
+        athenaNode.x = 0;
+        athenaNode.y = 0;
+        athenaNode.fx = 0;
+        athenaNode.fy = 0;
+      }
+
+      const athenaX = 0;
+      const athenaY = 0;
 
       // Update orbital positions for non-Athena nodes
       nodes.forEach((node, index) => {
         if (node.id === 'athena') return;
 
         // Calculate orbital parameters
-        const baseRadius = 80 + (index * 40); // Different orbit radii
+        const baseRadius = 100 + (index * 50); // Different orbit radii
         const relevanceMultiplier = (node.relevancia || 5) / 10;
-        const radius = baseRadius + (relevanceMultiplier * 30);
+        const radius = baseRadius + (relevanceMultiplier * 40);
         
-        // Each node has a different phase offset
+        // Each node has a different phase offset for varied orbital speeds
         const phaseOffset = (index * Math.PI * 2) / Math.max(1, nodes.length - 1);
-        const angle = timeRef.current + phaseOffset;
+        const orbitalSpeed = 1 + (relevanceMultiplier * 0.3); // Varying speeds based on relevance
+        const angle = (timeRef.current * orbitalSpeed) + phaseOffset;
 
         // Calculate new orbital position
         const newX = athenaX + Math.cos(angle) * radius;
         const newY = athenaY + Math.sin(angle) * radius;
 
-        // Update node position
-        if (node.x !== undefined && node.y !== undefined) {
-          node.x = newX;
-          node.y = newY;
-          // Keep nodes fixed in their orbital positions
-          node.fx = newX;
-          node.fy = newY;
-        }
+        // Update node position smoothly
+        node.x = newX;
+        node.y = newY;
+        node.fx = newX;
+        node.fy = newY;
       });
 
-      // Continue animation infinitely
+      // Force continue animation infinitely
       animationRef.current = requestAnimationFrame(animate);
     };
 
+    // Start animation
     animate();
 
+    // Cleanup on unmount or dependency change
     return () => {
       if (animationRef.current) {
         cancelAnimationFrame(animationRef.current);
       }
     };
   }, [nodes, isActive]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (animationRef.current) {
+        cancelAnimationFrame(animationRef.current);
+      }
+    };
+  }, []);
 
   return timeRef;
 }

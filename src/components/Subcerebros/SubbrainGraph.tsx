@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import ForceGraph2D from 'react-force-graph-2d';
 import { motion } from 'framer-motion';
@@ -164,37 +165,40 @@ export function SubbrainGraph({ graphData, onNodeClick }: SubbrainGraphProps) {
     }
   }, [graphData.nodes]);
   
-  // Enhanced node hover with tooltip positioning
-  const handleNodeHover = (node: GraphNode | null, event: any) => {
-    if (event && node) {
-      const canvas = event.target;
-      const canvasRect = canvas.getBoundingClientRect();
-      
-      setTooltipPosition({
-        x: event.clientX - canvasRect.left,
-        y: event.clientY - canvasRect.top
-      });
+  // Fixed node hover with proper tooltip positioning
+  const handleNodeHover = useCallback((node: GraphNode | null, event: any) => {
+    // Prevent animation interference by not updating during hover if animation is running
+    if (node && event) {
+      // Get proper canvas coordinates
+      const canvas = fgRef.current?.canvas();
+      if (canvas) {
+        const rect = canvas.getBoundingClientRect();
+        setTooltipPosition({
+          x: event.layerX || (event.clientX - rect.left),
+          y: event.layerY || (event.clientY - rect.top)
+        });
+      }
     }
     
     setHoveredNode(node);
-  };
+  }, []);
 
   // Handle node expansion (focus mode)
-  const handleNodeExpand = (node: GraphNode) => {
+  const handleNodeExpand = useCallback((node: GraphNode) => {
     setFocusedNode(node);
-    if (fgRef.current) {
+    if (fgRef.current && node.x && node.y) {
       fgRef.current.centerAt(node.x, node.y, 1000);
       fgRef.current.zoom(2, 1000);
     }
-  };
+  }, []);
 
   // Reset focus mode
-  const resetFocus = () => {
+  const resetFocus = useCallback(() => {
     setFocusedNode(null);
     if (fgRef.current) {
       fgRef.current.zoomToFit(400, 80);
     }
-  };
+  }, []);
   
   // Enhanced custom node paint function
   const paintNode = useCallback((node: GraphNode, ctx: CanvasRenderingContext2D, globalScale: number) => {
