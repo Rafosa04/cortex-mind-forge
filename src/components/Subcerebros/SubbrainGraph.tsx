@@ -1,9 +1,10 @@
-
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import ForceGraph2D from 'react-force-graph-2d';
 import { motion } from 'framer-motion';
+import { Maximize, Minimize } from 'lucide-react';
 import { NodeTooltip } from './NodeTooltip';
 import { useOrbitalAnimation } from '@/hooks/useOrbitalAnimation';
+import { Button } from '@/components/ui/button';
 
 interface GraphNode {
   id: string;
@@ -44,6 +45,7 @@ export function SubbrainGraph({ graphData, onNodeClick }: SubbrainGraphProps) {
   const [focusedNode, setFocusedNode] = useState<GraphNode | null>(null);
   const [isGraphReady, setIsGraphReady] = useState(false);
   const [showInitialLabels, setShowInitialLabels] = useState(true);
+  const [isFullscreen, setIsFullscreen] = useState(false);
   
   // Enable orbital animation
   useOrbitalAnimation(graphData.nodes, fgRef, isGraphReady);
@@ -133,20 +135,27 @@ export function SubbrainGraph({ graphData, onNodeClick }: SubbrainGraphProps) {
     };
   }, [graphData.links]);
   
-  // Initialize dimensions
+  // Initialize dimensions with fullscreen support
   useEffect(() => {
     const updateDimensions = () => {
-      setDimensions({
-        width: window.innerWidth,
-        height: Math.max(window.innerHeight - 120, 600)
-      });
+      if (isFullscreen) {
+        setDimensions({
+          width: window.innerWidth,
+          height: window.innerHeight
+        });
+      } else {
+        setDimensions({
+          width: window.innerWidth,
+          height: Math.max(window.innerHeight - 120, 600)
+        });
+      }
     };
     
     updateDimensions();
     window.addEventListener('resize', updateDimensions);
     
     return () => window.removeEventListener('resize', updateDimensions);
-  }, []);
+  }, [isFullscreen]);
   
   // Handle engine stop and initial positioning
   const handleEngineStop = useCallback(() => {
@@ -165,35 +174,36 @@ export function SubbrainGraph({ graphData, onNodeClick }: SubbrainGraphProps) {
     }
   }, [graphData.nodes]);
   
-  // Fixed node hover with proper tooltip positioning - corrected to avoid header overlap
+  // Fixed node hover with proper global positioning - definitive fix
   const handleNodeHover = useCallback((node: GraphNode | null, event: any) => {
     if (node && event) {
-      // Get proper canvas coordinates and adjust for header height
-      const canvas = fgRef.current?.canvas();
-      if (canvas) {
-        const rect = canvas.getBoundingClientRect();
-        const headerHeight = 200; // Approximate header height to avoid overlap
-        
-        let tooltipX = event.layerX || (event.clientX - rect.left);
-        let tooltipY = (event.layerY || (event.clientY - rect.top)) + headerHeight;
-        
-        // Ensure tooltip doesn't go off-screen
-        const tooltipWidth = 320; // Estimated tooltip width
-        const tooltipHeight = 200; // Estimated tooltip height
-        
-        if (tooltipX + tooltipWidth > window.innerWidth) {
-          tooltipX = window.innerWidth - tooltipWidth - 20;
-        }
-        
-        if (tooltipY + tooltipHeight > window.innerHeight) {
-          tooltipY = (event.layerY || (event.clientY - rect.top)) + headerHeight - tooltipHeight - 20;
-        }
-        
-        setTooltipPosition({
-          x: Math.max(10, tooltipX),
-          y: Math.max(headerHeight + 10, tooltipY)
-        });
+      // Use global mouse coordinates directly for fixed positioning
+      const mouseX = event.clientX || event.pageX;
+      const mouseY = event.clientY || event.pageY;
+      
+      // Calculate tooltip position with proper offsets
+      let tooltipX = mouseX + 15; // Small offset from cursor
+      let tooltipY = mouseY - 10; // Small offset from cursor
+      
+      // Tooltip dimensions for boundary checking
+      const tooltipWidth = 320;
+      const tooltipHeight = 200;
+      
+      // Prevent tooltip from going off-screen horizontally
+      if (tooltipX + tooltipWidth > window.innerWidth) {
+        tooltipX = mouseX - tooltipWidth - 15; // Show on left side of cursor
       }
+      
+      // Prevent tooltip from going off-screen vertically
+      if (tooltipY + tooltipHeight > window.innerHeight) {
+        tooltipY = mouseY - tooltipHeight + 10; // Show above cursor
+      }
+      
+      // Ensure minimum margins from screen edges
+      tooltipX = Math.max(10, Math.min(tooltipX, window.innerWidth - tooltipWidth - 10));
+      tooltipY = Math.max(10, Math.min(tooltipY, window.innerHeight - tooltipHeight - 10));
+      
+      setTooltipPosition({ x: tooltipX, y: tooltipY });
     }
     
     setHoveredNode(node);
@@ -215,6 +225,25 @@ export function SubbrainGraph({ graphData, onNodeClick }: SubbrainGraphProps) {
       fgRef.current.zoomToFit(400, 80);
     }
   }, []);
+  
+  // Toggle fullscreen mode
+  const toggleFullscreen = useCallback(() => {
+    setIsFullscreen(prev => !prev);
+  }, []);
+  
+  // Handle escape key for fullscreen exit
+  useEffect(() => {
+    const handleEscapeKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && isFullscreen) {
+        setIsFullscreen(false);
+      }
+    };
+    
+    if (isFullscreen) {
+      document.addEventListener('keydown', handleEscapeKey);
+      return () => document.removeEventListener('keydown', handleEscapeKey);
+    }
+  }, [isFullscreen]);
   
   // Enhanced custom node paint function
   const paintNode = useCallback((node: GraphNode, ctx: CanvasRenderingContext2D, globalScale: number) => {
@@ -399,13 +428,35 @@ export function SubbrainGraph({ graphData, onNodeClick }: SubbrainGraphProps) {
   }, [graphData.nodes, impulses, focusedNode]);
   
   return (
-    <div className="relative w-full h-full bg-[#0C0C1C]">
+    <div className={`relative w-full h-full bg-[#0C0C1C] ${isFullscreen ? 'fixed inset-0 z-50' : ''}`}>
+      {/* Fullscreen Toggle Button */}
+      <div className="absolute top-4 right-4 z-20">
+        <Button
+          onClick={toggleFullscreen}
+          variant="outline"
+          size="sm"
+          className="bg-background/80 backdrop-blur-md border-border/50 hover:bg-background/90"
+        >
+          {isFullscreen ? (
+            <>
+              <Minimize size={16} className="mr-2" />
+              Sair do Fullscreen
+            </>
+          ) : (
+            <>
+              <Maximize size={16} className="mr-2" />
+              Fullscreen
+            </>
+          )}
+        </Button>
+      </div>
+
       {/* Focus mode controls */}
       {focusedNode && (
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="absolute top-16 left-1/2 transform -translate-x-1/2 z-10"
+          className={`absolute ${isFullscreen ? 'top-20' : 'top-16'} left-1/2 transform -translate-x-1/2 z-10`}
         >
           <div className="bg-background/90 backdrop-blur-md border border-border/50 rounded-lg px-4 py-2 flex items-center gap-3">
             <span className="text-sm font-medium">
@@ -455,7 +506,7 @@ export function SubbrainGraph({ graphData, onNodeClick }: SubbrainGraphProps) {
         d3VelocityDecay={0.3}
       />
 
-      {/* Advanced Tooltip */}
+      {/* Advanced Tooltip with proper global positioning */}
       <NodeTooltip
         node={hoveredNode}
         position={tooltipPosition}
