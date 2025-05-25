@@ -165,17 +165,33 @@ export function SubbrainGraph({ graphData, onNodeClick }: SubbrainGraphProps) {
     }
   }, [graphData.nodes]);
   
-  // Fixed node hover with proper tooltip positioning
+  // Fixed node hover with proper tooltip positioning - corrected to avoid header overlap
   const handleNodeHover = useCallback((node: GraphNode | null, event: any) => {
-    // Prevent animation interference by not updating during hover if animation is running
     if (node && event) {
-      // Get proper canvas coordinates
+      // Get proper canvas coordinates and adjust for header height
       const canvas = fgRef.current?.canvas();
       if (canvas) {
         const rect = canvas.getBoundingClientRect();
+        const headerHeight = 200; // Approximate header height to avoid overlap
+        
+        let tooltipX = event.layerX || (event.clientX - rect.left);
+        let tooltipY = (event.layerY || (event.clientY - rect.top)) + headerHeight;
+        
+        // Ensure tooltip doesn't go off-screen
+        const tooltipWidth = 320; // Estimated tooltip width
+        const tooltipHeight = 200; // Estimated tooltip height
+        
+        if (tooltipX + tooltipWidth > window.innerWidth) {
+          tooltipX = window.innerWidth - tooltipWidth - 20;
+        }
+        
+        if (tooltipY + tooltipHeight > window.innerHeight) {
+          tooltipY = (event.layerY || (event.clientY - rect.top)) + headerHeight - tooltipHeight - 20;
+        }
+        
         setTooltipPosition({
-          x: event.layerX || (event.clientX - rect.left),
-          y: event.layerY || (event.clientY - rect.top)
+          x: Math.max(10, tooltipX),
+          y: Math.max(headerHeight + 10, tooltipY)
         });
       }
     }
@@ -384,15 +400,6 @@ export function SubbrainGraph({ graphData, onNodeClick }: SubbrainGraphProps) {
   
   return (
     <div className="relative w-full h-full bg-[#0C0C1C]">
-      {/* Identity phrase */}
-      <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-10 text-center">
-        <div className="bg-background/80 backdrop-blur-md border border-border/50 rounded-lg px-4 py-2">
-          <span className="text-sm italic text-foreground/80">
-            "Visualizando a inteligência conectada da sua mente digital."
-          </span>
-        </div>
-      </div>
-
       {/* Focus mode controls */}
       {focusedNode && (
         <motion.div
