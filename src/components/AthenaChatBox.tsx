@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { MessageSquare, X } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -24,7 +24,7 @@ interface Message {
 const MAX_MESSAGES = 10;
 const MAX_INTERACTIONS = 10; // Limite de interações por sessão
 
-const AthenaChatBox: React.FC = () => {
+const AthenaChatBox: React.FC = React.memo(() => {
   const [isOpen, setIsOpen] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
   const [message, setMessage] = useState("");
@@ -35,15 +35,29 @@ const AthenaChatBox: React.FC = () => {
   const { user } = useAuth();
   const scrollAreaRef = useRef<HTMLDivElement>(null);
 
-  const toggleExpanded = (id: string) => {
-    const newExpanded = new Set(expandedLogs);
-    if (newExpanded.has(id)) {
-      newExpanded.delete(id);
-    } else {
-      newExpanded.add(id);
-    }
-    setExpandedLogs(newExpanded);
-  };
+  const toggleExpanded = useCallback((id: string) => {
+    setExpandedLogs(prev => {
+      const newExpanded = new Set(prev);
+      if (newExpanded.has(id)) {
+        newExpanded.delete(id);
+      } else {
+        newExpanded.add(id);
+      }
+      return newExpanded;
+    });
+  }, []);
+
+  // Memoized functions
+  const clearHistory = useCallback(() => {
+    setMessages([]);
+    setInteractionCount(0);
+    localStorage.removeItem("athenaChatHistory");
+    localStorage.removeItem("athenaInteractionCount");
+    toast({
+      title: "Histórico limpo",
+      description: "O histórico de conversas foi apagado.",
+    });
+  }, [toast]);
 
   // Carregar histórico de mensagens do localStorage ao iniciar
   useEffect(() => {
@@ -87,7 +101,7 @@ const AthenaChatBox: React.FC = () => {
     }
   }, [messages]);
 
-  const handleSendMessage = async () => {
+  const handleSendMessage = useCallback(async () => {
     if (!message.trim()) return;
     
     // Verificar se atingiu o limite de interações
@@ -226,18 +240,28 @@ const AthenaChatBox: React.FC = () => {
     } finally {
       setIsTyping(false);
     }
-  };
+  }, [message, interactionCount, messages, user, toast]);
 
-  const clearHistory = () => {
-    setMessages([]);
-    setInteractionCount(0);
-    localStorage.removeItem("athenaChatHistory");
-    localStorage.removeItem("athenaInteractionCount");
-    toast({
-      title: "Histórico limpo",
-      description: "O histórico de conversas foi apagado.",
-    });
-  };
+  // Memoized components
+  const memoizedHistoryPreview = useMemo(() => (
+    <AthenaHistoryPreview
+      messages={messages}
+      expandedLogs={expandedLogs}
+      toggleExpanded={toggleExpanded}
+      isTyping={isTyping}
+    />
+  ), [messages, expandedLogs, toggleExpanded, isTyping]);
+
+  const memoizedInputBox = useMemo(() => (
+    <AthenaInputBox
+      message={message}
+      setMessage={setMessage}
+      handleSendMessage={handleSendMessage}
+      isTyping={isTyping}
+      interactionCount={interactionCount}
+      maxInteractions={MAX_INTERACTIONS}
+    />
+  ), [message, setMessage, handleSendMessage, isTyping, interactionCount]);
 
   return (
     <>
@@ -269,29 +293,18 @@ const AthenaChatBox: React.FC = () => {
               ref={scrollAreaRef} 
               className="flex-1 h-[350px] md:h-[400px] overflow-y-auto p-3 scrollbar-thin bg-background/95"
             >
-              <AthenaHistoryPreview
-                messages={messages}
-                expandedLogs={expandedLogs}
-                toggleExpanded={toggleExpanded}
-                isTyping={isTyping}
-              />
-              
+              {memoizedHistoryPreview}
               <AthenaTypingIndicator isTyping={isTyping} />
             </ScrollArea>
 
-            <AthenaInputBox
-              message={message}
-              setMessage={setMessage}
-              handleSendMessage={handleSendMessage}
-              isTyping={isTyping}
-              interactionCount={interactionCount}
-              maxInteractions={MAX_INTERACTIONS}
-            />
+            {memoizedInputBox}
           </motion.div>
         )}
       </AnimatePresence>
     </>
   );
-};
+});
+
+AthenaChatBox.displayName = 'AthenaChatBox';
 
 export default AthenaChatBox;

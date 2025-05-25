@@ -8,12 +8,18 @@ import { HabitoCard } from "@/components/Habitos/HabitoCard";
 import { NovoHabitoModal } from "@/components/Habitos/NovoHabitoModal";
 import { HabitosCalendarView } from "@/components/Habitos/HabitosCalendarView";
 import { HabitosRelatorioView } from "@/components/Habitos/HabitosRelatorioView";
-import { useHabitos } from "@/hooks/useHabitos";
+import { useOptimizedHabitos } from "@/hooks/useOptimizedHabitos";
+import { memo } from "react";
+
+// Memoized components for better performance
+const MemoizedHabitoCard = memo(HabitoCard);
+const MemoizedHabitosCalendarView = memo(HabitosCalendarView);
+const MemoizedHabitosRelatorioView = memo(HabitosRelatorioView);
 
 export default function Habitos() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("grid");
-  const { habitos, loading, addHabit, checkInHabit, deleteHabit } = useHabitos();
+  const { habitos, loading, addHabit, checkInHabit, deleteHabit } = useOptimizedHabitos();
 
   const handleCheckIn = (habitId?: string) => {
     if (habitId) {
@@ -74,7 +80,7 @@ export default function Habitos() {
           {/* Grid de Hábitos */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {habitos.map((habito) => (
-              <HabitoCard 
+              <MemoizedHabitoCard 
                 key={habito.id} 
                 habito={habito} 
                 onCheckIn={() => handleCheckIn(habito.id)}
@@ -100,11 +106,11 @@ export default function Habitos() {
         </TabsContent>
 
         <TabsContent value="calendar" className="space-y-4">
-          <HabitosCalendarView habitos={habitos} />
+          <MemoizedHabitosCalendarView habitos={habitos} />
         </TabsContent>
 
         <TabsContent value="relatorio" className="space-y-4">
-          <HabitosRelatorioView habitos={habitos} />
+          <MemoizedHabitosRelatorioView habitos={habitos} />
         </TabsContent>
       </Tabs>
     </div>
