@@ -1,3 +1,4 @@
+
 import { useEffect, useRef, useCallback } from 'react';
 import { GraphNode, calculateOrbitPosition, setupConstellationLayout } from '../utils/graphUtils';
 
@@ -15,7 +16,7 @@ export const useGraphAnimation = (
     
     setupConstellationLayout(graphData.nodes);
     
-    // Disable all force simulation for smooth orbital movement
+    // Desabilitar forças de simulação para movimento orbital puro
     if (fgRef.current) {
       const fg = fgRef.current;
       fg.d3Force('link', null);
@@ -38,18 +39,18 @@ export const useGraphAnimation = (
     const now = Date.now();
     const elapsed = now - startTimeRef.current;
     
-    // Throttle updates to 60fps for better performance
+    // Throttle para 60fps otimizado
     if (now - lastUpdateRef.current < 16) {
       animationFrameRef.current = requestAnimationFrame(animate);
       return;
     }
     lastUpdateRef.current = now;
     
-    // Update orbital positions for all non-Athena nodes
+    // Atualizar posições orbitais com movimento suave
     let needsUpdate = false;
     graphData.nodes.forEach(node => {
       if (node.id === 'athena') {
-        // Keep Athena fixed at center
+        // Manter Athena fixa no centro
         if (node.fx !== 0 || node.fy !== 0) {
           node.fx = 0;
           node.fy = 0;
@@ -58,22 +59,21 @@ export const useGraphAnimation = (
         return;
       }
       
-      // Calculate real orbital movement
+      // Movimento orbital translacional contínuo
       if (node.orbitRadius && node.orbitSpeed) {
-        const timeInSeconds = elapsed * 0.001; // Convert to seconds
+        const timeInSeconds = elapsed * 0.001;
         const currentAngle = (node.orbitAngle || 0) + (timeInSeconds * node.orbitSpeed);
         
-        // Add subtle wobble for organic movement
-        const wobbleFreq = 0.5 + (node.relevancia || 5) * 0.1;
-        const wobbleAmplitude = 5 + (node.relevancia || 5) * 2;
+        // Movimento orbital com sin/cos e variação orgânica
+        const wobbleFreq = 0.3 + (node.relevancia || 5) * 0.05;
+        const wobbleAmplitude = 2 + (node.relevancia || 5) * 1;
         const wobbleX = Math.sin(timeInSeconds * wobbleFreq) * wobbleAmplitude;
-        const wobbleY = Math.cos(timeInSeconds * wobbleFreq * 1.3) * wobbleAmplitude;
+        const wobbleY = Math.cos(timeInSeconds * wobbleFreq * 1.2) * wobbleAmplitude;
         
-        // Calculate new orbital position
         const newX = Math.cos(currentAngle) * node.orbitRadius + wobbleX;
         const newY = Math.sin(currentAngle) * node.orbitRadius + wobbleY;
         
-        // Only update if position changed significantly
+        // Atualizar apenas se mudança significativa
         if (Math.abs((node.fx || 0) - newX) > 0.1 || Math.abs((node.fy || 0) - newY) > 0.1) {
           node.fx = newX;
           node.fy = newY;
@@ -84,37 +84,36 @@ export const useGraphAnimation = (
       }
     });
     
-    // Force refresh only if positions changed
+    // Refresh apenas quando necessário
     if (needsUpdate && fgRef.current) {
       fgRef.current.refresh();
     }
     
-    // Continue animation loop
+    // Continuar loop de animação
     animationFrameRef.current = requestAnimationFrame(animate);
   }, [graphData.nodes, fgRef]);
   
   useEffect(() => {
     if (!graphData.nodes.length) return;
     
-    // Setup constellation layout
+    // Setup da constelação
     setupConstellation();
     
-    // Start continuous animation if not already running
+    // Iniciar animação contínua
     if (!isAnimatingRef.current) {
       isAnimatingRef.current = true;
       startTimeRef.current = Date.now();
       lastUpdateRef.current = 0;
       
-      // Start animation immediately
       animationFrameRef.current = requestAnimationFrame(animate);
     }
     
     return () => {
-      // Don't stop animation on dependency changes, only on unmount
+      // Não parar animação em mudanças de dependência
     };
   }, [graphData.nodes, setupConstellation, animate]);
   
-  // Cleanup on unmount
+  // Cleanup no unmount
   useEffect(() => {
     return () => {
       isAnimatingRef.current = false;

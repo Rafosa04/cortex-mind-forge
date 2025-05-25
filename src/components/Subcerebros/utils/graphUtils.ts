@@ -31,7 +31,7 @@ export interface GraphLink {
 
 export const getNodeColor = (node: GraphNode) => {
   const colors = {
-    athena: '#FFD700',
+    athena: '#9b87f5',
     subcerebro: '#8B5CF6',
     projeto: '#0EA5E9',
     habito: '#10B981',
@@ -47,19 +47,19 @@ export const calculateOrbitPosition = (node: GraphNode, time: number) => {
     return { x: node.fx || 0, y: node.fy || 0 };
   }
 
-  // Smooth orbital movement with time-based rotation
-  const timeInSeconds = time * 0.001; // Convert to seconds
+  // Movimento orbital suave baseado em deltaTime
+  const timeInSeconds = time * 0.001;
   const currentAngle = (node.orbitAngle || 0) + (timeInSeconds * node.orbitSpeed);
   
-  // Add subtle wobble based on relevance for organic movement
-  const wobbleFreq = 0.5 + (node.relevancia || 5) * 0.1;
-  const wobbleAmplitude = 5 + (node.relevancia || 5) * 2;
-  const wobbleX = Math.sin(timeInSeconds * wobbleFreq) * wobbleAmplitude;
-  const wobbleY = Math.cos(timeInSeconds * wobbleFreq * 1.3) * wobbleAmplitude;
-  
-  // Calculate orbital position with wobble
+  // Movimento translacional suave com sin/cos
   const baseX = Math.cos(currentAngle) * node.orbitRadius;
   const baseY = Math.sin(currentAngle) * node.orbitRadius;
+  
+  // Sutil variação orgânica baseada na relevância
+  const wobbleFreq = 0.3 + (node.relevancia || 5) * 0.05;
+  const wobbleAmplitude = 2 + (node.relevancia || 5) * 1;
+  const wobbleX = Math.sin(timeInSeconds * wobbleFreq) * wobbleAmplitude;
+  const wobbleY = Math.cos(timeInSeconds * wobbleFreq * 1.2) * wobbleAmplitude;
   
   return {
     x: baseX + wobbleX,
@@ -71,7 +71,7 @@ export const setupConstellationLayout = (nodes: GraphNode[]) => {
   const athenaNode = nodes.find(node => node.id === 'athena');
   if (!athenaNode) return;
   
-  // Fix Athena at center
+  // Fixar Athena no centro
   athenaNode.fx = 0;
   athenaNode.fy = 0;
   
@@ -82,32 +82,32 @@ export const setupConstellationLayout = (nodes: GraphNode[]) => {
     return acc;
   }, {} as Record<string, GraphNode[]>);
   
-  // Define orbital layers with different radii and speeds for variety
+  // Órbitas dinâmicas com velocidades diferenciadas
   const orbitLayers = {
     subcerebro: { 
-      radius: 200, 
-      speed: 0.3,  // Slower, more stable orbit
-      radiusVariation: 40 
-    },
-    projeto: { 
-      radius: 300, 
-      speed: 0.25, 
-      radiusVariation: 50 
-    },
-    habito: { 
-      radius: 380, 
-      speed: 0.2, 
+      radius: 180, 
+      speed: 0.2,
       radiusVariation: 30 
     },
-    favorito: { 
-      radius: 450, 
+    projeto: { 
+      radius: 280, 
       speed: 0.15, 
       radiusVariation: 40 
     },
-    pensamento: { 
-      radius: 520, 
+    habito: { 
+      radius: 360, 
+      speed: 0.12, 
+      radiusVariation: 25 
+    },
+    favorito: { 
+      radius: 430, 
       speed: 0.1, 
-      radiusVariation: 60 
+      radiusVariation: 35 
+    },
+    pensamento: { 
+      radius: 500, 
+      speed: 0.08, 
+      radiusVariation: 50 
     }
   };
   
@@ -119,17 +119,17 @@ export const setupConstellationLayout = (nodes: GraphNode[]) => {
       const angleStep = (2 * Math.PI) / nodes.length;
       const baseAngle = index * angleStep;
       
-      // Add some randomness for natural distribution
+      // Distribuição orgânica nas órbitas
       const radiusVariation = (Math.random() - 0.5) * layer.radiusVariation;
-      const angleVariation = (Math.random() - 0.5) * 0.5;
-      const speedVariation = (Math.random() - 0.5) * 0.1;
+      const angleVariation = (Math.random() - 0.5) * 0.3;
+      const speedVariation = (Math.random() - 0.5) * 0.05;
       
       node.orbitRadius = layer.radius + radiusVariation;
       node.orbitAngle = baseAngle + angleVariation;
       node.orbitSpeed = layer.speed + speedVariation;
       node.pulsePhase = Math.random() * Math.PI * 2;
       
-      // Set initial positions
+      // Posição inicial
       const pos = calculateOrbitPosition(node, 0);
       node.fx = pos.x;
       node.fy = pos.y;
