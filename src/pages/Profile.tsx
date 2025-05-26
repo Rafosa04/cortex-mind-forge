@@ -20,7 +20,7 @@ const Profile: React.FC = () => {
   
   const [profileUserId, setProfileUserId] = useState<string | undefined>();
   
-  const { profileData, loading: profileLoading, isOwnProfile } = useProfile(profileUserId);
+  const { profileData, loading: profileLoading, isOwnProfile, updateProfile } = useProfile(profileUserId);
   const { 
     projects, 
     achievements, 
@@ -108,8 +108,18 @@ const Profile: React.FC = () => {
       >
         <motion.div variants={itemVariants} className="mb-8">
           <ProfileHeader 
-            {...profileData}
+            userId={profileUserId || ''}
+            avatarUrl={profileData.avatarUrl}
+            coverUrl={profileData.coverUrl}
+            name={profileData.name}
+            username={profileData.username}
+            bio={profileData.bio}
+            location={profileData.location}
+            website={profileData.website}
+            publicLink={profileData.publicLink}
+            joinedDate={profileData.joinedDate}
             isOwnProfile={isOwnProfile}
+            onUpdateProfile={updateProfile}
           />
         </motion.div>
 

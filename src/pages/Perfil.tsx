@@ -11,6 +11,7 @@ import {
   Link, MessageCircle, TrendingUp
 } from "lucide-react";
 import { useState } from "react";
+import { ProfileHeader } from "@/components/Perfil/ProfileHeader";
 import { CognitiveStats } from "@/components/Perfil/CognitiveStats";
 import { Highlights } from "@/components/Perfil/Highlights";
 import { PersonalFeed } from "@/components/Perfil/PersonalFeed";
@@ -21,7 +22,7 @@ import { useProfile } from "@/hooks/useProfile";
 export default function Perfil() {
   const [activeTab, setActiveTab] = useState("highlights");
   const { user } = useAuth();
-  const { profileData, loading } = useProfile(user?.id);
+  const { profileData, loading, updateProfile } = useProfile(user?.id);
 
   if (loading) {
     return (
@@ -29,6 +30,17 @@ export default function Perfil() {
         <div className="text-center">
           <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-purple-500 mx-auto mb-4"></div>
           <p className="text-gray-400">Carregando perfil...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!profileData) {
+    return (
+      <div className="min-h-screen bg-gray-900 text-white flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold mb-4">Perfil não encontrado</h2>
+          <p className="text-gray-400">Não foi possível carregar o perfil.</p>
         </div>
       </div>
     );
@@ -42,6 +54,22 @@ export default function Perfil() {
         transition={{ duration: 0.5 }}
         className="space-y-6 sm:space-y-8"
       >
+        {/* Profile Header */}
+        <ProfileHeader 
+          userId={user?.id || ''}
+          avatarUrl={profileData.avatarUrl}
+          coverUrl={profileData.coverUrl}
+          name={profileData.name}
+          username={profileData.username}
+          bio={profileData.bio}
+          location={profileData.location}
+          website={profileData.website}
+          publicLink={profileData.publicLink}
+          joinedDate={profileData.joinedDate}
+          isOwnProfile={true}
+          onUpdateProfile={updateProfile}
+        />
+
         {/* Frase de identidade */}
         <motion.p 
           initial={{ opacity: 0 }}
