@@ -12,6 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { useConnectaPosts } from "@/hooks/useConnectaPosts";
 import { useConnectaConnections } from "@/hooks/useConnectaConnections";
+import { PostType } from "@/types/connecta";
 
 export default function Connecta() {
   const { toast } = useToast();
@@ -73,6 +74,23 @@ export default function Connecta() {
       title: "Conversa",
       description: `Abrindo conversa ${conversationId}`,
     });
+  };
+
+  // Convert ConnectaPost to PostType for PostCard component
+  const convertToPostType = (connectaPost: any): PostType => {
+    return {
+      id: connectaPost.id,
+      author: connectaPost.author,
+      content: connectaPost.content,
+      createdAt: connectaPost.createdAt,
+      likes: connectaPost.likes,
+      comments: connectaPost.comments,
+      saves: connectaPost.saves,
+      liked: connectaPost.liked,
+      saved: connectaPost.saved,
+      category: connectaPost.category as PostType['category'],
+      imageUrl: connectaPost.imageUrl
+    };
   };
 
   // Filter posts based on active tab
@@ -204,7 +222,7 @@ export default function Connecta() {
                       transition={{ duration: 0.3, delay: i * 0.1 }}
                     >
                       <PostCard 
-                        post={post}
+                        post={convertToPostType(post)}
                         onLike={() => toggleLike(post.id)}
                         onComment={() => handleComment(post.id)}
                         onSave={() => toggleSave(post.id)}
@@ -232,7 +250,7 @@ export default function Connecta() {
                       transition={{ duration: 0.3, delay: i * 0.1 }}
                     >
                       <PostCard 
-                        post={post}
+                        post={convertToPostType(post)}
                         onLike={() => toggleLike(post.id)}
                         onComment={() => handleComment(post.id)}
                         onSave={() => toggleSave(post.id)}
@@ -260,7 +278,7 @@ export default function Connecta() {
                       transition={{ duration: 0.3, delay: i * 0.1 }}
                     >
                       <PostCard 
-                        post={post}
+                        post={convertToPostType(post)}
                         onLike={() => toggleLike(post.id)}
                         onComment={() => handleComment(post.id)}
                         onSave={() => toggleSave(post.id)}

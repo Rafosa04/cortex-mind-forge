@@ -7,7 +7,7 @@ import { useToast } from '@/hooks/use-toast';
 interface ConnectaPost {
   id: string;
   content: string;
-  category: string;
+  category: 'focus' | 'expansion' | 'reflection';
   createdAt: string;
   likes: number;
   comments: number;
@@ -42,7 +42,7 @@ export const useConnectaPosts = () => {
           comments_count,
           saves_count,
           user_id,
-          profiles!posts_user_id_fkey (
+          profiles (
             name,
             avatar_url
           )
@@ -73,7 +73,7 @@ export const useConnectaPosts = () => {
       const transformedPosts: ConnectaPost[] = data?.map(post => ({
         id: post.id,
         content: post.content,
-        category: post.category,
+        category: post.category as 'focus' | 'expansion' | 'reflection',
         createdAt: post.created_at,
         likes: post.likes_count || 0,
         comments: post.comments_count || 0,
