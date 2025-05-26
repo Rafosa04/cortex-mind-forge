@@ -1,253 +1,239 @@
+
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Card, CardContent } from '@/components/ui/card';
+import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { 
-  Activity, 
-  CheckCircle, 
-  TrendingUp, 
   Star, 
-  Brain,
-  ChevronRight,
-  Calendar
+  Trophy, 
+  TrendingUp, 
+  BookOpen, 
+  Lightbulb,
+  Calendar,
+  ExternalLink,
+  Heart,
+  MessageSquare
 } from 'lucide-react';
 import { useProfileHighlights } from '@/hooks/useProfileHighlights';
-import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/hooks/useAuth';
 
-interface HighlightsProps {
-  profileUserId?: string;
-}
-
-export const Highlights: React.FC<HighlightsProps> = ({ profileUserId }) => {
+export const Highlights: React.FC = () => {
+  const { user } = useAuth();
   const { 
     projects, 
     achievements, 
     topPosts, 
     recentFavorites, 
-    athenaeSuggestion, 
+    athenaeSuggestion,
     loading 
-  } = useProfileHighlights(profileUserId);
-  
-  const navigate = useNavigate();
-
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: { staggerChildren: 0.1 }
-    }
-  };
-
-  const itemVariants = {
-    hidden: { opacity: 0, y: 20 },
-    visible: { opacity: 1, y: 0 }
-  };
+  } = useProfileHighlights(user?.id);
 
   if (loading) {
     return (
       <div className="space-y-6">
-        {[1, 2, 3, 4].map((i) => (
-          <div key={i} className="animate-pulse bg-gray-800/60 rounded-lg h-32"></div>
+        {[1, 2, 3].map((i) => (
+          <Card key={i} className="bg-gray-800/50 backdrop-blur-md border-gray-700">
+            <CardContent className="p-6">
+              <div className="animate-pulse space-y-4">
+                <div className="h-6 bg-gray-700 rounded w-1/3"></div>
+                <div className="h-4 bg-gray-700 rounded w-2/3"></div>
+                <div className="h-20 bg-gray-700 rounded"></div>
+              </div>
+            </CardContent>
+          </Card>
         ))}
       </div>
     );
   }
 
   return (
-    <motion.div className="space-y-8">
+    <div className="space-y-6">
       {/* Projetos em Destaque */}
-      <motion.section className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h3 className="text-lg font-semibold text-white flex items-center gap-2">
-            <Activity className="h-5 w-5 text-purple-400" />
-            Projetos em Destaque
-          </h3>
-          <Button 
-            variant="ghost" 
-            size="sm"
-            onClick={() => navigate('/projetos')}
-            className="text-purple-400 hover:text-purple-300"
-          >
-            Ver todos
-            <ChevronRight className="h-4 w-4 ml-1" />
-          </Button>
-        </div>
-        
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {projects.slice(0, 3).map((project) => (
-            <Card key={project.id} className="bg-gray-800/60 border-gray-700 hover:bg-gray-800/80 transition-colors cursor-pointer">
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between mb-2">
+      <Card className="bg-gray-800/50 backdrop-blur-md border-gray-700">
+        <CardContent className="p-6">
+          <div className="flex items-center gap-3 mb-4">
+            <Star className="h-5 w-5 text-yellow-400" />
+            <h3 className="text-lg font-semibold text-white">Projetos em Destaque</h3>
+          </div>
+          
+          {projects.length > 0 ? (
+            <div className="space-y-4">
+              {projects.map((project, index) => (
+                <motion.div
+                  key={project.id}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.1 }}
+                  className="p-4 rounded-lg bg-gray-700/30 border border-gray-600/30"
+                >
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="flex-1">
+                      <h4 className="font-medium text-white mb-1">{project.title}</h4>
+                      <Badge 
+                        variant="outline" 
+                        className={`text-xs ${
+                          project.status === 'concluido' 
+                            ? 'border-green-500/50 text-green-400' 
+                            : project.status === 'em_andamento'
+                            ? 'border-blue-500/50 text-blue-400'
+                            : 'border-gray-500/50 text-gray-400'
+                        }`}
+                      >
+                        {project.status === 'concluido' ? 'Concluído' : 
+                         project.status === 'em_andamento' ? 'Em Andamento' : 'Planejado'}
+                      </Badge>
+                    </div>
+                    <span className="text-sm font-medium text-purple-400">
+                      {project.progress}%
+                    </span>
+                  </div>
+                  <Progress value={project.progress} className="h-2" />
+                </motion.div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-gray-400 text-center py-4">
+              Nenhum projeto encontrado. Comece criando seu primeiro projeto!
+            </p>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Conquistas Recentes */}
+      <Card className="bg-gray-800/50 backdrop-blur-md border-gray-700">
+        <CardContent className="p-6">
+          <div className="flex items-center gap-3 mb-4">
+            <Trophy className="h-5 w-5 text-gold-400" />
+            <h3 className="text-lg font-semibold text-white">Conquistas Recentes</h3>
+          </div>
+          
+          {achievements.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {achievements.map((achievement, index) => (
+                <motion.div
+                  key={achievement.label}
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: index * 0.1 }}
+                  className="text-center p-4 rounded-lg bg-gradient-to-br from-purple-500/10 to-blue-500/10 border border-purple-500/20"
+                >
+                  <div className="text-2xl mb-2">{achievement.icon}</div>
+                  <h4 className="font-medium text-white mb-1">{achievement.label}</h4>
+                  <p className="text-sm text-purple-400">
+                    {achievement.streak} dias consecutivos
+                  </p>
+                </motion.div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-gray-400 text-center py-4">
+              Continue desenvolvendo seus hábitos para conquistar badges!
+            </p>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Post em Destaque */}
+      {topPosts.length > 0 && (
+        <Card className="bg-gray-800/50 backdrop-blur-md border-gray-700">
+          <CardContent className="p-6">
+            <div className="flex items-center gap-3 mb-4">
+              <TrendingUp className="h-5 w-5 text-green-400" />
+              <h3 className="text-lg font-semibold text-white">Post em Destaque</h3>
+            </div>
+            
+            {topPosts.map((post) => (
+              <motion.div
+                key={post.id}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="p-4 rounded-lg bg-gray-700/30 border border-gray-600/30"
+              >
+                <p className="text-gray-300 mb-3 line-clamp-3">{post.content}</p>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-4 text-sm text-gray-400">
+                    <div className="flex items-center gap-1">
+                      <Heart className="h-4 w-4" />
+                      <span>{post.likes}</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <MessageSquare className="h-4 w-4" />
+                      <span>{post.comments}</span>
+                    </div>
+                  </div>
                   <Badge 
-                    className={`${
-                      project.status === 'em_andamento' 
-                        ? 'bg-blue-500/20 text-blue-400' 
-                        : project.status === 'concluido'
-                        ? 'bg-green-500/20 text-green-400'
-                        : 'bg-yellow-500/20 text-yellow-400'
+                    variant="outline" 
+                    className={`text-xs ${
+                      post.category === 'focus' 
+                        ? 'border-blue-500/50 text-blue-400'
+                        : post.category === 'expansion'
+                        ? 'border-purple-500/50 text-purple-400'
+                        : 'border-green-500/50 text-green-400'
                     }`}
                   >
-                    {project.status === 'em_andamento' ? 'Em andamento' : 
-                     project.status === 'concluido' ? 'Concluído' : 'Planejado'}
+                    {post.category}
                   </Badge>
-                  <span className="text-xs text-gray-400">{project.progress}%</span>
                 </div>
-                <h4 className="font-medium text-white mb-2">{project.title}</h4>
-                <div className="w-full bg-gray-700 rounded-full h-2">
-                  <div 
-                    className="bg-purple-500 h-2 rounded-full transition-all duration-300"
-                    style={{ width: `${project.progress}%` }}
-                  />
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      </motion.section>
-
-      {/* Conquistas de Hábito */}
-      <motion.section className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h3 className="text-lg font-semibold text-white flex items-center gap-2">
-            <CheckCircle className="h-5 w-5 text-green-400" />
-            Conquistas de Hábito
-          </h3>
-          <Button 
-            variant="ghost" 
-            size="sm"
-            onClick={() => navigate('/habitos')}
-            className="text-green-400 hover:text-green-300"
-          >
-            Ver todos
-            <ChevronRight className="h-4 w-4 ml-1" />
-          </Button>
-        </div>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {achievements.slice(0, 2).map((achievement, index) => (
-            <Card key={index} className="bg-gray-800/60 border-gray-700">
-              <CardContent className="p-4 flex items-center gap-4">
-                <div className="text-2xl">{achievement.icon}</div>
-                <div>
-                  <h4 className="font-medium text-white">{achievement.label}</h4>
-                  <p className="text-sm text-green-400">{achievement.streak} dias consecutivos</p>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      </motion.section>
-
-      {/* Posts com Maior Impacto */}
-      <motion.section className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h3 className="text-lg font-semibold text-white flex items-center gap-2">
-            <TrendingUp className="h-5 w-5 text-blue-400" />
-            Posts com Maior Impacto
-          </h3>
-          <Button 
-            variant="ghost" 
-            size="sm"
-            onClick={() => navigate('/connecta')}
-            className="text-blue-400 hover:text-blue-300"
-          >
-            Ver no Connecta
-            <ChevronRight className="h-4 w-4 ml-1" />
-          </Button>
-        </div>
-        
-        {topPosts.length > 0 ? (
-          <Card className="bg-gray-800/60 border-gray-700">
-            <CardContent className="p-4">
-              <Badge className="mb-3 bg-blue-500/20 text-blue-400">
-                {topPosts[0].category}
-              </Badge>
-              <p className="text-white mb-3">{topPosts[0].content}</p>
-              <div className="flex items-center gap-4 text-sm text-gray-400">
-                <span>{topPosts[0].likes} likes</span>
-                <span>{topPosts[0].comments} comentários</span>
-              </div>
-            </CardContent>
-          </Card>
-        ) : (
-          <Card className="bg-gray-800/60 border-gray-700">
-            <CardContent className="p-4 text-center text-gray-400">
-              <p>Nenhum post encontrado ainda</p>
-            </CardContent>
-          </Card>
-        )}
-      </motion.section>
+              </motion.div>
+            ))}
+          </CardContent>
+        </Card>
+      )}
 
       {/* Favoritos Recentes */}
-      <motion.section className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h3 className="text-lg font-semibold text-white flex items-center gap-2">
-            <Star className="h-5 w-5 text-yellow-400" />
-            Favoritos Recentes
-          </h3>
-          <Button 
-            variant="ghost" 
-            size="sm"
-            onClick={() => navigate('/favoritos')}
-            className="text-yellow-400 hover:text-yellow-300"
-          >
-            Ver todos
-            <ChevronRight className="h-4 w-4 ml-1" />
-          </Button>
-        </div>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {recentFavorites.slice(0, 2).map((favorite, index) => (
-            <Card key={index} className="bg-gray-800/60 border-gray-700">
-              <CardContent className="p-4">
-                <Badge className="mb-2 bg-yellow-500/20 text-yellow-400">
-                  {favorite.type}
-                </Badge>
-                <h4 className="font-medium text-white mb-2">{favorite.title}</h4>
-                <p className="text-xs text-gray-400">
-                  Acessado {favorite.accessCount} vezes
-                </p>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      </motion.section>
+      {recentFavorites.length > 0 && (
+        <Card className="bg-gray-800/50 backdrop-blur-md border-gray-700">
+          <CardContent className="p-6">
+            <div className="flex items-center gap-3 mb-4">
+              <BookOpen className="h-5 w-5 text-blue-400" />
+              <h3 className="text-lg font-semibold text-white">Favoritos Recentes</h3>
+            </div>
+            
+            <div className="space-y-3">
+              {recentFavorites.map((favorite, index) => (
+                <motion.div
+                  key={favorite.title}
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: index * 0.1 }}
+                  className="flex items-center justify-between p-3 rounded-lg bg-gray-700/30 border border-gray-600/30"
+                >
+                  <div className="flex-1">
+                    <h4 className="font-medium text-white text-sm">{favorite.title}</h4>
+                    <p className="text-xs text-gray-400">
+                      {favorite.type} • Acessado {favorite.accessCount} vezes
+                    </p>
+                  </div>
+                  <Button variant="ghost" size="icon" className="text-gray-400 hover:text-white">
+                    <ExternalLink className="h-4 w-4" />
+                  </Button>
+                </motion.div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Sugestão da Athena */}
       {athenaeSuggestion && (
-        <motion.section className="space-y-4">
-          <h3 className="text-lg font-semibold text-white flex items-center gap-2">
-            <Brain className="h-5 w-5 text-purple-400" />
-            Sugestão da Athena
-          </h3>
-          
-          <Card className="bg-gradient-to-r from-purple-500/10 to-blue-500/10 border-purple-500/20">
-            <CardContent className="p-6">
-              <div className="flex items-start gap-4">
-                <div className="h-10 w-10 rounded-full bg-purple-500/20 flex items-center justify-center">
-                  <Brain className="h-5 w-5 text-purple-400" />
-                </div>
-                <div className="flex-1">
-                  <p className="text-white mb-3 italic">"{athenaeSuggestion.content}"</p>
-                  <div className="flex items-center justify-between">
-                    <p className="text-xs text-gray-400">
-                      Sugerido {athenaeSuggestion.timestamp}
-                    </p>
-                    <Button 
-                      size="sm" 
-                      onClick={() => navigate('/athena')}
-                      className="bg-purple-600 hover:bg-purple-700"
-                    >
-                      Explorar com Athena
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </motion.section>
+        <Card className="bg-gradient-to-br from-purple-500/10 to-blue-500/10 border-purple-500/30">
+          <CardContent className="p-6">
+            <div className="flex items-center gap-3 mb-4">
+              <Lightbulb className="h-5 w-5 text-purple-400" />
+              <h3 className="text-lg font-semibold text-white">Insight da Athena</h3>
+              <Badge variant="outline" className="border-purple-500/50 text-purple-400 text-xs">
+                {athenaeSuggestion.timestamp}
+              </Badge>
+            </div>
+            
+            <p className="text-gray-300 italic">
+              "{athenaeSuggestion.content}"
+            </p>
+          </CardContent>
+        </Card>
       )}
-    </motion.div>
+    </div>
   );
 };

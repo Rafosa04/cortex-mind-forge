@@ -1,176 +1,195 @@
 
-import { Card, CardContent } from "@/components/ui/card";
-import { motion } from "framer-motion";
-import { Layers, Check, Repeat, Star, Brain, MessageSquare, TrendingUp } from "lucide-react";
-import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
-import { AreaChart, Area, CartesianGrid, XAxis, YAxis, ResponsiveContainer } from "recharts";
+import React from 'react';
+import { motion } from 'framer-motion';
+import { Card, CardContent } from '@/components/ui/card';
+import { Progress } from '@/components/ui/progress';
+import { Badge } from '@/components/ui/badge';
+import { 
+  Brain, 
+  Target, 
+  Zap, 
+  Users, 
+  Calendar,
+  TrendingUp,
+  BookOpen,
+  Heart
+} from 'lucide-react';
+import { useProfile } from '@/hooks/useProfile';
+import { useAuth } from '@/hooks/useAuth';
 
-const container = {
-  hidden: { opacity: 0 },
-  show: {
-    opacity: 1,
-    transition: {
-      staggerChildren: 0.1
+export const CognitiveStats: React.FC = () => {
+  const { user } = useAuth();
+  const { profileStats, loading } = useProfile(user?.id);
+
+  const stats = [
+    {
+      icon: Brain,
+      label: 'Ideias Capturadas',
+      value: profileStats?.ideasCaptured || 0,
+      max: 100,
+      color: 'text-purple-400',
+      bgColor: 'bg-purple-500/10',
+      description: 'Ideias e insights salvos'
+    },
+    {
+      icon: Target,
+      label: 'Projetos Concluídos',
+      value: profileStats?.projectsCompleted || 0,
+      max: 20,
+      color: 'text-green-400',
+      bgColor: 'bg-green-500/10',
+      description: 'Projetos finalizados'
+    },
+    {
+      icon: Zap,
+      label: 'Hábitos Ativos',
+      value: profileStats?.activeHabits || 0,
+      max: 10,
+      color: 'text-yellow-400',
+      bgColor: 'bg-yellow-500/10',
+      description: 'Hábitos em desenvolvimento'
+    },
+    {
+      icon: Users,
+      label: 'Conexões Ativas',
+      value: profileStats?.activeConnections || 0,
+      max: 50,
+      color: 'text-blue-400',
+      bgColor: 'bg-blue-500/10',
+      description: 'Conexões na rede'
     }
+  ];
+
+  const additionalStats = [
+    {
+      icon: BookOpen,
+      label: 'Posts Publicados',
+      value: profileStats?.totalPosts || 0,
+      color: 'text-indigo-400'
+    },
+    {
+      icon: Heart,
+      label: 'Curtidas Recebidas',
+      value: profileStats?.totalLikes || 0,
+      color: 'text-pink-400'
+    },
+    {
+      icon: TrendingUp,
+      label: 'Engajamento',
+      value: `${Math.round(((profileStats?.totalLikes || 0) / Math.max(profileStats?.totalPosts || 1, 1)) * 100)}%`,
+      color: 'text-emerald-400'
+    }
+  ];
+
+  if (loading) {
+    return (
+      <Card className="bg-gray-800/50 backdrop-blur-md border-gray-700">
+        <CardContent className="p-6">
+          <div className="animate-pulse space-y-4">
+            <div className="h-6 bg-gray-700 rounded w-1/3"></div>
+            <div className="space-y-3">
+              {[1, 2, 3, 4].map((i) => (
+                <div key={i} className="flex items-center space-x-3">
+                  <div className="h-10 w-10 bg-gray-700 rounded"></div>
+                  <div className="flex-1">
+                    <div className="h-4 bg-gray-700 rounded w-1/2 mb-2"></div>
+                    <div className="h-2 bg-gray-700 rounded"></div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    );
   }
-};
 
-const item = {
-  hidden: { opacity: 0, y: 20 },
-  show: { opacity: 1, y: 0 }
-};
-
-const data = [
-  { name: 'Jan', value: 12 },
-  { name: 'Fev', value: 19 },
-  { name: 'Mar', value: 15 },
-  { name: 'Abr', value: 29 },
-  { name: 'Mai', value: 32 },
-  { name: 'Jun', value: 25 },
-  { name: 'Jul', value: 42 },
-];
-
-const chartConfig = {
-  mental: {
-    label: "Atividade Mental",
-    color: "#60B5B5"
-  }
-};
-
-export function CognitiveStats() {
   return (
-    <motion.section
-      variants={container}
-      initial="hidden"
-      animate="show"
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.6, delay: 0.2 }}
       className="space-y-6"
     >
-      <h3 className="text-xl font-semibold">
-        Estatísticas Cognitivas
-      </h3>
-      
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-        <motion.div variants={item}>
-          <StatsCard
-            icon={<Layers className="h-5 w-5 text-primary" />}
-            title="Subcérebros"
-            value="5"
-            label="ativos"
-          />
-        </motion.div>
-        
-        <motion.div variants={item}>
-          <StatsCard
-            icon={<Check className="h-5 w-5 text-primary" />}
-            title="Projetos"
-            value="12"
-            label="criados (3 concluídos)"
-          />
-        </motion.div>
-        
-        <motion.div variants={item}>
-          <StatsCard
-            icon={<Repeat className="h-5 w-5 text-primary" />}
-            title="Hábitos"
-            value="8"
-            label="em andamento (75% consistência)"
-          />
-        </motion.div>
-        
-        <motion.div variants={item}>
-          <StatsCard
-            icon={<Star className="h-5 w-5 text-primary" />}
-            title="Conteúdos"
-            value="32"
-            label="salvos e organizados"
-          />
-        </motion.div>
-        
-        <motion.div variants={item}>
-          <StatsCard
-            icon={<Brain className="h-5 w-5 text-primary" />}
-            title="Interações"
-            value="87"
-            label="brain likes e conexões"
-          />
-        </motion.div>
-        
-        <motion.div variants={item}>
-          <StatsCard
-            icon={<MessageSquare className="h-5 w-5 text-primary" />}
-            title="Comentários"
-            value="24"
-            label="em discussões"
-          />
-        </motion.div>
-      </div>
+      <Card className="bg-gray-800/50 backdrop-blur-md border-gray-700">
+        <CardContent className="p-6">
+          <div className="flex items-center gap-3 mb-6">
+            <Brain className="h-6 w-6 text-purple-400" />
+            <h3 className="text-xl font-semibold text-white">Estatísticas Cognitivas</h3>
+          </div>
 
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.6, duration: 0.4 }}
-      >
-        <Card className="overflow-hidden border-primary/10">
-          <CardContent className="p-6">
-            <h4 className="text-sm font-medium mb-4 flex items-center gap-2">
-              <TrendingUp className="h-4 w-4 text-primary" />
-              Evolução da Atividade Mental
-            </h4>
-            <div className="h-48">
-              <ChartContainer config={chartConfig}>
-                <AreaChart data={data} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-                  <defs>
-                    <linearGradient id="mental" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#60B5B5" stopOpacity={0.3}/>
-                      <stop offset="95%" stopColor="#60B5B5" stopOpacity={0}/>
-                    </linearGradient>
-                  </defs>
-                  <XAxis 
-                    dataKey="name" 
-                    tick={{ fontSize: 10, fill: '#E6E6F0' }} 
-                    axisLine={false}
-                    tickLine={false}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+            {stats.map((stat, index) => {
+              const Icon = stat.icon;
+              const progress = Math.min((stat.value / stat.max) * 100, 100);
+              
+              return (
+                <motion.div
+                  key={stat.label}
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.5, delay: index * 0.1 }}
+                  className={`p-4 rounded-lg ${stat.bgColor} border border-gray-600/30`}
+                >
+                  <div className="flex items-center gap-3 mb-3">
+                    <Icon className={`h-5 w-5 ${stat.color}`} />
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-gray-300">{stat.label}</p>
+                      <p className="text-xs text-gray-400">{stat.description}</p>
+                    </div>
+                    <span className={`text-lg font-bold ${stat.color}`}>
+                      {stat.value}
+                    </span>
+                  </div>
+                  <Progress 
+                    value={progress} 
+                    className="h-2"
                   />
-                  <YAxis 
-                    hide={true}
-                  />
-                  <CartesianGrid strokeDasharray="3 3" stroke="#191933" />
-                  <ChartTooltip 
-                    content={({ active, payload }) => (
-                      <ChartTooltipContent 
-                        active={active} 
-                        payload={payload}
-                        labelKey="name" 
-                      />
-                    )} 
-                  />
-                  <Area 
-                    type="monotone" 
-                    dataKey="value" 
-                    stroke="#60B5B5" 
-                    fillOpacity={1} 
-                    fill="url(#mental)" 
-                    name="mental"
-                  />
-                </AreaChart>
-              </ChartContainer>
+                  <p className="text-xs text-gray-400 mt-1">
+                    {stat.value} de {stat.max}
+                  </p>
+                </motion.div>
+              );
+            })}
+          </div>
+
+          <div className="border-t border-gray-600/30 pt-4">
+            <h4 className="text-sm font-medium text-gray-300 mb-3">Métricas Adicionais</h4>
+            <div className="grid grid-cols-3 gap-4">
+              {additionalStats.map((stat, index) => {
+                const Icon = stat.icon;
+                return (
+                  <motion.div
+                    key={stat.label}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.3, delay: 0.5 + index * 0.1 }}
+                    className="text-center p-3 rounded-lg bg-gray-700/30"
+                  >
+                    <Icon className={`h-4 w-4 ${stat.color} mx-auto mb-1`} />
+                    <p className={`text-lg font-bold ${stat.color}`}>
+                      {stat.value}
+                    </p>
+                    <p className="text-xs text-gray-400">{stat.label}</p>
+                  </motion.div>
+                );
+              })}
             </div>
-          </CardContent>
-        </Card>
-      </motion.div>
-    </motion.section>
-  );
-}
+          </div>
 
-function StatsCard({ icon, title, value, label }) {
-  return (
-    <Card className="border-primary/10 bg-card/60 backdrop-blur-sm h-full">
-      <CardContent className="p-4 flex flex-col items-center justify-center text-center h-full">
-        <div className="mb-2 mt-1">{icon}</div>
-        <h4 className="text-xs font-medium text-muted-foreground">{title}</h4>
-        <p className="text-xl font-bold text-foreground">{value}</p>
-        <p className="text-xs text-muted-foreground">{label}</p>
-      </CardContent>
-    </Card>
+          <div className="mt-6 flex flex-wrap gap-2">
+            <Badge variant="outline" className="border-purple-500/50 text-purple-400">
+              Nível Avançado
+            </Badge>
+            <Badge variant="outline" className="border-blue-500/50 text-blue-400">
+              Explorador Ativo
+            </Badge>
+            <Badge variant="outline" className="border-green-500/50 text-green-400">
+              Construtor
+            </Badge>
+          </div>
+        </CardContent>
+      </Card>
+    </motion.div>
   );
-}
+};

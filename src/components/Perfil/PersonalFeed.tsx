@@ -1,156 +1,175 @@
 
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardFooter } from "@/components/ui/card";
-import { motion } from "framer-motion";
-import { MessageSquare, ThumbsUp, Share2, Brain, Calendar } from "lucide-react";
-import { timeAgo } from "@/lib/utils";
+import React from 'react';
+import { motion } from 'framer-motion';
+import { Card, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
+import { 
+  Heart, 
+  MessageSquare, 
+  Share2, 
+  Bookmark,
+  Calendar,
+  Clock,
+  TrendingUp
+} from 'lucide-react';
 
-const container = {
-  hidden: { opacity: 0 },
-  show: {
-    opacity: 1,
-    transition: {
-      staggerChildren: 0.1
+export const PersonalFeed: React.FC = () => {
+  // Mock data - replace with real data from hooks
+  const feedItems = [
+    {
+      id: '1',
+      type: 'post',
+      content: 'Acabei de conectar minha rotina matinal com meu projeto de IA pessoal. A produtividade disparou! 🚀',
+      timestamp: '2h atrás',
+      category: 'productivity',
+      likes: 12,
+      comments: 3,
+      isLiked: false,
+      isSaved: true
+    },
+    {
+      id: '2',
+      type: 'achievement',
+      content: 'Completei 30 dias consecutivos de meditação! 🧘‍♂️',
+      timestamp: '1 dia atrás',
+      category: 'habit',
+      likes: 25,
+      comments: 8,
+      isLiked: true,
+      isSaved: false
+    },
+    {
+      id: '3',
+      type: 'insight',
+      content: 'Descoberta interessante: meus picos de criatividade acontecem sempre após exercícios físicos. Conectando os pontos! 💡',
+      timestamp: '3 dias atrás',
+      category: 'insight',
+      likes: 18,
+      comments: 5,
+      isLiked: false,
+      isSaved: true
     }
-  }
-};
+  ];
 
-const item = {
-  hidden: { opacity: 0, y: 20 },
-  show: { opacity: 1, y: 0 }
-};
+  const getCategoryColor = (category: string) => {
+    switch (category) {
+      case 'productivity':
+        return 'border-blue-500/50 text-blue-400';
+      case 'habit':
+        return 'border-green-500/50 text-green-400';
+      case 'insight':
+        return 'border-purple-500/50 text-purple-400';
+      default:
+        return 'border-gray-500/50 text-gray-400';
+    }
+  };
 
-const posts = [
-  {
-    id: 1,
-    content: "Estou explorando um novo método de organização para meu Segundo Cérebro. Alguém já testou o método BASB (Building a Second Brain) do Tiago Forte?",
-    timestamp: "2025-05-13T10:30:00",
-    likes: 12,
-    comments: 5,
-    shares: 2,
-    type: "post"
-  },
-  {
-    id: 2,
-    content: "Acabei de concluir a primeira fase do meu projeto de IA Pessoal! O modelo já consegue classificar automaticamente minhas notas por contexto.",
-    timestamp: "2025-05-10T16:45:00",
-    likes: 24,
-    comments: 8,
-    shares: 6,
-    type: "milestone",
-    project: "IA Pessoal"
-  },
-  {
-    id: 3,
-    content: "Recomendação de livro: 'Hyperfocus' de Chris Bailey mudou completamente minha visão sobre atenção e produtividade.",
-    timestamp: "2025-05-08T08:20:00",
-    likes: 18,
-    comments: 7,
-    shares: 9,
-    type: "recommendation"
-  }
-];
+  const getCategoryLabel = (category: string) => {
+    switch (category) {
+      case 'productivity':
+        return 'Produtividade';
+      case 'habit':
+        return 'Hábito';
+      case 'insight':
+        return 'Insight';
+      default:
+        return 'Geral';
+    }
+  };
 
-export function PersonalFeed() {
   return (
-    <motion.div
-      variants={container}
-      initial="hidden"
-      animate="show"
-      className="space-y-6"
-    >
-      {/* Filter options */}
-      <div className="flex flex-wrap gap-2">
-        <Button size="sm" variant="outline" className="border-primary/40 bg-primary/10">
-          Todos
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h3 className="text-lg font-semibold text-white">Seu Feed Pessoal</h3>
+        <Button variant="outline" size="sm" className="border-purple-500/50 text-purple-400">
+          <TrendingUp className="h-4 w-4 mr-2" />
+          Ver Tendências
         </Button>
-        <Button size="sm" variant="ghost">Posts</Button>
-        <Button size="sm" variant="ghost">Atualizações</Button>
-        <Button size="sm" variant="ghost">Interações</Button>
       </div>
-      
-      {/* Posts */}
-      <div className="space-y-6">
-        {posts.map((post) => (
-          <motion.div key={post.id} variants={item}>
-            <PostCard post={post} />
+
+      <div className="space-y-4">
+        {feedItems.map((item, index) => (
+          <motion.div
+            key={item.id}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: index * 0.1 }}
+          >
+            <Card className="bg-gray-800/50 backdrop-blur-md border-gray-700 hover:border-gray-600 transition-colors">
+              <CardContent className="p-6">
+                <div className="flex items-start gap-4">
+                  <Avatar className="h-10 w-10">
+                    <AvatarImage src="/placeholder.svg" />
+                    <AvatarFallback className="bg-purple-500/20 text-purple-400">
+                      EU
+                    </AvatarFallback>
+                  </Avatar>
+                  
+                  <div className="flex-1 space-y-3">
+                    <div className="flex items-center gap-2 text-sm text-gray-400">
+                      <Clock className="h-4 w-4" />
+                      <span>{item.timestamp}</span>
+                      <Badge 
+                        variant="outline" 
+                        className={`text-xs ${getCategoryColor(item.category)}`}
+                      >
+                        {getCategoryLabel(item.category)}
+                      </Badge>
+                    </div>
+                    
+                    <p className="text-gray-300 leading-relaxed">
+                      {item.content}
+                    </p>
+                    
+                    <div className="flex items-center justify-between pt-3 border-t border-gray-700/50">
+                      <div className="flex items-center gap-4">
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className={`text-gray-400 hover:text-white gap-2 ${
+                            item.isLiked ? 'text-red-400' : ''
+                          }`}
+                        >
+                          <Heart className={`h-4 w-4 ${item.isLiked ? 'fill-current' : ''}`} />
+                          <span>{item.likes}</span>
+                        </Button>
+                        
+                        <Button variant="ghost" size="sm" className="text-gray-400 hover:text-white gap-2">
+                          <MessageSquare className="h-4 w-4" />
+                          <span>{item.comments}</span>
+                        </Button>
+                        
+                        <Button variant="ghost" size="sm" className="text-gray-400 hover:text-white">
+                          <Share2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                      
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className={`text-gray-400 hover:text-white ${
+                          item.isSaved ? 'text-yellow-400' : ''
+                        }`}
+                      >
+                        <Bookmark className={`h-4 w-4 ${item.isSaved ? 'fill-current' : ''}`} />
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
           </motion.div>
         ))}
       </div>
-    </motion.div>
-  );
-}
 
-function PostCard({ post }) {
-  return (
-    <Card className="border-primary/10 bg-card/60 backdrop-blur-sm overflow-hidden">
-      <CardContent className="p-5 pt-5">
-        <div className="flex items-start gap-3 mb-4">
-          <Avatar>
-            <AvatarImage src="" />
-            <AvatarFallback className="bg-accent/20">AU</AvatarFallback>
-          </Avatar>
-          <div>
-            <div className="font-medium">Athena User</div>
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-muted-foreground">{timeAgo(post.timestamp)}</span>
-              {post.type === "milestone" && (
-                <Badge className="text-xs bg-primary/20 text-primary">
-                  Avanço em projeto: {post.project}
-                </Badge>
-              )}
-              {post.type === "recommendation" && (
-                <Badge className="text-xs bg-secondary/20 text-secondary">
-                  Recomendação
-                </Badge>
-              )}
-            </div>
-          </div>
-        </div>
-        
-        <p className="text-sm mb-4">{post.content}</p>
-        
-        {post.type === "milestone" && (
-          <div className="p-3 bg-primary/5 border border-primary/20 rounded-md mb-3 flex items-center gap-3">
-            <Calendar className="h-5 w-5 text-primary" />
-            <div>
-              <div className="text-sm font-medium">Novo marco alcançado</div>
-              <div className="text-xs text-muted-foreground">Projeto está 75% concluído</div>
-            </div>
-          </div>
-        )}
-      </CardContent>
-      
-      <CardFooter className="px-5 py-3 border-t border-border/40 flex items-center justify-between">
-        <div className="flex items-center gap-1 text-muted-foreground text-xs">
-          <div className="flex items-center gap-1">
-            <ThumbsUp className="h-3.5 w-3.5" />
-            <span>{post.likes}</span>
-          </div>
-          <span className="mx-1">•</span>
-          <div className="flex items-center gap-1">
-            <MessageSquare className="h-3.5 w-3.5" />
-            <span>{post.comments} comentários</span>
-          </div>
-        </div>
-        
-        <div className="flex items-center gap-2">
-          <Button variant="ghost" size="sm" className="text-xs flex items-center gap-1.5">
-            <Brain className="h-3.5 w-3.5" />
-            <span>Brain Like</span>
-          </Button>
-          <Button variant="ghost" size="sm" className="text-xs flex items-center gap-1.5">
-            <MessageSquare className="h-3.5 w-3.5" />
-            <span>Comentar</span>
-          </Button>
-          <Button variant="ghost" size="sm" className="text-xs flex items-center gap-1.5">
-            <Share2 className="h-3.5 w-3.5" />
-            <span>Compartilhar</span>
-          </Button>
-        </div>
-      </CardFooter>
-    </Card>
+      <div className="text-center py-8">
+        <p className="text-gray-400 mb-4">Você chegou ao fim do seu feed pessoal</p>
+        <Button variant="outline" className="border-purple-500/50 text-purple-400">
+          Criar Novo Post
+        </Button>
+      </div>
+    </div>
   );
-}
+};

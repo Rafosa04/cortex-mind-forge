@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useParams } from 'react-router-dom';
@@ -5,7 +6,7 @@ import { ProfileHeader } from '@/components/Perfil/ProfileHeader';
 import { CognitiveStats } from '@/components/Perfil/CognitiveStats';
 import { Highlights } from '@/components/Perfil/Highlights';
 import { PersonalFeed } from '@/components/Perfil/PersonalFeed';
-import { MindMirror } from '@/components/Perfil/MentalMirror';
+import { MentalMirror } from '@/components/Perfil/MentalMirror';
 import { QuickActions } from '@/components/Perfil/QuickActions';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useProfile } from '@/hooks/useProfile';
@@ -117,13 +118,10 @@ const Profile: React.FC = () => {
             variants={itemVariants}
             className="lg:col-span-4 space-y-6"
           >
-            <CognitiveStats profileUserId={profileUserId} />
+            <CognitiveStats />
             
             <div className="lg:sticky lg:top-6">
-              <MindMirror 
-                profileUserId={profileUserId} 
-                diagnostic={athenaeSuggestion?.content}
-              />
+              <MentalMirror />
             </div>
           </motion.div>
 
@@ -154,11 +152,11 @@ const Profile: React.FC = () => {
               </TabsList>
 
               <TabsContent value="highlights" className="mt-6">
-                <Highlights profileUserId={profileUserId} />
+                <Highlights />
               </TabsContent>
 
               <TabsContent value="feed" className="mt-6">
-                <PersonalFeed profileUserId={profileUserId} />
+                <PersonalFeed />
               </TabsContent>
 
               <TabsContent value="activity" className="mt-6">

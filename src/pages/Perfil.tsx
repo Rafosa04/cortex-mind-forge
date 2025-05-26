@@ -11,14 +11,28 @@ import {
   Link, MessageCircle, TrendingUp
 } from "lucide-react";
 import { useState } from "react";
-import { ProfileHeader } from "@/components/Perfil/ProfileHeader";
 import { CognitiveStats } from "@/components/Perfil/CognitiveStats";
-import { CorTexHighlights } from "@/components/Perfil/CorTexHighlights";
+import { Highlights } from "@/components/Perfil/Highlights";
 import { PersonalFeed } from "@/components/Perfil/PersonalFeed";
 import { MentalMirror } from "@/components/Perfil/MentalMirror";
+import { useAuth } from "@/hooks/useAuth";
+import { useProfile } from "@/hooks/useProfile";
 
 export default function Perfil() {
   const [activeTab, setActiveTab] = useState("highlights");
+  const { user } = useAuth();
+  const { profileData, loading } = useProfile(user?.id);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-900 text-white flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-purple-500 mx-auto mb-4"></div>
+          <p className="text-gray-400">Carregando perfil...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full max-w-5xl mx-auto px-2 sm:px-4 space-y-6 sm:space-y-8">
@@ -37,9 +51,6 @@ export default function Perfil() {
         >
           "Esse sou eu. Não apenas quem fui, mas o que estou me tornando."
         </motion.p>
-
-        {/* Seção 1: Cabeçalho do Perfil */}
-        <ProfileHeader />
 
         {/* Seção 2: Estatísticas Cognitivas */}
         <CognitiveStats />
@@ -60,7 +71,7 @@ export default function Perfil() {
 
           {/* Seção 3: Destaques do CÓRTEX */}
           <TabsContent value="highlights" className="mt-0">
-            <CorTexHighlights />
+            <Highlights />
           </TabsContent>
 
           {/* Seção 4: Feed Pessoal */}
