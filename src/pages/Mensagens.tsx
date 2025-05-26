@@ -3,48 +3,53 @@ import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Search, Send, MessageSquare, Plus, Brain, Smile, Star, Lightbulb, Target, Info, Circle } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import { Search, Send, MessageSquare, Plus, Smile } from "lucide-react";
 import { ConversationsList } from "@/components/Mensagens/ConversationsList";
 import { MessageItem } from "@/components/Mensagens/MessageItem";
-import { useMessages } from "@/hooks/useMessages";
 import { AthenaObserver } from "@/components/Mensagens/AthenaObserver";
+import { useConversations } from "@/hooks/useConversations";
+import { useAuth } from "@/hooks/useAuth";
 
 export default function Mensagens() {
-  const { toast } = useToast();
+  const { user } = useAuth();
+  const { 
+    conversations, 
+    messages, 
+    loading, 
+    sendMessage, 
+    markAsRead,
+    createConversation 
+  } = useConversations();
+  
   const [currentContact, setCurrentContact] = useState(null);
   const [inputMessage, setInputMessage] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
   const messagesEndRef = useRef(null);
-  const { messages, sendMessage, markAsRead } = useMessages();
   
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+  }, [messages, currentContact]);
   
   // Handle contact selection
   const handleSelectContact = (contact) => {
     setCurrentContact(contact);
-    if (contact) {
+    if (contact && contact.id) {
       markAsRead(contact.id);
     }
   };
 
   // Handle message sending
-  const handleSendMessage = () => {
+  const handleSendMessage = async () => {
     if (!inputMessage.trim() || !currentContact) return;
     
-    sendMessage({
-      text: inputMessage,
-      contactId: currentContact.id,
-      timestamp: new Date().toISOString()
-    });
-    
-    setInputMessage("");
+    const success = await sendMessage(currentContact.id, inputMessage);
+    if (success) {
+      setInputMessage("");
+    }
   };
   
   // Handle keypress (Enter to send)
@@ -57,11 +62,28 @@ export default function Mensagens() {
   
   // Create habit or project from message
   const handleCreateFromMessage = (messageId, type) => {
-    toast({
-      title: `Criando ${type} a partir da mensagem`,
-      description: "Funcionalidade em desenvolvimento"
-    });
+    console.log(`Creating ${type} from message ${messageId}`);
+    // Esta funcionalidade pode ser implementada posteriormente
   };
+
+  // Filter conversations based on search
+  const filteredConversations = conversations.filter(conv => 
+    conv.other_participant?.name?.toLowerCase().includes(searchTerm.toLowerCase()) || false
+  );
+
+  // Get current conversation messages
+  const currentMessages = currentContact ? messages[currentContact.id] || [] : [];
+
+  if (loading) {
+    return (
+      <div className="w-full h-[calc(100vh-9rem)] flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Carregando mensagens...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full h-[calc(100vh-9rem)] flex gap-4">
@@ -84,19 +106,31 @@ export default function Mensagens() {
             <Input 
               placeholder="Buscar conversa..." 
               className="pl-9 bg-background text-sm"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
         </div>
         
         {/* Conversations List */}
         <ConversationsList 
+          conversations={filteredConversations}
+          messages={messages}
           onSelectContact={handleSelectContact} 
           selectedContactId={currentContact?.id}
+          loading={loading}
         />
         
         {/* New Conversation Button */}
         <div className="p-3 mt-auto border-t border-border">
-          <Button className="w-full flex gap-2 items-center" size="sm">
+          <Button 
+            className="w-full flex gap-2 items-center" 
+            size="sm"
+            onClick={() => {
+              // Esta funcionalidade pode ser implementada posteriormente
+              console.log("Nova conversa");
+            }}
+          >
             <MessageSquare className="h-4 w-4" />
             <span>Nova Conversa</span>
           </Button>
@@ -136,17 +170,31 @@ export default function Mensagens() {
             
             {/* Messages Area */}
             <div className="flex-1 overflow-y-auto p-4 space-y-4">
-              <AnimatePresence>
-                {messages
-                  .filter(m => m.contactId === currentContact.id)
-                  .map((message) => (
+              {currentMessages.length === 0 ? (
+                <div className="flex-1 flex items-center justify-center text-center">
+                  <div>
+                    <MessageSquare className="h-12 w-12 text-muted-foreground mx-auto mb-4 opacity-50" />
+                    <p className="text-muted-foreground">Nenhuma mensagem ainda</p>
+                    <p className="text-sm text-muted-foreground/70">Envie a primeira mensagem para começar a conversa</p>
+                  </div>
+                </div>
+              ) : (
+                <AnimatePresence>
+                  {currentMessages.map((message) => (
                     <MessageItem 
                       key={message.id}
-                      message={message}
+                      message={{
+                        ...message,
+                        senderId: message.sender_id === user?.id ? "me" : message.sender_id,
+                        text: message.content,
+                        timestamp: message.created_at,
+                        read: !!message.read_at
+                      }}
                       onCreateFromMessage={handleCreateFromMessage}
                     />
                   ))}
-              </AnimatePresence>
+                </AnimatePresence>
+              )}
               <div ref={messagesEndRef} />
             </div>
             
@@ -185,32 +233,14 @@ export default function Mensagens() {
                     </Popover>
                   </div>
                 </div>
-                <Button onClick={handleSendMessage} className="h-[60px] px-5">
+                <Button 
+                  onClick={handleSendMessage} 
+                  className="h-[60px] px-5"
+                  disabled={!inputMessage.trim()}
+                >
                   <Send className="h-5 w-5" />
                 </Button>
               </div>
-              
-              {/* AI Suggestions */}
-              {inputMessage.length > 10 && (
-                <div className="mt-2 flex gap-1.5">
-                  <Badge 
-                    variant="outline" 
-                    className="cursor-pointer hover:bg-primary/10 text-xs py-1"
-                    onClick={() => setInputMessage("Podemos marcar um encontro na semana que vem?")}
-                  >
-                    <Lightbulb className="h-3 w-3 mr-1 text-primary" />
-                    Sugerir encontro
-                  </Badge>
-                  <Badge 
-                    variant="outline" 
-                    className="cursor-pointer hover:bg-primary/10 text-xs py-1"
-                    onClick={() => setInputMessage("Gostei muito da sua sugestão, vamos implementar!")}
-                  >
-                    <Target className="h-3 w-3 mr-1 text-primary" />
-                    Concordar
-                  </Badge>
-                </div>
-              )}
             </div>
           </>
         ) : (
@@ -222,7 +252,7 @@ export default function Mensagens() {
             <p className="text-muted-foreground mb-4 max-w-md">
               Selecione uma conversa à esquerda ou inicie uma nova para começar a interagir.
             </p>
-            <Button>
+            <Button onClick={() => console.log("Nova conversa")}>
               <MessageSquare className="h-4 w-4 mr-2" />
               Nova Conversa
             </Button>

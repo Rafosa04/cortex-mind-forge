@@ -9,6 +9,48 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      agenda_events: {
+        Row: {
+          completed: boolean | null
+          created_at: string
+          description: string | null
+          end_time: string
+          event_type: string
+          id: string
+          start_time: string
+          subcrebro_relacionado: string | null
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          completed?: boolean | null
+          created_at?: string
+          description?: string | null
+          end_time: string
+          event_type?: string
+          id?: string
+          start_time: string
+          subcrebro_relacionado?: string | null
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          completed?: boolean | null
+          created_at?: string
+          description?: string | null
+          end_time?: string
+          event_type?: string
+          id?: string
+          start_time?: string
+          subcrebro_relacionado?: string | null
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       athena_highlights: {
         Row: {
           action: string | null
@@ -340,6 +382,8 @@ export type Database = {
           conversation_id: string
           created_at: string
           id: string
+          message_type: string | null
+          metadata: Json | null
           read_at: string | null
           sender_id: string
         }
@@ -348,6 +392,8 @@ export type Database = {
           conversation_id: string
           created_at?: string
           id?: string
+          message_type?: string | null
+          metadata?: Json | null
           read_at?: string | null
           sender_id: string
         }
@@ -356,6 +402,8 @@ export type Database = {
           conversation_id?: string
           created_at?: string
           id?: string
+          message_type?: string | null
+          metadata?: Json | null
           read_at?: string | null
           sender_id?: string
         }
