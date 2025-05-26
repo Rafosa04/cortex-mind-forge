@@ -3,7 +3,7 @@
  * MindMirror.tsx
  * Espelho mental dinâmico com círculos pulsantes e interativos
  * Props:
- *   - circles: array de círculos mentais com intensidade e cor
+ *   - profileUserId: string opcional para visualizar perfil de outro usuário
  *   - diagnostic: string com diagnóstico da Athena
  * 
  * Visual: SVG com círculos animados e conectados
@@ -15,6 +15,8 @@ import { motion } from 'framer-motion';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Brain, RotateCcw } from 'lucide-react';
+import { useProfile } from '@/hooks/useProfile';
+import { useProfileHighlights } from '@/hooks/useProfileHighlights';
 
 interface MindCircle {
   id: string;
@@ -28,71 +30,81 @@ interface MindCircle {
 }
 
 interface MindMirrorProps {
+  profileUserId?: string;
   diagnostic?: string;
   onReassess?: () => void;
 }
 
 export const MindMirror: React.FC<MindMirrorProps> = ({
-  diagnostic = "Sua mente está mais ativa em criatividade e foco. Que tal equilibrar com saúde?",
+  profileUserId,
+  diagnostic,
   onReassess
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
+  const { profileStats } = useProfile(profileUserId);
+  const { projects, achievements, topPosts } = useProfileHighlights(profileUserId);
   
-  // TODO: fetch from Athena endpoint "/profile/mind-analysis"
-  const [circles, setCircles] = useState<MindCircle[]>([
-    {
-      id: '1',
-      label: 'Criatividade',
-      intensity: 90,
-      color: '#8B5CF6',
-      x: 150,
-      y: 100,
-      vx: 0.5,
-      vy: 0.3
-    },
-    {
-      id: '2',
-      label: 'Foco',
-      intensity: 85,
-      color: '#06B6D4',
-      x: 250,
-      y: 150,
-      vx: -0.3,
-      vy: 0.4
-    },
-    {
-      id: '3',
-      label: 'Saúde',
-      intensity: 60,
-      color: '#10B981',
-      x: 100,
-      y: 200,
-      vx: 0.4,
-      vy: -0.2
-    },
-    {
-      id: '4',
-      label: 'Relacionamentos',
-      intensity: 75,
-      color: '#F59E0B',
-      x: 300,
-      y: 80,
-      vx: -0.2,
-      vy: 0.5
-    },
-    {
-      id: '5',
-      label: 'Finanças',
-      intensity: 55,
-      color: '#EF4444',
-      x: 200,
-      y: 250,
-      vx: 0.3,
-      vy: -0.4
-    }
-  ]);
-
+  const [circles, setCircles] = useState<MindCircle[]>([]);
   const [hoveredCircle, setHoveredCircle] = useState<string | null>(null);
+
+  // Generate mind circles based on user data
+  useEffect(() => {
+    if (profileStats) {
+      const newCircles: MindCircle[] = [
+        {
+          id: '1',
+          label: 'Criatividade',
+          intensity: Math.min(90, (topPosts.length * 20) + 50),
+          color: '#8B5CF6',
+          x: 150,
+          y: 100,
+          vx: 0.5,
+          vy: 0.3
+        },
+        {
+          id: '2',
+          label: 'Foco',
+          intensity: Math.min(85, (profileStats.projectsCompleted * 15) + 40),
+          color: '#06B6D4',
+          x: 250,
+          y: 150,
+          vx: -0.3,
+          vy: 0.4
+        },
+        {
+          id: '3',
+          label: 'Hábitos',
+          intensity: Math.min(80, (profileStats.activeHabits * 10) + 30),
+          color: '#10B981',
+          x: 100,
+          y: 200,
+          vx: 0.4,
+          vy: -0.2
+        },
+        {
+          id: '4',
+          label: 'Conexões',
+          intensity: Math.min(75, (profileStats.activeConnections * 5) + 25),
+          color: '#F59E0B',
+          x: 300,
+          y: 80,
+          vx: -0.2,
+          vy: 0.5
+        },
+        {
+          id: '5',
+          label: 'Projetos',
+          intensity: Math.min(70, (projects.length * 12) + 35),
+          color: '#EF4444',
+          x: 200,
+          y: 250,
+          vx: 0.3,
+          vy: -0.4
+        }
+      ];
+      setCircles(newCircles);
+    }
+  }, [profileStats, projects, topPosts]);
 
   // Animação dos círculos
   useEffect(() => {
@@ -143,6 +155,8 @@ export const MindMirror: React.FC<MindMirrorProps> = ({
     console.log('Solicitando reavaliação da Athena...');
   };
 
+  const defaultDiagnostic = diagnostic || "Sua mente está mais ativa em criatividade e foco. Que tal equilibrar com saúde?";
+
   return (
     <Card className="bg-gray-800/60 backdrop-blur-sm border-gray-700">
       <CardContent className="p-6">
@@ -164,7 +178,7 @@ export const MindMirror: React.FC<MindMirrorProps> = ({
 
         {/* Diagnóstico da Athena */}
         <div className="text-center mb-6 p-3 bg-purple-500/10 border border-purple-500/20 rounded-lg">
-          <p className="text-sm italic text-purple-300">"{diagnostic}"</p>
+          <p className="text-sm italic text-purple-300">"{defaultDiagnostic}"</p>
         </div>
 
         {/* Espelho Mental SVG */}
