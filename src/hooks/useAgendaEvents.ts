@@ -36,7 +36,17 @@ export const useAgendaEvents = () => {
         .order('start_time', { ascending: true });
 
       if (error) throw error;
-      setEvents(data || []);
+      
+      // Type assertion para garantir que os dados estão no formato correto
+      const typedEvents = (data || []).map(event => ({
+        ...event,
+        event_type: event.event_type as AgendaEvent['event_type'],
+        completed: event.completed || false,
+        description: event.description || undefined,
+        subcrebro_relacionado: event.subcrebro_relacionado || undefined
+      }));
+      
+      setEvents(typedEvents);
     } catch (error) {
       console.error('Erro ao carregar eventos:', error);
       toast({
@@ -64,13 +74,21 @@ export const useAgendaEvents = () => {
 
       if (error) throw error;
 
-      setEvents(prev => [...prev, data]);
+      const typedEvent = {
+        ...data,
+        event_type: data.event_type as AgendaEvent['event_type'],
+        completed: data.completed || false,
+        description: data.description || undefined,
+        subcrebro_relacionado: data.subcrebro_relacionado || undefined
+      };
+
+      setEvents(prev => [...prev, typedEvent]);
       toast({
         title: "Sucesso",
         description: "Evento criado com sucesso!"
       });
       
-      return data;
+      return typedEvent;
     } catch (error) {
       console.error('Erro ao criar evento:', error);
       toast({
@@ -94,8 +112,16 @@ export const useAgendaEvents = () => {
 
       if (error) throw error;
 
+      const typedEvent = {
+        ...data,
+        event_type: data.event_type as AgendaEvent['event_type'],
+        completed: data.completed || false,
+        description: data.description || undefined,
+        subcrebro_relacionado: data.subcrebro_relacionado || undefined
+      };
+
       setEvents(prev => prev.map(event => 
-        event.id === id ? { ...event, ...data } : event
+        event.id === id ? typedEvent : event
       ));
 
       toast({
@@ -103,7 +129,7 @@ export const useAgendaEvents = () => {
         description: "Evento atualizado com sucesso!"
       });
       
-      return data;
+      return typedEvent;
     } catch (error) {
       console.error('Erro ao atualizar evento:', error);
       toast({

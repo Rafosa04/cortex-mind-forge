@@ -44,31 +44,38 @@ export const useConversations = () => {
     try {
       setLoading(true);
 
-      // Buscar conversas do usuário
+      // Buscar conversas do usuário sem fazer join com profiles ainda
       const { data: conversationsData, error: conversationsError } = await supabase
         .from('conversations')
-        .select(`
-          *,
-          participant_1_profile:profiles!conversations_participant_1_fkey(id, name, avatar_url),
-          participant_2_profile:profiles!conversations_participant_2_fkey(id, name, avatar_url)
-        `)
+        .select('*')
         .or(`participant_1.eq.${user.id},participant_2.eq.${user.id}`)
         .order('updated_at', { ascending: false });
 
       if (conversationsError) throw conversationsError;
 
-      // Processar conversas para incluir informações do outro participante
-      const processedConversations = (conversationsData || []).map(conv => {
-        const isParticipant1 = conv.participant_1 === user.id;
-        const otherParticipant = isParticipant1 
-          ? conv.participant_2_profile 
-          : conv.participant_1_profile;
+      // Processar conversas e buscar informações dos participantes
+      const processedConversations = await Promise.all(
+        (conversationsData || []).map(async (conv) => {
+          const isParticipant1 = conv.participant_1 === user.id;
+          const otherParticipantId = isParticipant1 ? conv.participant_2 : conv.participant_1;
 
-        return {
-          ...conv,
-          other_participant: otherParticipant
-        };
-      });
+          // Buscar perfil do outro participante
+          const { data: profileData } = await supabase
+            .from('profiles')
+            .select('id, name, avatar_url')
+            .eq('id', otherParticipantId)
+            .single();
+
+          return {
+            ...conv,
+            other_participant: profileData || {
+              id: otherParticipantId,
+              name: 'Usuário',
+              avatar_url: undefined
+            }
+          };
+        })
+      );
 
       setConversations(processedConversations);
 
@@ -167,7 +174,7 @@ export const useConversations = () => {
         .from('messages')
         .update({ read_at: new Date().toISOString() })
         .eq('conversation_id', conversationId)
-        .eq('sender_id', user.id, { negate: true })
+        .neq('sender_id', user.id)
         .is('read_at', null);
 
       if (error) throw error;
