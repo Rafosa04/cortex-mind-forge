@@ -35,7 +35,6 @@ export function AddFavoriteModal({ open, onOpenChange, initialType }: AddFavorit
         type: type as 'musica' | 'video' | 'podcast' | 'artigo',
         platform: platform || null,
         tags,
-        metadata: {},
       });
       
       // Reset form
