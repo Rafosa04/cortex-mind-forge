@@ -1,98 +1,30 @@
 
 import React, { useState } from "react";
 import { motion } from "framer-motion";
-import { Search, Filter, Plus, Music, Youtube, Podcast, Book, Play, Link, Calendar, Grid, Table, Brain } from "lucide-react";
+import { Search, Filter, Plus, Music, Youtube, Podcast, Book, Grid, Calendar, Table, Brain } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardFooter } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { cn } from "@/lib/utils";
-
-// Mock data for the different content types
-const SPOTIFY_ITEMS = [
-  { 
-    id: 1, 
-    title: "Lo-Fi Focus", 
-    artist: "ChillBeats", 
-    coverUrl: "https://placehold.co/100x100/993887/FFFFFF/png",
-    duration: "1:27:42",
-    tags: ["foco", "trabalho", "estudo"],
-    badge: "Mais ouvido de abril"
-  },
-  { 
-    id: 2, 
-    title: "Deep Work", 
-    artist: "Mind Sense", 
-    coverUrl: "https://placehold.co/100x100/191933/60B5B5/png",
-    duration: "42:16",
-    tags: ["concentração", "produtividade"],
-    badge: "Combinação com projeto Tese"
-  },
-];
-
-const YOUTUBE_ITEMS = [
-  {
-    id: 1,
-    title: "Como criar um segundo cérebro digital",
-    channel: "Produtivity Master",
-    thumbnailUrl: "https://placehold.co/200x120/191933/E6E6F0/png",
-    watchedTime: "18:42 de 24:15",
-    insights: "Você assistiu 3 vídeos sobre produtividade essa semana"
-  },
-  {
-    id: 2,
-    title: "Técnicas avançadas de gestão mental",
-    channel: "Brain Works",
-    thumbnailUrl: "https://placehold.co/200x120/0C0C1C/60B5B5/png",
-    watchedTime: "9:27 de 15:30",
-    insights: "Relacionado ao seu hábito de meditação"
-  }
-];
-
-const PODCAST_ITEMS = [
-  {
-    id: 1,
-    title: "Consciência e foco digital",
-    podcast: "Tech Mind",
-    coverUrl: "https://placehold.co/80x80/993887/FFFFFF/png",
-    highlight: "A formação de hábitos digitais depende da consciência do seu impacto mental",
-    tags: ["tecnologia", "saúde mental"]
-  },
-  {
-    id: 2,
-    title: "Hábitos que transformam",
-    podcast: "Evolução Diária",
-    coverUrl: "https://placehold.co/80x80/191933/60B5B5/png",
-    highlight: "Pequenas mudanças no dia a dia constroem resultados extraordinários",
-    tags: ["hábitos", "crescimento"]
-  }
-];
-
-const ARTICLE_ITEMS = [
-  {
-    id: 1,
-    title: "Como criar um segundo cérebro eficiente",
-    domain: "produtividade.com.br",
-    summary: "Um guia completo para organizar conhecimento e informações no mundo digital atual.",
-    category: "Produtividade"
-  },
-  {
-    id: 2,
-    title: "Neuroplasticidade e formação de hábitos",
-    domain: "cienciadamente.org",
-    summary: "Descobertas recentes mostram como o cérebro se adapta a novos comportamentos.",
-    category: "Ciência"
-  }
-];
+import { useFavorites } from "@/hooks/useFavorites";
+import { AddFavoriteModal } from "@/components/Favoritos/AddFavoriteModal";
+import { FavoriteCard } from "@/components/Favoritos/FavoriteCard";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function Favoritos() {
-  const [searchTerm, setSearchTerm] = useState("");
-  const [contentType, setContentType] = useState("todos");
   const [viewMode, setViewMode] = useState("gallery");
-  const [modalOpen, setModalOpen] = useState(false);
+  const [addModalOpen, setAddModalOpen] = useState(false);
+  const [addModalType, setAddModalType] = useState<string>();
   const [athenaDialog, setAthenaDialog] = useState(false);
+  
+  const {
+    favoritesByType,
+    loading,
+    searchTerm,
+    setSearchTerm,
+    contentType,
+    setContentType
+  } = useFavorites();
 
   // Animation variants for staggered animations
   const containerVariants = {
@@ -114,6 +46,19 @@ export default function Favoritos() {
     }
   };
 
+  const handleAddFavorite = (type: string) => {
+    setAddModalType(type);
+    setAddModalOpen(true);
+  };
+
+  const LoadingSkeleton = () => (
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      {Array.from({ length: 4 }).map((_, i) => (
+        <Skeleton key={i} className="h-48 w-full" />
+      ))}
+    </div>
+  );
+
   return (
     <div className="w-full max-w-5xl mx-auto mt-2">
       {/* HEADER */}
@@ -132,7 +77,7 @@ export default function Favoritos() {
           </div>
         </div>
         <div className="flex gap-2">
-          <Button variant="default" size="sm" onClick={() => setModalOpen(true)} className="gap-2">
+          <Button variant="default" size="sm" onClick={() => setAddModalOpen(true)} className="gap-2">
             <Plus className="w-4" /> Adicionar Manualmente
           </Button>
           <Button 
@@ -165,9 +110,9 @@ export default function Favoritos() {
         >
           <option value="todos">Todos tipos</option>
           <option value="musica">Músicas</option>
-          <option value="videos">Vídeos</option>
-          <option value="podcasts">Podcasts</option>
-          <option value="artigos">Artigos</option>
+          <option value="video">Vídeos</option>
+          <option value="podcast">Podcasts</option>
+          <option value="artigo">Artigos</option>
         </select>
         <div className="flex gap-1 ml-auto">
           <Button 
@@ -194,10 +139,12 @@ export default function Favoritos() {
         </div>
       </div>
 
-      {viewMode === "gallery" && (
+      {loading ? (
+        <LoadingSkeleton />
+      ) : viewMode === "gallery" ? (
         <div className="space-y-10">
-          {/* SPOTIFY / MÚSICA */}
-          {(contentType === "todos" || contentType === "musica") && (
+          {/* MÚSICAS */}
+          {(contentType === "todos" || contentType === "musica") && favoritesByType.musica.length > 0 && (
             <motion.section
               initial="hidden"
               animate="visible"
@@ -205,57 +152,28 @@ export default function Favoritos() {
             >
               <div className="flex items-center gap-2 mb-3">
                 <Music className="w-5 h-5 text-green-400" />
-                <h3 className="text-xl font-bold text-primary">Spotify / Músicas</h3>
+                <h3 className="text-xl font-bold text-primary">Músicas</h3>
+                <Button 
+                  size="sm" 
+                  variant="ghost" 
+                  onClick={() => handleAddFavorite('musica')}
+                  className="ml-auto"
+                >
+                  <Plus className="w-4 h-4" />
+                </Button>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {SPOTIFY_ITEMS.map(item => (
-                  <motion.div key={item.id} variants={itemVariants}>
-                    <Card className="bg-card border-border/60 hover:border-primary/40 transition-colors overflow-hidden">
-                      <CardContent className="p-0">
-                        <div className="flex">
-                          <img 
-                            src={item.coverUrl} 
-                            alt={item.title} 
-                            className="w-24 h-24 object-cover" 
-                          />
-                          <div className="p-4 flex-1">
-                            <h4 className="font-bold text-lg">{item.title}</h4>
-                            <p className="text-sm text-muted-foreground">{item.artist}</p>
-                            <div className="flex items-center gap-2 mt-1">
-                              <span className="text-xs text-muted-foreground">{item.duration}</span>
-                              <Button size="icon" variant="ghost" className="rounded-full w-7 h-7">
-                                <Play className="w-3 h-3" />
-                              </Button>
-                            </div>
-                            {item.badge && (
-                              <Badge variant="secondary" className="mt-2 text-xs">
-                                {item.badge}
-                              </Badge>
-                            )}
-                          </div>
-                        </div>
-                      </CardContent>
-                      <CardFooter className="px-4 py-3 bg-card/50 flex flex-wrap justify-between gap-2">
-                        <div className="flex flex-wrap gap-1">
-                          {item.tags.map(tag => (
-                            <Badge key={tag} variant="outline" className="bg-background/50 text-[10px]">
-                              {tag}
-                            </Badge>
-                          ))}
-                        </div>
-                        <Button variant="ghost" size="sm" className="text-xs h-7">
-                          <Link className="w-3 h-3 mr-1" /> Associar
-                        </Button>
-                      </CardFooter>
-                    </Card>
+                {favoritesByType.musica.map(favorite => (
+                  <motion.div key={favorite.id} variants={itemVariants}>
+                    <FavoriteCard favorite={favorite} />
                   </motion.div>
                 ))}
               </div>
             </motion.section>
           )}
 
-          {/* YOUTUBE / VÍDEOS */}
-          {(contentType === "todos" || contentType === "videos") && (
+          {/* VÍDEOS */}
+          {(contentType === "todos" || contentType === "video") && favoritesByType.video.length > 0 && (
             <motion.section
               initial="hidden"
               animate="visible"
@@ -263,42 +181,28 @@ export default function Favoritos() {
             >
               <div className="flex items-center gap-2 mb-3">
                 <Youtube className="w-5 h-5 text-red-500" />
-                <h3 className="text-xl font-bold text-primary">YouTube / Vídeos</h3>
+                <h3 className="text-xl font-bold text-primary">Vídeos</h3>
+                <Button 
+                  size="sm" 
+                  variant="ghost" 
+                  onClick={() => handleAddFavorite('video')}
+                  className="ml-auto"
+                >
+                  <Plus className="w-4 h-4" />
+                </Button>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {YOUTUBE_ITEMS.map(item => (
-                  <motion.div key={item.id} variants={itemVariants}>
-                    <Card className="bg-card border-border/60 hover:border-primary/40 transition-colors">
-                      <CardContent className="p-0">
-                        <img 
-                          src={item.thumbnailUrl} 
-                          alt={item.title} 
-                          className="w-full h-32 object-cover" 
-                        />
-                        <div className="p-4">
-                          <h4 className="font-bold">{item.title}</h4>
-                          <p className="text-xs text-muted-foreground">{item.channel}</p>
-                          <div className="mt-2 flex justify-between items-center">
-                            <span className="text-xs text-primary/70">{item.watchedTime}</span>
-                            <Button variant="ghost" size="sm" className="text-xs h-7">
-                              <Link className="w-3 h-3 mr-1" /> Associar
-                            </Button>
-                          </div>
-                        </div>
-                      </CardContent>
-                      <CardFooter className="px-4 py-3 bg-secondary/10 text-xs italic">
-                        <Brain className="w-4 h-4 mr-2 text-cyan-400" />
-                        {item.insights}
-                      </CardFooter>
-                    </Card>
+                {favoritesByType.video.map(favorite => (
+                  <motion.div key={favorite.id} variants={itemVariants}>
+                    <FavoriteCard favorite={favorite} />
                   </motion.div>
                 ))}
               </div>
             </motion.section>
           )}
 
-          {/* PODCASTS / RSS */}
-          {(contentType === "todos" || contentType === "podcasts") && (
+          {/* PODCASTS */}
+          {(contentType === "todos" || contentType === "podcast") && favoritesByType.podcast.length > 0 && (
             <motion.section
               initial="hidden"
               animate="visible"
@@ -306,53 +210,28 @@ export default function Favoritos() {
             >
               <div className="flex items-center gap-2 mb-3">
                 <Podcast className="w-5 h-5 text-purple-400" />
-                <h3 className="text-xl font-bold text-primary">Podcasts / RSS</h3>
+                <h3 className="text-xl font-bold text-primary">Podcasts</h3>
+                <Button 
+                  size="sm" 
+                  variant="ghost" 
+                  onClick={() => handleAddFavorite('podcast')}
+                  className="ml-auto"
+                >
+                  <Plus className="w-4 h-4" />
+                </Button>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {PODCAST_ITEMS.map(item => (
-                  <motion.div key={item.id} variants={itemVariants}>
-                    <Card className="bg-card border-border/60 hover:border-primary/40 transition-colors">
-                      <CardContent className="p-4">
-                        <div className="flex gap-3">
-                          <img 
-                            src={item.coverUrl} 
-                            alt={item.podcast} 
-                            className="w-16 h-16 object-cover rounded-md" 
-                          />
-                          <div>
-                            <h4 className="font-bold">{item.title}</h4>
-                            <p className="text-xs text-muted-foreground">{item.podcast}</p>
-                            <div className="flex gap-1 mt-1">
-                              {item.tags.map(tag => (
-                                <Badge key={tag} variant="outline" className="bg-background/50 text-[10px]">
-                                  {tag}
-                                </Badge>
-                              ))}
-                            </div>
-                          </div>
-                        </div>
-                        <div className="mt-3 text-xs italic border-l-2 border-cyan-400 pl-2 text-muted-foreground">
-                          "{item.highlight}"
-                        </div>
-                      </CardContent>
-                      <CardFooter className="px-4 py-2 flex justify-between bg-card/50 gap-2">
-                        <div className="flex items-center gap-1 text-xs">
-                          <Play className="w-3 h-3" /> 
-                          <span>22:15</span>
-                        </div>
-                        <Button variant="ghost" size="sm" className="text-xs h-7">
-                          <Link className="w-3 h-3 mr-1" /> Associar
-                        </Button>
-                      </CardFooter>
-                    </Card>
+                {favoritesByType.podcast.map(favorite => (
+                  <motion.div key={favorite.id} variants={itemVariants}>
+                    <FavoriteCard favorite={favorite} />
                   </motion.div>
                 ))}
               </div>
             </motion.section>
           )}
 
-          {/* ARTIGOS E LINKS */}
-          {(contentType === "todos" || contentType === "artigos") && (
+          {/* ARTIGOS */}
+          {(contentType === "todos" || contentType === "artigo") && favoritesByType.artigo.length > 0 && (
             <motion.section
               initial="hidden"
               animate="visible"
@@ -360,56 +239,45 @@ export default function Favoritos() {
             >
               <div className="flex items-center gap-2 mb-3">
                 <Book className="w-5 h-5 text-blue-400" />
-                <h3 className="text-xl font-bold text-primary">Artigos e Links</h3>
+                <h3 className="text-xl font-bold text-primary">Artigos</h3>
+                <Button 
+                  size="sm" 
+                  variant="ghost" 
+                  onClick={() => handleAddFavorite('artigo')}
+                  className="ml-auto"
+                >
+                  <Plus className="w-4 h-4" />
+                </Button>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {ARTICLE_ITEMS.map(item => (
-                  <motion.div key={item.id} variants={itemVariants}>
-                    <Card className={cn(
-                      "border-l-4 bg-card hover:bg-card/80 transition-colors",
-                      item.category === "Produtividade" ? "border-l-green-500" : "border-l-blue-500"
-                    )}>
-                      <CardContent className="p-4">
-                        <div className="flex justify-between items-start">
-                          <div>
-                            <h4 className="font-bold">{item.title}</h4>
-                            <p className="text-xs text-muted-foreground">{item.domain}</p>
-                          </div>
-                          <Badge variant="outline" className="bg-background/50 text-[10px]">
-                            {item.category}
-                          </Badge>
-                        </div>
-                        <p className="mt-2 text-xs text-muted-foreground">
-                          {item.summary}
-                        </p>
-                      </CardContent>
-                      <CardFooter className="px-4 py-2 flex justify-between bg-card/50">
-                        <div className="flex items-center gap-1 text-xs">
-                          <Brain className="w-3 h-3 text-cyan-400" />
-                          <span className="text-cyan-400/80">Resumo por Athena</span>
-                        </div>
-                        <div className="flex gap-1">
-                          <Button variant="ghost" size="sm" className="text-xs h-7">
-                            Ler depois
-                          </Button>
-                          <Button variant="ghost" size="sm" className="text-xs h-7">
-                            <Link className="w-3 h-3 mr-1" /> Associar
-                          </Button>
-                        </div>
-                      </CardFooter>
-                    </Card>
+                {favoritesByType.artigo.map(favorite => (
+                  <motion.div key={favorite.id} variants={itemVariants}>
+                    <FavoriteCard favorite={favorite} />
                   </motion.div>
                 ))}
               </div>
             </motion.section>
           )}
-        </div>
-      )}
 
-      {viewMode !== "gallery" && (
+          {/* Empty state */}
+          {!loading && Object.values(favoritesByType).every(arr => arr.length === 0) && (
+            <div className="text-center py-12">
+              <div className="text-6xl mb-4">📚</div>
+              <h3 className="text-xl font-bold mb-2">Nenhum favorito encontrado</h3>
+              <p className="text-muted-foreground mb-4">
+                Comece adicionando conteúdos que inspiram sua mente
+              </p>
+              <Button onClick={() => setAddModalOpen(true)}>
+                <Plus className="w-4 h-4 mr-2" />
+                Adicionar primeiro favorito
+              </Button>
+            </div>
+          )}
+        </div>
+      ) : (
         <div className="rounded-xl border border-primary/40 bg-card/80 p-10 flex flex-col items-center justify-center min-h-[260px] text-lg text-primary/70 font-bold shadow-inner">
-          {viewMode === "timeline" && <span>Visualização de linha do tempo (mock)</span>}
-          {viewMode === "table" && <span>Visualização em tabela (mock)</span>}
+          {viewMode === "timeline" && <span>Visualização de linha do tempo (em desenvolvimento)</span>}
+          {viewMode === "table" && <span>Visualização em tabela (em desenvolvimento)</span>}
         </div>
       )}
 
@@ -424,56 +292,29 @@ export default function Favoritos() {
               <span>Insight da Athena</span>
             </DialogTitle>
             <DialogDescription>
-              Baseado nos seus favoritos recentes, identifiquei alguns padrões interessantes:
+              Baseado nos seus favoritos, posso ajudar a encontrar padrões e sugerir organizações.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 mt-2">
             <p className="text-sm">
-              Seus podcasts e vídeos favoritados sugerem um foco em produtividade e gestão mental, que se alinha com seu projeto "Tese" e o hábito de meditação que você está construindo.
-            </p>
-            <p className="text-sm">
-              Notei que você tende a consumir conteúdo com foco em produtividade nas manhãs de terça e quinta, e música lo-fi quando está trabalhando no seu projeto "Tese".
+              Vejo que você está construindo sua biblioteca de favoritos. Que tal organizá-los por projetos ou contextos específicos?
             </p>
             <div className="bg-secondary/10 p-3 rounded-lg border border-secondary/20 mt-3">
-              <p className="text-sm font-medium text-secondary">Recomendação:</p>
+              <p className="text-sm font-medium text-secondary">Sugestão:</p>
               <p className="text-xs mt-1">
-                Considere associar a trilha "Lo-Fi Focus" diretamente ao seu projeto "Tese" para criar um gatilho de foco automático quando iniciar suas sessões de trabalho.
+                Adicione tags relacionadas aos seus projetos ativos para criar conexões automáticas entre conteúdos e contextos.
               </p>
             </div>
           </div>
         </DialogContent>
       </Dialog>
 
-      {/* Add Manually Modal */}
-      <Dialog open={modalOpen} onOpenChange={setModalOpen}>
-        <DialogContent className="bg-card border-border max-w-md">
-          <DialogHeader>
-            <DialogTitle>Adicionar favorito manualmente</DialogTitle>
-            <DialogDescription>
-              Adicione um conteúdo que não foi importado automaticamente.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 mt-2">
-            <div className="grid grid-cols-2 gap-2">
-              <Button variant="outline" className="justify-start">
-                <Music className="w-4 h-4 mr-2" /> Música
-              </Button>
-              <Button variant="outline" className="justify-start">
-                <Youtube className="w-4 h-4 mr-2" /> Vídeo
-              </Button>
-              <Button variant="outline" className="justify-start">
-                <Podcast className="w-4 h-4 mr-2" /> Podcast
-              </Button>
-              <Button variant="outline" className="justify-start">
-                <Book className="w-4 h-4 mr-2" /> Artigo
-              </Button>
-            </div>
-            <p className="text-sm text-muted-foreground">
-              Selecione o tipo de conteúdo para acessar o formulário apropriado.
-            </p>
-          </div>
-        </DialogContent>
-      </Dialog>
+      {/* Add Favorite Modal */}
+      <AddFavoriteModal 
+        open={addModalOpen} 
+        onOpenChange={setAddModalOpen}
+        initialType={addModalType}
+      />
     </div>
   );
 }
