@@ -57,16 +57,58 @@ export interface UserSuggestionType {
   isFollowing: boolean;
 }
 
-// Exemplo de payload para integração futura com Supabase
+// Tipos do banco de dados para integração com Supabase
+export interface DatabasePost {
+  id: string;
+  user_id: string;
+  content: string;
+  image_url?: string;
+  category: CategoryType;
+  likes_count: number;
+  comments_count: number;
+  saves_count: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface DatabaseConnection {
+  id: string;
+  requester_id: string;
+  addressee_id: string;
+  status: 'pending' | 'accepted' | 'rejected';
+  created_at: string;
+  updated_at: string;
+}
+
+export interface DatabaseConversation {
+  id: string;
+  participant_1: string;
+  participant_2: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface DatabaseMessage {
+  id: string;
+  conversation_id: string;
+  sender_id: string;
+  content: string;
+  read_at?: string;
+  created_at: string;
+}
+
+// Payloads para criação de dados
 export interface PostPayload {
   content: string;
   category: CategoryType;
-  imageUrl?: string;
-  // TODO: user_id será preenchido automaticamente via auth.uid()
+  image_url?: string;
 }
 
 export interface MessagePayload {
   content: string;
   recipient_id: string;
-  // TODO: sender_id será preenchido automaticamente via auth.uid()
+}
+
+export interface ConnectionPayload {
+  addressee_id: string;
 }

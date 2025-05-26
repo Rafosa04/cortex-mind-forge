@@ -1,158 +1,45 @@
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Plus, Bell, Search, Users } from "lucide-react";
+import { Plus, Bell, Search } from "lucide-react";
 import PostCard from "@/components/Connecta/PostCard";
 import ConnectionsSidebar from "@/components/Connecta/ConnectionsSidebar";
 import SuggestionsPanel from "@/components/Connecta/SuggestionsPanel";
+import CreatePostModal from "@/components/Connecta/CreatePostModal";
 import { useToast } from "@/hooks/use-toast";
-import { PostType, ConnectionType, ConversationType, UserSuggestionType } from "@/types/connecta";
+import { useAuth } from "@/hooks/useAuth";
+import { useConnectaPosts } from "@/hooks/useConnectaPosts";
+import { useConnectaConnections } from "@/hooks/useConnectaConnections";
 
 export default function Connecta() {
   const { toast } = useToast();
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState("feed");
-  const [showConnectionsSidebar, setShowConnectionsSidebar] = useState(false);
+  const [showCreateModal, setShowCreateModal] = useState(false);
 
-  // TODO: fetch posts from Supabase table "posts"
-  const [posts, setPosts] = useState<PostType[]>([
-    {
-      id: "1",
-      author: {
-        name: "Matheus Alencar",
-        avatar: "/placeholder.svg",
-        username: "matheusalencar"
-      },
-      content: "Acabo de conectar meu Subcérebro de Produtividade com a Athena IA. Os lembretes contextuais estão revolucionando minha rotina matinal! #AthenaTips",
-      createdAt: "2024-05-14T09:30:00",
-      likes: 24,
-      comments: 5,
-      saves: 7,
-      liked: false,
-      saved: false,
-      category: "focus"
-    },
-    {
-      id: "2",
-      author: {
-        name: "Sofia Torres",
-        avatar: "/placeholder.svg",
-        username: "sofiatorres"
-      },
-      content: "Meu novo projeto de visualização de hábitos está disponível para todos os usuários Córtex. Visualize seus padrões mentais de forma tridimensional!",
-      imageUrl: "/placeholder.svg",
-      createdAt: "2024-05-14T10:15:00",
-      likes: 42,
-      comments: 13,
-      saves: 18,
-      liked: true,
-      saved: false,
-      category: "expansion"
-    },
-    {
-      id: "3",
-      author: {
-        name: "Daniel Moretti",
-        avatar: "/placeholder.svg",
-        username: "danielmoretti"
-      },
-      content: "Reflexão do dia: Como a integração entre diferentes subcérebros tem potencializado seu processo criativo? Para mim, conectar 'Estudos Filosóficos' + 'Música' gerou insights inesperados.",
-      createdAt: "2024-05-14T11:45:00",
-      likes: 17,
-      comments: 8,
-      saves: 5,
-      liked: false,
-      saved: true,
-      category: "reflection"
-    }
-  ]);
+  // Hooks para dados reais
+  const {
+    posts,
+    loading: postsLoading,
+    createPost,
+    toggleLike,
+    toggleSave
+  } = useConnectaPosts();
 
-  // TODO: fetch conversations from "messages" 
-  const [conversations, setConversations] = useState<ConversationType[]>([
-    {
-      id: "1",
-      participant: {
-        name: "Ana Silva",
-        avatar: "/placeholder.svg",
-        username: "anasilva"
-      },
-      lastMessage: "Adorei sua reflexão sobre criatividade!",
-      timestamp: "2024-05-14T14:30:00",
-      unreadCount: 2,
-      isOnline: true
-    }
-  ]);
-
-  // TODO: fetch connections from "connections"
-  const [connections, setConnections] = useState<ConnectionType[]>([
-    {
-      id: "1",
-      name: "Lucas Santos",
-      avatar: "/placeholder.svg",
-      username: "lucassantos",
-      status: "pending",
-      mutualConnections: 5
-    },
-    {
-      id: "2",
-      name: "Maria Costa",
-      avatar: "/placeholder.svg",
-      username: "mariacosta",
-      status: "suggested",
-      mutualConnections: 3,
-      commonInterests: ["Filosofia", "Tecnologia"]
-    }
-  ]);
-
-  // TODO: fetch user suggestions from "user_suggestions"
-  const [suggestions, setSuggestions] = useState<UserSuggestionType[]>([
-    {
-      id: "1",
-      name: "Pedro Oliveira",
-      avatar: "/placeholder.svg", 
-      username: "pedrooliveira",
-      commonCells: 8,
-      mutualConnections: 2,
-      isFollowing: false
-    }
-  ]);
-
-  // Handle post like
-  const handleLike = (postId: string) => {
-    setPosts(prev => 
-      prev.map(post => {
-        if (post.id === postId) {
-          return {
-            ...post,
-            liked: !post.liked,
-            likes: post.liked ? post.likes - 1 : post.likes + 1
-          };
-        }
-        return post;
-      })
-    );
-  };
-
-  // Handle post save
-  const handleSave = (postId: string) => {
-    setPosts(prev => 
-      prev.map(post => {
-        if (post.id === postId) {
-          return {
-            ...post,
-            saved: !post.saved,
-            saves: post.saved ? post.saves - 1 : post.saves + 1
-          };
-        }
-        return post;
-      })
-    );
-  };
+  const {
+    conversations,
+    connections,
+    suggestions,
+    loading: connectionsLoading,
+    acceptConnection,
+    rejectConnection,
+    followUser
+  } = useConnectaConnections();
 
   // Handle post comment
   const handleComment = (postId: string) => {
-    // TODO: Open comment modal/thread
     toast({
       title: "Comentário",
       description: "Funcionalidade de comentários em desenvolvimento",
@@ -161,7 +48,6 @@ export default function Connecta() {
 
   // Handle post share
   const handleShare = (postId: string) => {
-    // TODO: Implement share functionality
     toast({
       title: "Compartilhar",
       description: "Funcionalidade de compartilhamento em desenvolvimento",
@@ -170,61 +56,22 @@ export default function Connecta() {
 
   // Handle new post
   const handleNewPost = () => {
-    // TODO: Open create post modal
-    toast({
-      title: "Nova Ideia",
-      description: "Funcionalidade para criar nova postagem em desenvolvimento",
-    });
+    if (!user) {
+      toast({
+        title: "Login necessário",
+        description: "Você precisa estar logado para criar um post",
+        variant: "destructive"
+      });
+      return;
+    }
+    setShowCreateModal(true);
   };
 
   // Handle message selection
   const handleMessageSelect = (conversationId: string) => {
-    // TODO: Open chat interface
     toast({
       title: "Conversa",
       description: `Abrindo conversa ${conversationId}`,
-    });
-  };
-
-  // Handle connection accept
-  const handleAccept = (connectionId: string) => {
-    // TODO: Accept connection in database
-    setConnections(prev => 
-      prev.map(conn => 
-        conn.id === connectionId 
-          ? { ...conn, status: "accepted" as const }
-          : conn
-      )
-    );
-    toast({
-      title: "Conexão aceita",
-      description: "Conexão estabelecida com sucesso!",
-    });
-  };
-
-  // Handle connection reject
-  const handleReject = (connectionId: string) => {
-    // TODO: Reject connection in database
-    setConnections(prev => prev.filter(conn => conn.id !== connectionId));
-    toast({
-      title: "Conexão rejeitada",
-      description: "Solicitação rejeitada.",
-    });
-  };
-
-  // Handle follow user
-  const handleFollow = (userId: string) => {
-    // TODO: Follow/unfollow user in database
-    setSuggestions(prev =>
-      prev.map(user =>
-        user.id === userId
-          ? { ...user, isFollowing: !user.isFollowing }
-          : user
-      )
-    );
-    toast({
-      title: "Seguindo",
-      description: "Agora você está seguindo este usuário!",
     });
   };
 
@@ -234,11 +81,31 @@ export default function Connecta() {
       case "trending":
         return [...posts].sort((a, b) => b.likes - a.likes);
       case "following":
-        return posts.filter((_, index) => index % 2 === 0); // Mock following filter
+        // TODO: Filtrar posts de usuários seguidos
+        return posts.filter((_, index) => index % 2 === 0);
       default:
         return posts;
     }
   };
+
+  // Verificar se o usuário está logado
+  if (!user) {
+    return (
+      <div className="w-full min-h-screen bg-gray-900 flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-600 via-indigo-600 to-blue-500 bg-clip-text text-transparent mb-4">
+            CONNECTA
+          </h1>
+          <p className="text-gray-400 text-lg mb-6">
+            Conecte-se pelo que você pensa. Evolua com quem te entende.
+          </p>
+          <p className="text-gray-500">
+            Faça login para acessar a rede social
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full min-h-screen bg-gray-900">
@@ -254,8 +121,8 @@ export default function Connecta() {
             conversations={conversations}
             connections={connections}
             onMessageSelect={handleMessageSelect}
-            onAccept={handleAccept}
-            onReject={handleReject}
+            onAccept={acceptConnection}
+            onReject={rejectConnection}
           />
         </motion.div>
 
@@ -317,69 +184,92 @@ export default function Connecta() {
             </TabsList>
 
             <TabsContent value="feed" className="space-y-4 mt-6">
-              <AnimatePresence mode="popLayout">
-                {getFilteredPosts().map((post, i) => (
-                  <motion.div
-                    key={post.id}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, scale: 0.95 }}
-                    transition={{ duration: 0.3, delay: i * 0.1 }}
-                  >
-                    <PostCard 
-                      post={post}
-                      onLike={() => handleLike(post.id)}
-                      onComment={() => handleComment(post.id)}
-                      onSave={() => handleSave(post.id)}
-                      onShare={() => handleShare(post.id)}
-                    />
-                  </motion.div>
-                ))}
-              </AnimatePresence>
+              {postsLoading ? (
+                <div className="text-center py-8 text-gray-400">
+                  Carregando posts...
+                </div>
+              ) : getFilteredPosts().length === 0 ? (
+                <div className="text-center py-12 text-gray-500">
+                  <p className="text-lg mb-2">Nenhum post encontrado</p>
+                  <p className="text-sm">Seja o primeiro a compartilhar uma ideia!</p>
+                </div>
+              ) : (
+                <AnimatePresence mode="popLayout">
+                  {getFilteredPosts().map((post, i) => (
+                    <motion.div
+                      key={post.id}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, scale: 0.95 }}
+                      transition={{ duration: 0.3, delay: i * 0.1 }}
+                    >
+                      <PostCard 
+                        post={post}
+                        onLike={() => toggleLike(post.id)}
+                        onComment={() => handleComment(post.id)}
+                        onSave={() => toggleSave(post.id)}
+                        onShare={() => handleShare(post.id)}
+                      />
+                    </motion.div>
+                  ))}
+                </AnimatePresence>
+              )}
             </TabsContent>
 
             <TabsContent value="trending" className="space-y-4 mt-6">
-              <AnimatePresence mode="popLayout">
-                {getFilteredPosts().map((post, i) => (
-                  <motion.div
-                    key={post.id}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, scale: 0.95 }}
-                    transition={{ duration: 0.3, delay: i * 0.1 }}
-                  >
-                    <PostCard 
-                      post={post}
-                      onLike={() => handleLike(post.id)}
-                      onComment={() => handleComment(post.id)}
-                      onSave={() => handleSave(post.id)}
-                      onShare={() => handleShare(post.id)}
-                    />
-                  </motion.div>
-                ))}
-              </AnimatePresence>
+              {postsLoading ? (
+                <div className="text-center py-8 text-gray-400">
+                  Carregando posts em alta...
+                </div>
+              ) : (
+                <AnimatePresence mode="popLayout">
+                  {getFilteredPosts().map((post, i) => (
+                    <motion.div
+                      key={post.id}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, scale: 0.95 }}
+                      transition={{ duration: 0.3, delay: i * 0.1 }}
+                    >
+                      <PostCard 
+                        post={post}
+                        onLike={() => toggleLike(post.id)}
+                        onComment={() => handleComment(post.id)}
+                        onSave={() => toggleSave(post.id)}
+                        onShare={() => handleShare(post.id)}
+                      />
+                    </motion.div>
+                  ))}
+                </AnimatePresence>
+              )}
             </TabsContent>
 
             <TabsContent value="following" className="space-y-4 mt-6">
-              <AnimatePresence mode="popLayout">
-                {getFilteredPosts().map((post, i) => (
-                  <motion.div
-                    key={post.id}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, scale: 0.95 }}
-                    transition={{ duration: 0.3, delay: i * 0.1 }}
-                  >
-                    <PostCard 
-                      post={post}
-                      onLike={() => handleLike(post.id)}
-                      onComment={() => handleComment(post.id)}
-                      onSave={() => handleSave(post.id)}
-                      onShare={() => handleShare(post.id)}
-                    />
-                  </motion.div>
-                ))}
-              </AnimatePresence>
+              {postsLoading ? (
+                <div className="text-center py-8 text-gray-400">
+                  Carregando posts de quem você segue...
+                </div>
+              ) : (
+                <AnimatePresence mode="popLayout">
+                  {getFilteredPosts().map((post, i) => (
+                    <motion.div
+                      key={post.id}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, scale: 0.95 }}
+                      transition={{ duration: 0.3, delay: i * 0.1 }}
+                    >
+                      <PostCard 
+                        post={post}
+                        onLike={() => toggleLike(post.id)}
+                        onComment={() => handleComment(post.id)}
+                        onSave={() => toggleSave(post.id)}
+                        onShare={() => handleShare(post.id)}
+                      />
+                    </motion.div>
+                  ))}
+                </AnimatePresence>
+              )}
             </TabsContent>
           </Tabs>
 
@@ -408,10 +298,17 @@ export default function Connecta() {
         >
           <SuggestionsPanel
             suggestions={suggestions}
-            onFollow={handleFollow}
+            onFollow={followUser}
           />
         </motion.div>
       </div>
+
+      {/* Create Post Modal */}
+      <CreatePostModal
+        open={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+        onSubmit={createPost}
+      />
     </div>
   );
 }
