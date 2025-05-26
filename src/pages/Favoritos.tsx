@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { motion } from "framer-motion";
 import { Search, Filter, Plus, Music, Youtube, Podcast, Book, Grid, Calendar, Table, Brain } from "lucide-react";
@@ -9,6 +8,8 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useFavorites } from "@/hooks/useFavorites";
 import { AddFavoriteModal } from "@/components/Favoritos/AddFavoriteModal";
 import { FavoriteCard } from "@/components/Favoritos/FavoriteCard";
+import { FavoritesTableView } from "@/components/Favoritos/FavoritesTableView";
+import { FavoritesTimelineView } from "@/components/Favoritos/FavoritesTimelineView";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export default function Favoritos() {
@@ -19,6 +20,7 @@ export default function Favoritos() {
   
   const {
     favoritesByType,
+    favorites,
     loading,
     searchTerm,
     setSearchTerm,
@@ -143,7 +145,6 @@ export default function Favoritos() {
         <LoadingSkeleton />
       ) : viewMode === "gallery" ? (
         <div className="space-y-10">
-          {/* MÚSICAS */}
           {(contentType === "todos" || contentType === "musica") && favoritesByType.musica.length > 0 && (
             <motion.section
               initial="hidden"
@@ -172,7 +173,6 @@ export default function Favoritos() {
             </motion.section>
           )}
 
-          {/* VÍDEOS */}
           {(contentType === "todos" || contentType === "video") && favoritesByType.video.length > 0 && (
             <motion.section
               initial="hidden"
@@ -201,7 +201,6 @@ export default function Favoritos() {
             </motion.section>
           )}
 
-          {/* PODCASTS */}
           {(contentType === "todos" || contentType === "podcast") && favoritesByType.podcast.length > 0 && (
             <motion.section
               initial="hidden"
@@ -230,7 +229,6 @@ export default function Favoritos() {
             </motion.section>
           )}
 
-          {/* ARTIGOS */}
           {(contentType === "todos" || contentType === "artigo") && favoritesByType.artigo.length > 0 && (
             <motion.section
               initial="hidden"
@@ -259,7 +257,6 @@ export default function Favoritos() {
             </motion.section>
           )}
 
-          {/* Empty state */}
           {!loading && Object.values(favoritesByType).every(arr => arr.length === 0) && (
             <div className="text-center py-12">
               <div className="text-6xl mb-4">📚</div>
@@ -274,12 +271,11 @@ export default function Favoritos() {
             </div>
           )}
         </div>
-      ) : (
-        <div className="rounded-xl border border-primary/40 bg-card/80 p-10 flex flex-col items-center justify-center min-h-[260px] text-lg text-primary/70 font-bold shadow-inner">
-          {viewMode === "timeline" && <span>Visualização de linha do tempo (em desenvolvimento)</span>}
-          {viewMode === "table" && <span>Visualização em tabela (em desenvolvimento)</span>}
-        </div>
-      )}
+      ) : viewMode === "table" ? (
+        <FavoritesTableView favorites={favorites} />
+      ) : viewMode === "timeline" ? (
+        <FavoritesTimelineView favorites={favorites} />
+      ) : null}
 
       {/* Athena Dialog */}
       <Dialog open={athenaDialog} onOpenChange={setAthenaDialog}>
