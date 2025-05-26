@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
@@ -112,7 +113,7 @@ export default function Salvos() {
     source: "",
     source_type: "Manual",
     url: "",
-    tags: [] as string[],
+    tags: "" as string,
     thumbnail: ""
   });
 
@@ -166,9 +167,10 @@ export default function Salvos() {
   const handleCreateItem = () => {
     if (!newItem.title || !newItem.type) return;
 
-    const tagsArray = typeof newItem.tags === 'string' 
+    // Convert tags string to array
+    const tagsArray = newItem.tags
       ? newItem.tags.split(',').map(tag => tag.trim()).filter(tag => tag)
-      : newItem.tags;
+      : [];
 
     createSavedItem({
       ...newItem,
@@ -183,7 +185,7 @@ export default function Salvos() {
       source: "",
       source_type: "Manual",
       url: "",
-      tags: [],
+      tags: "",
       thumbnail: ""
     });
     setAddItemModal(false);
@@ -871,7 +873,7 @@ export default function Salvos() {
               <Input 
                 id="tags" 
                 placeholder="Separadas por vírgula (ex: produtividade, organização)" 
-                value={Array.isArray(newItem.tags) ? newItem.tags.join(', ') : newItem.tags}
+                value={newItem.tags}
                 onChange={(e) => setNewItem({...newItem, tags: e.target.value})}
               />
             </div>
