@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import {
   LayoutDashboard,
@@ -8,10 +8,10 @@ import {
   Plug,
   Shield,
   Settings,
-  FlaskConical
+  FlaskConical,
+  Loader2
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Toggle } from "@/components/ui/toggle";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Card, CardContent } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
@@ -19,6 +19,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { useUserSettings } from "@/hooks/useUserSettings";
+import { useUserIntegrations } from "@/hooks/useUserIntegrations";
+import { useToast } from "@/hooks/use-toast";
 
 const menuItems = [
   { id: "visual", label: "Visual", icon: LayoutDashboard },
@@ -32,62 +35,52 @@ const menuItems = [
 
 export default function Configuracoes() {
   const [activeSection, setActiveSection] = useState("visual");
-  const [theme, setTheme] = useState("dark");
-  const [displayMode, setDisplayMode] = useState("minimalista");
-  const [typography, setTypography] = useState("moderna");
-  const [animationSpeed, setAnimationSpeed] = useState("fluida");
-  const [athenaAvatar, setAthenaAvatar] = useState("ativado");
-  
-  // IA Athena settings
-  const [interactionLevel, setInteractionLevel] = useState("media");
-  const [aiStyle, setAiStyle] = useState("neutra");
-  const [interventions, setInterventions] = useState("somente-contexto");
-  const [memoryAccess, setMemoryAccess] = useState("permitir");
-  const [aiLanguage, setAiLanguage] = useState("português");
-  
-  // Notifications settings
-  const [notificationPreferences, setNotificationPreferences] = useState({
-    messages: true,
-    aiSuggestions: true,
-    newConnections: true,
-    habitProgress: true,
-    weeklyReport: true
-  });
-  
-  const [notificationChannels, setNotificationChannels] = useState({
-    app: true,
-    email: false,
-    push: true
-  });
-  
-  const [notificationFrequency, setNotificationFrequency] = useState("imediato");
-  
-  // Integrations mock data
-  const integrations = [
-    { name: "Spotify", connected: true },
-    { name: "YouTube", connected: false },
-    { name: "Google Agenda", connected: true },
-    { name: "Alexa", connected: false },
-    { name: "RSS/Podcasts", connected: false }
-  ];
-  
-  // Privacy settings
-  const [profileVisibility, setProfileVisibility] = useState("privado");
-  const [subbrainSharing, setSubbrainSharing] = useState(false);
-  
-  // Performance settings
-  const [economyMode, setEconomyMode] = useState(false);
-  const [offlineMode, setOfflineMode] = useState(false);
-  const [autoSave, setAutoSave] = useState(true);
-  const [visualCompression, setVisualCompression] = useState(false);
-  
-  // Lab features
-  const [labFeatures, setLabFeatures] = useState({
-    neuronalFeed: false,
-    collaborativeSubbrains: false,
-    voiceGeneration: false,
-    immersiveMode: false
-  });
+  const { settings, loading, saving, updateSettings, resetToDefaults, clearCache } = useUserSettings();
+  const { integrations, loading: integrationsLoading, toggleConnection, updatePermissions } = useUserIntegrations();
+  const { toast } = useToast();
+
+  // Função para atualizar configuração individual
+  const handleSettingChange = async (key: string, value: any) => {
+    await updateSettings({ [key]: value });
+  };
+
+  // Função para baixar dados do usuário (mock)
+  const handleDownloadData = () => {
+    const dataToDownload = {
+      settings,
+      integrations,
+      timestamp: new Date().toISOString()
+    };
+    
+    const blob = new Blob([JSON.stringify(dataToDownload, null, 2)], {
+      type: 'application/json'
+    });
+    
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `cortex-dados-${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    toast({
+      title: "Sucesso",
+      description: "Dados baixados com sucesso!"
+    });
+  };
+
+  if (loading || integrationsLoading) {
+    return (
+      <div className="w-full flex items-center justify-center py-20">
+        <div className="flex items-center gap-3">
+          <Loader2 className="h-6 w-6 animate-spin text-primary" />
+          <span className="text-lg">Carregando configurações...</span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full flex flex-col md:flex-row gap-6">
@@ -149,8 +142,8 @@ export default function Configuracoes() {
                 <ToggleGroup 
                   type="single" 
                   variant="outline"
-                  value={theme}
-                  onValueChange={(value) => value && setTheme(value)}
+                  value={settings.theme}
+                  onValueChange={(value) => value && handleSettingChange('theme', value)}
                   className="flex flex-wrap gap-2"
                 >
                   <ToggleGroupItem value="dark" className="rounded px-4 py-2">Escuro</ToggleGroupItem>
@@ -158,20 +151,30 @@ export default function Configuracoes() {
                   <ToggleGroupItem value="custom" className="rounded px-4 py-2">Personalizado</ToggleGroupItem>
                 </ToggleGroup>
                 
-                {theme === "custom" && (
+                {settings.theme === "custom" && (
                   <div className="mt-4 grid grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm text-foreground/70 mb-2">Cor primária</label>
                       <div className="flex items-center gap-2">
-                        <Input type="color" className="w-10 h-10 p-0 border-none" defaultValue="#60B5B5" />
-                        <span className="text-xs">#60B5B5</span>
+                        <Input 
+                          type="color" 
+                          className="w-10 h-10 p-0 border-none" 
+                          value={settings.custom_primary_color || "#60B5B5"}
+                          onChange={(e) => handleSettingChange('custom_primary_color', e.target.value)}
+                        />
+                        <span className="text-xs">{settings.custom_primary_color || "#60B5B5"}</span>
                       </div>
                     </div>
                     <div>
                       <label className="block text-sm text-foreground/70 mb-2">Cor secundária</label>
                       <div className="flex items-center gap-2">
-                        <Input type="color" className="w-10 h-10 p-0 border-none" defaultValue="#993887" />
-                        <span className="text-xs">#993887</span>
+                        <Input 
+                          type="color" 
+                          className="w-10 h-10 p-0 border-none" 
+                          value={settings.custom_secondary_color || "#993887"}
+                          onChange={(e) => handleSettingChange('custom_secondary_color', e.target.value)}
+                        />
+                        <span className="text-xs">{settings.custom_secondary_color || "#993887"}</span>
                       </div>
                     </div>
                   </div>
@@ -183,8 +186,8 @@ export default function Configuracoes() {
                 <ToggleGroup 
                   type="single" 
                   variant="outline"
-                  value={displayMode}
-                  onValueChange={(value) => value && setDisplayMode(value)}
+                  value={settings.display_mode}
+                  onValueChange={(value) => value && handleSettingChange('display_mode', value)}
                   className="flex flex-wrap gap-2"
                 >
                   <ToggleGroupItem value="minimalista" className="rounded px-4 py-2">Minimalista</ToggleGroupItem>
@@ -199,8 +202,8 @@ export default function Configuracoes() {
                 <ToggleGroup 
                   type="single" 
                   variant="outline"
-                  value={typography}
-                  onValueChange={(value) => value && setTypography(value)}
+                  value={settings.typography}
+                  onValueChange={(value) => value && handleSettingChange('typography', value)}
                   className="flex flex-wrap gap-2"
                 >
                   <ToggleGroupItem value="moderna" className="rounded px-4 py-2">Moderna</ToggleGroupItem>
@@ -214,8 +217,8 @@ export default function Configuracoes() {
                 <ToggleGroup 
                   type="single" 
                   variant="outline"
-                  value={animationSpeed}
-                  onValueChange={(value) => value && setAnimationSpeed(value)}
+                  value={settings.animation_speed}
+                  onValueChange={(value) => value && handleSettingChange('animation_speed', value)}
                   className="flex flex-wrap gap-2"
                 >
                   <ToggleGroupItem value="fluida" className="rounded px-4 py-2">Fluida</ToggleGroupItem>
@@ -229,8 +232,8 @@ export default function Configuracoes() {
                 <ToggleGroup 
                   type="single" 
                   variant="outline"
-                  value={athenaAvatar}
-                  onValueChange={(value) => value && setAthenaAvatar(value)}
+                  value={settings.athena_avatar}
+                  onValueChange={(value) => value && handleSettingChange('athena_avatar', value)}
                   className="flex flex-wrap gap-2"
                 >
                   <ToggleGroupItem value="ativado" className="rounded px-4 py-2">Ativado</ToggleGroupItem>
@@ -245,13 +248,13 @@ export default function Configuracoes() {
                     <div className="text-sm mb-2 text-primary/80">Pré-visualização</div>
                     <div className={cn(
                       "h-32 flex items-center justify-center rounded-lg",
-                      theme === "dark" ? "bg-background text-foreground" : "bg-[#E6E6F0] text-[#0C0C1C]" 
+                      settings.theme === "dark" ? "bg-background text-foreground" : "bg-[#E6E6F0] text-[#0C0C1C]" 
                     )}>
                       <div className="text-center">
                         <div className={cn(
                           "text-lg font-semibold mb-2",
-                          typography === "moderna" ? "font-sans" : 
-                          typography === "legivel" ? "font-mono" : 
+                          settings.typography === "moderna" ? "font-sans" : 
+                          settings.typography === "legivel" ? "font-mono" : 
                           "font-serif"
                         )}>
                           Pré-visualização do tema
@@ -273,8 +276,8 @@ export default function Configuracoes() {
                 <ToggleGroup 
                   type="single" 
                   variant="outline"
-                  value={interactionLevel}
-                  onValueChange={(value) => value && setInteractionLevel(value)}
+                  value={settings.interaction_level}
+                  onValueChange={(value) => value && handleSettingChange('interaction_level', value)}
                   className="flex flex-wrap gap-2"
                 >
                   <ToggleGroupItem value="alta" className="rounded px-4 py-2">Alta</ToggleGroupItem>
@@ -289,8 +292,8 @@ export default function Configuracoes() {
                 <ToggleGroup 
                   type="single" 
                   variant="outline"
-                  value={aiStyle}
-                  onValueChange={(value) => value && setAiStyle(value)}
+                  value={settings.ai_style}
+                  onValueChange={(value) => value && handleSettingChange('ai_style', value)}
                   className="flex flex-wrap gap-2"
                 >
                   <ToggleGroupItem value="neutra" className="rounded px-4 py-2">Neutra</ToggleGroupItem>
@@ -304,8 +307,8 @@ export default function Configuracoes() {
                 <ToggleGroup 
                   type="single" 
                   variant="outline"
-                  value={interventions}
-                  onValueChange={(value) => value && setInterventions(value)}
+                  value={settings.interventions}
+                  onValueChange={(value) => value && handleSettingChange('interventions', value)}
                   className="flex flex-wrap gap-2"
                 >
                   <ToggleGroupItem value="ativadas" className="rounded px-4 py-2">Ativadas</ToggleGroupItem>
@@ -319,8 +322,8 @@ export default function Configuracoes() {
                 <ToggleGroup 
                   type="single" 
                   variant="outline"
-                  value={memoryAccess}
-                  onValueChange={(value) => value && setMemoryAccess(value)}
+                  value={settings.memory_access}
+                  onValueChange={(value) => value && handleSettingChange('memory_access', value)}
                   className="flex flex-wrap gap-2"
                 >
                   <ToggleGroupItem value="permitir" className="rounded px-4 py-2">Permitir</ToggleGroupItem>
@@ -332,8 +335,8 @@ export default function Configuracoes() {
               <div>
                 <h3 className="font-semibold mb-4">Idioma da IA</h3>
                 <select
-                  value={aiLanguage}
-                  onChange={(e) => setAiLanguage(e.target.value)}
+                  value={settings.ai_language}
+                  onChange={(e) => handleSettingChange('ai_language', e.target.value)}
                   className="rounded px-3 py-2 bg-background text-foreground border border-border"
                 >
                   <option value="português">Português</option>
@@ -343,7 +346,17 @@ export default function Configuracoes() {
               </div>
               
               <div>
-                <Button variant="secondary" className="mt-4">
+                <Button 
+                  variant="secondary" 
+                  className="mt-4"
+                  onClick={() => {
+                    // Implementar recalibração da personalidade
+                    toast({
+                      title: "Recalibrando",
+                      description: "Personalidade da Athena está sendo recalibrada..."
+                    });
+                  }}
+                >
                   Recalibrar personalidade da Athena
                 </Button>
               </div>
@@ -360,50 +373,40 @@ export default function Configuracoes() {
                     <label htmlFor="notif-messages" className="cursor-pointer">Mensagens</label>
                     <Switch
                       id="notif-messages"
-                      checked={notificationPreferences.messages}
-                      onCheckedChange={(checked) => 
-                        setNotificationPreferences({...notificationPreferences, messages: checked})
-                      }
+                      checked={settings.notif_messages}
+                      onCheckedChange={(checked) => handleSettingChange('notif_messages', checked)}
                     />
                   </div>
                   <div className="flex items-center justify-between">
                     <label htmlFor="notif-suggestions" className="cursor-pointer">Sugestões da IA</label>
                     <Switch
                       id="notif-suggestions"
-                      checked={notificationPreferences.aiSuggestions}
-                      onCheckedChange={(checked) => 
-                        setNotificationPreferences({...notificationPreferences, aiSuggestions: checked})
-                      }
+                      checked={settings.notif_ai_suggestions}
+                      onCheckedChange={(checked) => handleSettingChange('notif_ai_suggestions', checked)}
                     />
                   </div>
                   <div className="flex items-center justify-between">
                     <label htmlFor="notif-connections" className="cursor-pointer">Conexões novas</label>
                     <Switch
                       id="notif-connections"
-                      checked={notificationPreferences.newConnections}
-                      onCheckedChange={(checked) => 
-                        setNotificationPreferences({...notificationPreferences, newConnections: checked})
-                      }
+                      checked={settings.notif_new_connections}
+                      onCheckedChange={(checked) => handleSettingChange('notif_new_connections', checked)}
                     />
                   </div>
                   <div className="flex items-center justify-between">
                     <label htmlFor="notif-habits" className="cursor-pointer">Progresso de hábitos</label>
                     <Switch
                       id="notif-habits"
-                      checked={notificationPreferences.habitProgress}
-                      onCheckedChange={(checked) => 
-                        setNotificationPreferences({...notificationPreferences, habitProgress: checked})
-                      }
+                      checked={settings.notif_habit_progress}
+                      onCheckedChange={(checked) => handleSettingChange('notif_habit_progress', checked)}
                     />
                   </div>
                   <div className="flex items-center justify-between">
                     <label htmlFor="notif-weekly" className="cursor-pointer">Resumo semanal</label>
                     <Switch
                       id="notif-weekly"
-                      checked={notificationPreferences.weeklyReport}
-                      onCheckedChange={(checked) => 
-                        setNotificationPreferences({...notificationPreferences, weeklyReport: checked})
-                      }
+                      checked={settings.notif_weekly_report}
+                      onCheckedChange={(checked) => handleSettingChange('notif_weekly_report', checked)}
                     />
                   </div>
                 </div>
@@ -416,30 +419,24 @@ export default function Configuracoes() {
                     <label htmlFor="channel-app" className="cursor-pointer">App</label>
                     <Switch
                       id="channel-app"
-                      checked={notificationChannels.app}
-                      onCheckedChange={(checked) => 
-                        setNotificationChannels({...notificationChannels, app: checked})
-                      }
+                      checked={settings.channel_app}
+                      onCheckedChange={(checked) => handleSettingChange('channel_app', checked)}
                     />
                   </div>
                   <div className="flex items-center justify-between">
                     <label htmlFor="channel-email" className="cursor-pointer">Email</label>
                     <Switch
                       id="channel-email"
-                      checked={notificationChannels.email}
-                      onCheckedChange={(checked) => 
-                        setNotificationChannels({...notificationChannels, email: checked})
-                      }
+                      checked={settings.channel_email}
+                      onCheckedChange={(checked) => handleSettingChange('channel_email', checked)}
                     />
                   </div>
                   <div className="flex items-center justify-between">
                     <label htmlFor="channel-push" className="cursor-pointer">Push</label>
                     <Switch
                       id="channel-push"
-                      checked={notificationChannels.push}
-                      onCheckedChange={(checked) => 
-                        setNotificationChannels({...notificationChannels, push: checked})
-                      }
+                      checked={settings.channel_push}
+                      onCheckedChange={(checked) => handleSettingChange('channel_push', checked)}
                     />
                   </div>
                 </div>
@@ -450,8 +447,8 @@ export default function Configuracoes() {
                 <ToggleGroup 
                   type="single" 
                   variant="outline"
-                  value={notificationFrequency}
-                  onValueChange={(value) => value && setNotificationFrequency(value)}
+                  value={settings.notification_frequency}
+                  onValueChange={(value) => value && handleSettingChange('notification_frequency', value)}
                   className="flex flex-wrap gap-2"
                 >
                   <ToggleGroupItem value="imediato" className="rounded px-4 py-2">Imediato</ToggleGroupItem>
@@ -468,15 +465,19 @@ export default function Configuracoes() {
               <div>
                 <h3 className="font-semibold mb-4">Serviços conectáveis</h3>
                 {integrations.map(integration => (
-                  <div key={integration.name} className="flex items-center justify-between p-3 border-b border-border/20 last:border-0">
+                  <div key={integration.id} className="flex items-center justify-between p-3 border-b border-border/20 last:border-0">
                     <div>
-                      <div className="font-medium">{integration.name}</div>
+                      <div className="font-medium">{integration.service_name}</div>
                       <div className="text-xs text-foreground/60">
-                        {integration.connected ? 'Conectado' : 'Desconectado'}
+                        {integration.is_connected ? 'Conectado' : 'Desconectado'}
                       </div>
                     </div>
-                    <Button variant={integration.connected ? "outline" : "secondary"} size="sm">
-                      {integration.connected ? 'Desconectar' : 'Conectar'}
+                    <Button 
+                      variant={integration.is_connected ? "outline" : "secondary"} 
+                      size="sm"
+                      onClick={() => toggleConnection(integration.id, integration.is_connected)}
+                    >
+                      {integration.is_connected ? 'Desconectar' : 'Conectar'}
                     </Button>
                   </div>
                 ))}
@@ -514,8 +515,8 @@ export default function Configuracoes() {
                 <ToggleGroup 
                   type="single" 
                   variant="outline"
-                  value={profileVisibility}
-                  onValueChange={(value) => value && setProfileVisibility(value)}
+                  value={settings.profile_visibility}
+                  onValueChange={(value) => value && handleSettingChange('profile_visibility', value)}
                   className="flex flex-wrap gap-2"
                 >
                   <ToggleGroupItem value="publico" className="rounded px-4 py-2">Público</ToggleGroupItem>
@@ -529,8 +530,8 @@ export default function Configuracoes() {
                   <label htmlFor="subbrain-sharing" className="cursor-pointer">Compartilhamento de subcérebros</label>
                   <Switch
                     id="subbrain-sharing"
-                    checked={subbrainSharing}
-                    onCheckedChange={setSubbrainSharing}
+                    checked={settings.subbrain_sharing}
+                    onCheckedChange={(checked) => handleSettingChange('subbrain_sharing', checked)}
                   />
                 </div>
               </div>
@@ -538,9 +539,28 @@ export default function Configuracoes() {
               <div>
                 <h3 className="font-semibold mb-4">Histórico e Dados</h3>
                 <div className="space-y-3">
-                  <Button variant="outline">Visualizar histórico de atividades</Button>
-                  <Button variant="outline">Baixar todos os dados</Button>
-                  <Button variant="destructive">Deletar conta</Button>
+                  <Button variant="outline" onClick={() => {
+                    // Implementar visualização de histórico
+                    toast({
+                      title: "Em desenvolvimento",
+                      description: "Visualização de histórico em breve..."
+                    });
+                  }}>
+                    Visualizar histórico de atividades
+                  </Button>
+                  <Button variant="outline" onClick={handleDownloadData}>
+                    Baixar todos os dados
+                  </Button>
+                  <Button variant="destructive" onClick={() => {
+                    // Implementar exclusão de conta
+                    toast({
+                      title: "Atenção",
+                      description: "Funcionalidade de exclusão em desenvolvimento...",
+                      variant: "destructive"
+                    });
+                  }}>
+                    Deletar conta
+                  </Button>
                 </div>
               </div>
             </div>
@@ -557,8 +577,8 @@ export default function Configuracoes() {
                   </div>
                   <Switch
                     id="economy-mode"
-                    checked={economyMode}
-                    onCheckedChange={setEconomyMode}
+                    checked={settings.economy_mode}
+                    onCheckedChange={(checked) => handleSettingChange('economy_mode', checked)}
                   />
                 </div>
                 
@@ -569,8 +589,8 @@ export default function Configuracoes() {
                   </div>
                   <Switch
                     id="offline-mode"
-                    checked={offlineMode}
-                    onCheckedChange={setOfflineMode}
+                    checked={settings.offline_mode}
+                    onCheckedChange={(checked) => handleSettingChange('offline_mode', checked)}
                   />
                 </div>
                 
@@ -581,8 +601,8 @@ export default function Configuracoes() {
                   </div>
                   <Switch
                     id="auto-save"
-                    checked={autoSave}
-                    onCheckedChange={setAutoSave}
+                    checked={settings.auto_save}
+                    onCheckedChange={(checked) => handleSettingChange('auto_save', checked)}
                   />
                 </div>
                 
@@ -593,14 +613,17 @@ export default function Configuracoes() {
                   </div>
                   <Switch
                     id="visual-compression"
-                    checked={visualCompression}
-                    onCheckedChange={setVisualCompression}
+                    checked={settings.visual_compression}
+                    onCheckedChange={(checked) => handleSettingChange('visual_compression', checked)}
                   />
                 </div>
               </div>
               
               <div>
-                <Button variant="outline">Limpar cache local</Button>
+                <Button variant="outline" onClick={clearCache} disabled={saving}>
+                  {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                  Limpar cache local
+                </Button>
               </div>
             </div>
           )}
@@ -620,10 +643,8 @@ export default function Configuracoes() {
                   </div>
                   <Switch
                     id="neuronal-feed"
-                    checked={labFeatures.neuronalFeed}
-                    onCheckedChange={(checked) => 
-                      setLabFeatures({...labFeatures, neuronalFeed: checked})
-                    }
+                    checked={settings.lab_neuronal_feed}
+                    onCheckedChange={(checked) => handleSettingChange('lab_neuronal_feed', checked)}
                   />
                 </div>
                 
@@ -634,10 +655,8 @@ export default function Configuracoes() {
                   </div>
                   <Switch
                     id="collaborative-subbrains"
-                    checked={labFeatures.collaborativeSubbrains}
-                    onCheckedChange={(checked) => 
-                      setLabFeatures({...labFeatures, collaborativeSubbrains: checked})
-                    }
+                    checked={settings.lab_collaborative_subbrains}
+                    onCheckedChange={(checked) => handleSettingChange('lab_collaborative_subbrains', checked)}
                   />
                 </div>
                 
@@ -648,10 +667,8 @@ export default function Configuracoes() {
                   </div>
                   <Switch
                     id="voice-generation"
-                    checked={labFeatures.voiceGeneration}
-                    onCheckedChange={(checked) => 
-                      setLabFeatures({...labFeatures, voiceGeneration: checked})
-                    }
+                    checked={settings.lab_voice_generation}
+                    onCheckedChange={(checked) => handleSettingChange('lab_voice_generation', checked)}
                   />
                 </div>
                 
@@ -662,10 +679,8 @@ export default function Configuracoes() {
                   </div>
                   <Switch
                     id="immersive-mode"
-                    checked={labFeatures.immersiveMode}
-                    onCheckedChange={(checked) => 
-                      setLabFeatures({...labFeatures, immersiveMode: checked})
-                    }
+                    checked={settings.lab_immersive_mode}
+                    onCheckedChange={(checked) => handleSettingChange('lab_immersive_mode', checked)}
                   />
                 </div>
               </div>
@@ -674,7 +689,13 @@ export default function Configuracoes() {
           
           {/* Floating restore button */}
           <div className="fixed bottom-6 right-6">
-            <Button variant="outline" className="bg-background/60 backdrop-blur-sm">
+            <Button 
+              variant="outline" 
+              className="bg-background/60 backdrop-blur-sm"
+              onClick={resetToDefaults}
+              disabled={saving}
+            >
+              {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
               Restaurar padrões
             </Button>
           </div>
