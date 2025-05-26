@@ -4,6 +4,35 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 
+/**
+ * Interface para autor do post com dados do perfil
+ */
+interface PostAuthor {
+  id: string;
+  name: string;
+  avatar_url: string | null;
+  username?: string;
+}
+
+/**
+ * Interface para post com autor completo
+ */
+interface PostWithAuthor {
+  id: string;
+  content: string;
+  category: 'focus' | 'expansion' | 'reflection';
+  created_at: string;
+  likes_count: number;
+  comments_count: number;
+  saves_count: number;
+  user_id: string;
+  image_url?: string;
+  author: PostAuthor;
+}
+
+/**
+ * Interface para post transformado para uso na UI
+ */
 interface ConnectaPost {
   id: string;
   content: string;
@@ -14,6 +43,7 @@ interface ConnectaPost {
   saves: number;
   liked: boolean;
   saved: boolean;
+  imageUrl?: string;
   author: {
     name: string;
     username: string;
@@ -21,17 +51,34 @@ interface ConnectaPost {
   };
 }
 
+/**
+ * Hook para gerenciar posts da rede social Connecta
+ * 
+ * @returns {Object} Estado e funções para manipular posts
+ * @example
+ * const { posts, loading, error, createPost, toggleLike } = useConnectaPosts();
+ */
 export const useConnectaPosts = () => {
   const [posts, setPosts] = useState<ConnectaPost[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const { user } = useAuth();
   const { toast } = useToast();
 
+  /**
+   * Busca posts com dados do autor via join com profiles
+   */
   const fetchPosts = async () => {
-    if (!user) return;
+    if (!user) {
+      setLoading(false);
+      return;
+    }
 
     try {
-      const { data, error } = await supabase
+      setError(null);
+      
+      // Query com join explícito para buscar dados do autor
+      const { data: postsData, error: postsError } = await supabase
         .from('posts')
         .select(`
           id,
@@ -42,17 +89,28 @@ export const useConnectaPosts = () => {
           comments_count,
           saves_count,
           user_id,
-          profiles:user_id (
+          image_url,
+          profiles!inner (
+            id,
             name,
             avatar_url
           )
         `)
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (postsError) {
+        console.error('Erro ao buscar posts:', postsError);
+        setError(postsError.message);
+        return;
+      }
 
-      // Buscar likes e saves do usuário atual
-      const postIds = data?.map(post => post.id) || [];
+      if (!postsData) {
+        setPosts([]);
+        return;
+      }
+
+      // Buscar likes e saves do usuário atual para todos os posts
+      const postIds = postsData.map(post => post.id);
       
       const [likesData, savesData] = await Promise.all([
         supabase
@@ -70,33 +128,45 @@ export const useConnectaPosts = () => {
       const userLikes = new Set(likesData.data?.map(like => like.post_id) || []);
       const userSaves = new Set(savesData.data?.map(save => save.post_id) || []);
 
-      const transformedPosts: ConnectaPost[] = data?.map(post => ({
-        id: post.id,
-        content: post.content,
-        category: post.category as 'focus' | 'expansion' | 'reflection',
-        createdAt: post.created_at,
-        likes: post.likes_count || 0,
-        comments: post.comments_count || 0,
-        saves: post.saves_count || 0,
-        liked: userLikes.has(post.id),
-        saved: userSaves.has(post.id),
-        author: {
-          name: post.profiles?.name || 'Usuário',
-          username: post.profiles?.name?.toLowerCase().replace(/\s+/g, '_') || 'usuario',
-          avatar: post.profiles?.avatar_url || '/placeholder.svg'
-        }
-      })) || [];
+      // Transformar dados para interface esperada
+      const transformedPosts: ConnectaPost[] = postsData.map(post => {
+        const profile = Array.isArray(post.profiles) ? post.profiles[0] : post.profiles;
+        
+        return {
+          id: post.id,
+          content: post.content,
+          category: post.category as 'focus' | 'expansion' | 'reflection',
+          createdAt: post.created_at,
+          likes: post.likes_count || 0,
+          comments: post.comments_count || 0,
+          saves: post.saves_count || 0,
+          liked: userLikes.has(post.id),
+          saved: userSaves.has(post.id),
+          imageUrl: post.image_url || undefined,
+          author: {
+            name: profile?.name || 'Usuário',
+            username: profile?.name?.toLowerCase().replace(/\s+/g, '_') || 'usuario',
+            avatar: profile?.avatar_url || '/placeholder.svg'
+          }
+        };
+      });
 
       setPosts(transformedPosts);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Erro ao buscar posts:', error);
+      setError(error.message || 'Erro desconhecido ao buscar posts');
     } finally {
       setLoading(false);
     }
   };
 
+  /**
+   * Cria um novo post
+   */
   const createPost = async (content: string, category: string) => {
-    if (!user) return;
+    if (!user) {
+      throw new Error('Usuário não autenticado');
+    }
 
     try {
       const { data, error } = await supabase
@@ -130,6 +200,9 @@ export const useConnectaPosts = () => {
     }
   };
 
+  /**
+   * Alterna o like de um post
+   */
   const toggleLike = async (postId: string) => {
     if (!user) return;
 
@@ -162,9 +235,17 @@ export const useConnectaPosts = () => {
       );
     } catch (error) {
       console.error('Erro ao curtir post:', error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível curtir o post.",
+        variant: "destructive"
+      });
     }
   };
 
+  /**
+   * Alterna o save de um post
+   */
   const toggleSave = async (postId: string) => {
     if (!user) return;
 
@@ -197,6 +278,11 @@ export const useConnectaPosts = () => {
       );
     } catch (error) {
       console.error('Erro ao salvar post:', error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível salvar o post.",
+        variant: "destructive"
+      });
     }
   };
 
@@ -207,9 +293,53 @@ export const useConnectaPosts = () => {
   return {
     posts,
     loading,
+    error,
     createPost,
     toggleLike,
     toggleSave,
     refetch: fetchPosts
   };
 };
+
+/**
+ * Teste unitário sugerido:
+ * 
+ * @example
+ * // Mock do Supabase
+ * jest.mock('@/integrations/supabase/client');
+ * 
+ * describe('useConnectaPosts', () => {
+ *   it('should fetch posts with author data', async () => {
+ *     const mockPosts = [
+ *       {
+ *         id: '1',
+ *         content: 'Test post',
+ *         profiles: { name: 'Test User', avatar_url: 'test.jpg' }
+ *       }
+ *     ];
+ *     
+ *     (supabase.from as jest.Mock).mockReturnValue({
+ *       select: jest.fn().mockReturnValue({
+ *         order: jest.fn().mockResolvedValue({ data: mockPosts, error: null })
+ *       })
+ *     });
+ *     
+ *     const { result } = renderHook(() => useConnectaPosts());
+ *     await waitFor(() => expect(result.current.loading).toBe(false));
+ *     expect(result.current.posts).toHaveLength(1);
+ *   });
+ * 
+ *   it('should handle SelectQueryError properly', async () => {
+ *     const mockError = { message: 'Database error' };
+ *     
+ *     (supabase.from as jest.Mock).mockReturnValue({
+ *       select: jest.fn().mockReturnValue({
+ *         order: jest.fn().mockResolvedValue({ data: null, error: mockError })
+ *       })
+ *     });
+ *     
+ *     const { result } = renderHook(() => useConnectaPosts());
+ *     await waitFor(() => expect(result.current.error).toBe('Database error'));
+ *   });
+ * });
+ */
