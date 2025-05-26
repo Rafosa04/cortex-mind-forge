@@ -1,283 +1,269 @@
 
+/**
+ * ConnectionsSidebar - Sidebar para mensagens e conexões
+ * 
+ * @component
+ * @example
+ * <ConnectionsSidebar 
+ *   conversations={conversations}
+ *   connections={connections}
+ *   onMessageSelect={(conversationId) => openChat(conversationId)}
+ *   onAccept={(connectionId) => acceptConnection(connectionId)}
+ *   onReject={(connectionId) => rejectConnection(connectionId)}
+ * />
+ */
+
 import React, { useState } from "react";
-import { motion } from "framer-motion";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { X, MessageSquare, Users, Plus } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { useToast } from "@/hooks/use-toast";
+import { motion, AnimatePresence } from "framer-motion";
+import { MessageSquare, Users, Check, X, Circle } from "lucide-react";
+import { ConnectionType, ConversationType } from "@/types/connecta";
+import { formatDistanceToNow } from "date-fns";
+import { ptBR } from "date-fns/locale";
 
-type ConnectionsSidebarProps = {
-  onClose: () => void;
-};
+interface ConnectionsSidebarProps {
+  conversations: ConversationType[];
+  connections: ConnectionType[];
+  onMessageSelect: (conversationId: string) => void;
+  onAccept: (connectionId: string) => void;
+  onReject: (connectionId: string) => void;
+}
 
-type Contact = {
-  id: string;
-  name: string;
-  avatar: string;
-  status: "online" | "offline";
-  lastMessage?: string;
-  unreadCount?: number;
-  connectionStatus?: "connected" | "pending" | "suggested";
-  commonTraits?: string;
-};
-
-const mockContacts: Contact[] = [
-  {
-    id: "1",
-    name: "Ana Silva",
-    avatar: "/placeholder.svg",
-    status: "online",
-    lastMessage: "Vamos conectar nossos subcérebros de filosofia?",
-    unreadCount: 2,
-    connectionStatus: "connected"
-  },
-  {
-    id: "2",
-    name: "Carlos Mendes",
-    avatar: "/placeholder.svg",
-    status: "offline",
-    lastMessage: "Obrigado pela dica de leitura!",
-    connectionStatus: "connected"
-  },
-  {
-    id: "3",
-    name: "Fernanda Lima",
-    avatar: "/placeholder.svg",
-    status: "online",
-    connectionStatus: "pending"
-  },
-  {
-    id: "4",
-    name: "Ricardo Gomes",
-    avatar: "/placeholder.svg",
-    status: "offline",
-    connectionStatus: "pending"
-  },
-  {
-    id: "5",
-    name: "Patrícia Luz",
-    avatar: "/placeholder.svg",
-    status: "online",
-    connectionStatus: "suggested",
-    commonTraits: "5 hábitos em comum"
-  },
-  {
-    id: "6",
-    name: "Rafael Costa",
-    avatar: "/placeholder.svg",
-    status: "online",
-    connectionStatus: "suggested",
-    commonTraits: "3 projetos similares"
-  },
-  {
-    id: "7",
-    name: "Daniela Mota",
-    avatar: "/placeholder.svg",
-    status: "offline",
-    connectionStatus: "suggested",
-    commonTraits: "Interesses em comum: filosofia, ciência"
-  }
-];
-
-export default function ConnectionsSidebar({ onClose }: ConnectionsSidebarProps) {
-  const { toast } = useToast();
+export default function ConnectionsSidebar({ 
+  conversations, 
+  connections, 
+  onMessageSelect, 
+  onAccept, 
+  onReject 
+}: ConnectionsSidebarProps) {
   const [activeTab, setActiveTab] = useState("messages");
-  const [contacts, setContacts] = useState(mockContacts);
 
-  const handleConnect = (contactId: string) => {
-    setContacts(prev => 
-      prev.map(contact => {
-        if (contact.id === contactId && contact.connectionStatus === "suggested") {
-          return {...contact, connectionStatus: "pending"};
-        }
-        return contact;
-      })
-    );
-    
-    toast({
-      title: "Solicitação enviada",
-      description: "Solicitação de conexão enviada com sucesso!",
-    });
-  };
-
-  const handleMessage = (contactId: string) => {
-    toast({
-      title: "Mensagem",
-      description: "Funcionalidade de mensagens em desenvolvimento",
-    });
-  };
-
-  const handleCreateGroup = () => {
-    toast({
-      title: "Grupo Mental",
-      description: "Funcionalidade de criação de grupo em desenvolvimento",
-    });
-  };
+  // Filtrar conexões por status
+  const pendingConnections = connections.filter(c => c.status === 'pending');
+  const suggestedConnections = connections.filter(c => c.status === 'suggested');
 
   return (
     <motion.div
-      initial={{ opacity: 0, x: 300 }}
+      initial={{ opacity: 0, x: -20 }}
       animate={{ opacity: 1, x: 0 }}
-      exit={{ opacity: 0, x: 300 }}
-      transition={{ type: "spring", stiffness: 300, damping: 30 }}
-      className="w-80 bg-card/30 backdrop-blur-lg rounded-lg border border-border/50 flex flex-col h-[calc(100vh-15rem)]"
+      transition={{ duration: 0.5 }}
+      className="w-full h-full"
     >
-      {/* Header */}
-      <div className="p-4 flex items-center justify-between border-b border-border/40">
-        <h2 className="font-semibold text-sm">Connecta Social</h2>
-        <Button variant="ghost" size="icon" onClick={onClose}>
-          <X className="h-4 w-4" />
-        </Button>
-      </div>
+      <Card className="bg-gray-800 border-gray-700 h-full flex flex-col">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
+          <TabsList className="grid grid-cols-2 m-4 bg-gray-900">
+            <TabsTrigger 
+              value="messages" 
+              className="text-sm data-[state=active]:bg-indigo-600 data-[state=active]:text-white"
+            >
+              <MessageSquare className="h-4 w-4 mr-2" />
+              Mensagens
+            </TabsTrigger>
+            <TabsTrigger 
+              value="connections"
+              className="text-sm data-[state=active]:bg-indigo-600 data-[state=active]:text-white"
+            >
+              <Users className="h-4 w-4 mr-2" />
+              Conexões
+            </TabsTrigger>
+          </TabsList>
 
-      {/* Tabs for different connection views */}
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
-        <TabsList className="grid grid-cols-2 mx-4 mt-2">
-          <TabsTrigger value="messages" className="text-xs">
-            <MessageSquare className="h-3 w-3 mr-1" />
-            Mensagens
-          </TabsTrigger>
-          <TabsTrigger value="connections" className="text-xs">
-            <Users className="h-3 w-3 mr-1" />
-            Conexões
-          </TabsTrigger>
-        </TabsList>
-
-        {/* Messages Tab Content */}
-        <TabsContent value="messages" className="flex-1 flex flex-col p-0 m-0">
-          <ScrollArea className="flex-1 px-4">
-            <div className="space-y-2 py-2">
-              {contacts
-                .filter(contact => contact.connectionStatus === "connected")
-                .map(contact => (
-                  <Card key={contact.id} className="bg-card/30 hover:bg-card/50 transition-colors cursor-pointer">
-                    <CardContent className="p-3 flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="relative">
-                          <Avatar className="h-9 w-9">
-                            <AvatarImage src={contact.avatar} />
-                            <AvatarFallback>{contact.name.substring(0, 2)}</AvatarFallback>
-                          </Avatar>
-                          <span 
-                            className={`absolute bottom-0 right-0 h-2 w-2 rounded-full ${
-                              contact.status === "online" ? "bg-green-500" : "bg-gray-400"
-                            } ring-1 ring-background`}
-                          />
-                        </div>
-                        <div>
-                          <div className="text-sm font-medium flex items-center gap-2">
-                            {contact.name}
-                            {contact.unreadCount && (
-                              <span className="bg-[#8B5CF6] text-white text-[10px] rounded-full px-1.5 py-0.5">
-                                {contact.unreadCount}
-                              </span>
+          {/* Tab de Mensagens */}
+          <TabsContent value="messages" className="flex-1 flex flex-col m-0">
+            <ScrollArea className="flex-1 px-4">
+              <div className="space-y-2 pb-4">
+                {conversations.map((conversation) => (
+                  <motion.div
+                    key={conversation.id}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                  >
+                    <Card 
+                      className="bg-gray-900 hover:bg-gray-700 transition-colors cursor-pointer border-gray-600"
+                      onClick={() => onMessageSelect(conversation.id)}
+                    >
+                      <CardContent className="p-3">
+                        <div className="flex items-center gap-3">
+                          <div className="relative">
+                            <Avatar className="h-12 w-12 border border-gray-600">
+                              <AvatarImage src={conversation.participant.avatar} />
+                              <AvatarFallback className="bg-gray-700 text-white">
+                                {conversation.participant.name.substring(0, 2)}
+                              </AvatarFallback>
+                            </Avatar>
+                            {conversation.isOnline && (
+                              <Circle className="absolute -bottom-1 -right-1 h-4 w-4 fill-green-500 text-green-500" />
                             )}
                           </div>
-                          {contact.lastMessage && (
-                            <p className="text-xs text-muted-foreground line-clamp-1">
-                              {contact.lastMessage}
+                          <div className="flex-1 min-w-0">
+                            <div className="flex justify-between items-start">
+                              <div className="font-medium text-white text-sm truncate">
+                                {conversation.participant.name}
+                              </div>
+                              {conversation.unreadCount > 0 && (
+                                <span className="bg-indigo-600 text-white text-xs rounded-full px-2 py-0.5 ml-2">
+                                  {conversation.unreadCount}
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-xs text-gray-400 truncate">
+                              {conversation.lastMessage}
                             </p>
-                          )}
+                            <p className="text-xs text-gray-500 mt-1">
+                              {formatDistanceToNow(new Date(conversation.timestamp), { 
+                                addSuffix: true, 
+                                locale: ptBR 
+                              })}
+                            </p>
+                          </div>
                         </div>
-                      </div>
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        className="h-8 w-8"
-                        onClick={() => handleMessage(contact.id)}
-                      >
-                        <MessageSquare className="h-4 w-4" />
-                      </Button>
-                    </CardContent>
-                  </Card>
-                ))}
-            </div>
-          </ScrollArea>
-          
-          {/* Create group button */}
-          <div className="p-4 border-t border-border/40">
-            <Button 
-              variant="outline" 
-              className="w-full text-xs"
-              onClick={handleCreateGroup}
-            >
-              <Plus className="h-4 w-4 mr-2" /> Criar Grupo Mental
-            </Button>
-          </div>
-        </TabsContent>
-
-        {/* Connections Tab Content */}
-        <TabsContent value="connections" className="flex-1 flex flex-col p-0 m-0">
-          <ScrollArea className="flex-1 px-4">
-            {/* Pending Connections */}
-            <div className="py-2">
-              <h3 className="font-medium text-xs text-muted-foreground mb-2">Solicitações Pendentes</h3>
-              <div className="space-y-2">
-                {contacts
-                  .filter(contact => contact.connectionStatus === "pending")
-                  .map(contact => (
-                    <Card key={contact.id} className="bg-card/30">
-                      <CardContent className="p-3 flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <Avatar className="h-9 w-9">
-                            <AvatarImage src={contact.avatar} />
-                            <AvatarFallback>{contact.name.substring(0, 2)}</AvatarFallback>
-                          </Avatar>
-                          <div className="text-sm">{contact.name}</div>
-                        </div>
-                        <div className="text-xs text-[#8B5CF6]">Pendente</div>
                       </CardContent>
                     </Card>
-                  ))}
+                  </motion.div>
+                ))}
 
-                {contacts.filter(contact => contact.connectionStatus === "pending").length === 0 && (
-                  <p className="text-xs text-muted-foreground">Nenhuma solicitação pendente</p>
+                {conversations.length === 0 && (
+                  <div className="text-center py-8 text-gray-500">
+                    <MessageSquare className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                    <p className="text-sm">Nenhuma conversa ainda</p>
+                    <p className="text-xs mt-1">Conecte-se com outros usuários!</p>
+                  </div>
                 )}
               </div>
-            </div>
+            </ScrollArea>
+          </TabsContent>
 
-            {/* Suggested Connections */}
-            <div className="py-4">
-              <h3 className="font-medium text-xs text-muted-foreground mb-2">Sugestões para Você</h3>
-              <div className="space-y-2">
-                {contacts
-                  .filter(contact => contact.connectionStatus === "suggested")
-                  .map(contact => (
-                    <Card key={contact.id} className="bg-card/30">
-                      <CardContent className="p-3">
-                        <div className="flex items-center gap-3 mb-2">
-                          <Avatar className="h-9 w-9">
-                            <AvatarImage src={contact.avatar} />
-                            <AvatarFallback>{contact.name.substring(0, 2)}</AvatarFallback>
-                          </Avatar>
-                          <div className="text-sm">{contact.name}</div>
-                        </div>
-                        {contact.commonTraits && (
-                          <div className="text-xs text-muted-foreground mb-2 ml-12">
-                            {contact.commonTraits}
-                          </div>
-                        )}
-                        <div className="flex justify-end">
-                          <Button 
-                            size="sm" 
-                            variant="outline"
-                            className="text-xs"
-                            onClick={() => handleConnect(contact.id)}
-                          >
-                            Conectar
-                          </Button>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
+          {/* Tab de Conexões */}
+          <TabsContent value="connections" className="flex-1 flex flex-col m-0">
+            <ScrollArea className="flex-1 px-4">
+              <div className="space-y-4 pb-4">
+                {/* Solicitações Pendentes */}
+                {pendingConnections.length > 0 && (
+                  <div>
+                    <h3 className="font-medium text-white text-sm mb-3">
+                      Solicitações Pendentes
+                    </h3>
+                    <div className="space-y-2">
+                      {pendingConnections.map((connection) => (
+                        <motion.div
+                          key={connection.id}
+                          initial={{ opacity: 0, x: -10 }}
+                          animate={{ opacity: 1, x: 0 }}
+                        >
+                          <Card className="bg-gray-900 border-gray-600">
+                            <CardContent className="p-3">
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                  <Avatar className="h-10 w-10 border border-gray-600">
+                                    <AvatarImage src={connection.avatar} />
+                                    <AvatarFallback className="bg-gray-700 text-white">
+                                      {connection.name.substring(0, 2)}
+                                    </AvatarFallback>
+                                  </Avatar>
+                                  <div>
+                                    <div className="font-medium text-white text-sm">
+                                      {connection.name}
+                                    </div>
+                                    <div className="text-xs text-gray-400">
+                                      @{connection.username}
+                                    </div>
+                                  </div>
+                                </div>
+                                <div className="flex gap-1">
+                                  <Button
+                                    size="sm"
+                                    variant="default"
+                                    onClick={() => onAccept(connection.id)}
+                                    className="bg-green-600 hover:bg-green-700 h-8 w-8 p-0"
+                                  >
+                                    <Check className="h-4 w-4" />
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="secondary"
+                                    onClick={() => onReject(connection.id)}
+                                    className="bg-red-600 hover:bg-red-700 h-8 w-8 p-0"
+                                  >
+                                    <X className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        </motion.div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Sugestões de Conexão */}
+                {suggestedConnections.length > 0 && (
+                  <div>
+                    <h3 className="font-medium text-white text-sm mb-3">
+                      Sugestões para Você
+                    </h3>
+                    <div className="space-y-2">
+                      {suggestedConnections.map((connection) => (
+                        <motion.div
+                          key={connection.id}
+                          initial={{ opacity: 0, x: -10 }}
+                          animate={{ opacity: 1, x: 0 }}
+                        >
+                          <Card className="bg-gray-900 border-gray-600">
+                            <CardContent className="p-3">
+                              <div className="flex items-center gap-3 mb-2">
+                                <Avatar className="h-10 w-10 border border-gray-600">
+                                  <AvatarImage src={connection.avatar} />
+                                  <AvatarFallback className="bg-gray-700 text-white">
+                                    {connection.name.substring(0, 2)}
+                                  </AvatarFallback>
+                                </Avatar>
+                                <div className="flex-1">
+                                  <div className="font-medium text-white text-sm">
+                                    {connection.name}
+                                  </div>
+                                  <div className="text-xs text-gray-400">
+                                    @{connection.username}
+                                  </div>
+                                  {connection.mutualConnections && (
+                                    <div className="text-xs text-indigo-400">
+                                      {connection.mutualConnections} conexões em comum
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => onAccept(connection.id)}
+                                className="w-full bg-indigo-600 hover:bg-indigo-700 border-indigo-600 text-white"
+                              >
+                                Conectar
+                              </Button>
+                            </CardContent>
+                          </Card>
+                        </motion.div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {pendingConnections.length === 0 && suggestedConnections.length === 0 && (
+                  <div className="text-center py-8 text-gray-500">
+                    <Users className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                    <p className="text-sm">Nenhuma conexão disponível</p>
+                    <p className="text-xs mt-1">Explore a plataforma para encontrar pessoas!</p>
+                  </div>
+                )}
               </div>
-            </div>
-          </ScrollArea>
-        </TabsContent>
-      </Tabs>
+            </ScrollArea>
+          </TabsContent>
+        </Tabs>
+      </Card>
     </motion.div>
   );
 }

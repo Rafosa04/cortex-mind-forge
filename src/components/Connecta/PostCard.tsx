@@ -1,4 +1,18 @@
 
+/**
+ * PostCard - Componente de post para a rede social Connecta
+ * 
+ * @component
+ * @example
+ * <PostCard 
+ *   post={post} 
+ *   onLike={() => handleLike(post.id)}
+ *   onSave={() => handleSave(post.id)}
+ *   onComment={() => handleComment(post.id)}
+ *   onShare={() => handleShare(post.id)}
+ * />
+ */
+
 import React from "react";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -8,8 +22,19 @@ import { Brain, MessageSquare, Bookmark, Share } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { PostType } from "@/types/connecta";
 
-// Helper function to format dates
+interface PostCardProps {
+  post: PostType;
+  onLike: () => void;
+  onComment: () => void;
+  onSave: () => void;
+  onShare: () => void;
+}
+
+/**
+ * Formata timestamp para exibição em português
+ */
 const timeAgo = (date: string) => {
   return formatDistanceToNow(new Date(date), { 
     addSuffix: true,
@@ -17,122 +42,139 @@ const timeAgo = (date: string) => {
   });
 };
 
-type PostCardProps = {
-  post: {
-    id: string;
-    author: {
-      name: string;
-      avatar: string;
-      username: string;
-    };
-    content: string;
-    createdAt: string;
-    likes: number;
-    comments: number;
-    saves: number;
-    liked: boolean;
-    saved: boolean;
-    category?: string;
-    imageUrl?: string;
+/**
+ * Retorna classes CSS para badges de categoria
+ */
+const getCategoryStyles = (category: PostType['category']) => {
+  const styles = {
+    focus: "bg-purple-600/20 text-purple-400 border border-purple-600/30",
+    expansion: "bg-blue-500/20 text-blue-400 border border-blue-500/30", 
+    reflection: "bg-green-500/20 text-green-400 border border-green-500/30"
   };
-  onLike: () => void;
-  onComment: () => void;
-  onSave: () => void;
-  onShare: () => void;
+  return styles[category];
+};
+
+/**
+ * Retorna nome da categoria em português
+ */
+const getCategoryName = (category: PostType['category']) => {
+  const names = {
+    focus: "Clareza",
+    expansion: "Expansão", 
+    reflection: "Reflexão"
+  };
+  return names[category];
 };
 
 export default function PostCard({ post, onLike, onComment, onSave, onShare }: PostCardProps) {
   return (
-    <Card className="overflow-hidden bg-card/40 backdrop-blur-sm border-border/50 hover:shadow-md hover:shadow-primary/5 transition-all">
-      <CardContent className="p-4">
-        {/* Author info */}
-        <div className="flex items-center gap-3 mb-3">
-          <Avatar className="h-10 w-10 border border-border/50">
-            <AvatarImage src={post.author.avatar} />
-            <AvatarFallback>{post.author.name.substring(0, 2)}</AvatarFallback>
-          </Avatar>
-          <div>
-            <div className="font-medium text-sm">{post.author.name}</div>
-            <div className="text-xs text-muted-foreground">@{post.author.username} · {timeAgo(post.createdAt)}</div>
+    <motion.div
+      initial={{ opacity: 0, y: -10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3 }}
+      whileHover={{ scale: 1.01 }}
+    >
+      <Card className="bg-gray-800 rounded-2xl p-4 shadow-lg border-gray-700 hover:bg-gray-700 transition-all duration-300">
+        <CardContent className="p-0">
+          {/* Seção do autor */}
+          <div className="flex items-center gap-3 mb-4">
+            <Avatar className="h-12 w-12 border border-gray-600">
+              <AvatarImage src={post.author.avatar} />
+              <AvatarFallback className="bg-gray-700 text-white">
+                {post.author.name.substring(0, 2)}
+              </AvatarFallback>
+            </Avatar>
+            <div>
+              <div className="font-semibold text-white">
+                {post.author.name}
+              </div>
+              <div className="text-sm text-gray-400">
+                @{post.author.username} · {timeAgo(post.createdAt)}
+              </div>
+            </div>
           </div>
-        </div>
-        
-        {/* Post content */}
-        <p className="mb-4 text-sm">{post.content}</p>
-        
-        {/* Post image if available */}
-        {post.imageUrl && (
-          <div className="mt-3 mb-3 rounded-md overflow-hidden">
-            <img 
-              src={post.imageUrl} 
-              alt="Post content" 
-              className="w-full h-auto max-h-80 object-cover"
-            />
-          </div>
-        )}
-        
-        {/* Category badge */}
-        {post.category && (
-          <div className="mt-2 mb-1">
+          
+          {/* Conteúdo do post */}
+          <p className="text-white mb-4 leading-relaxed">
+            {post.content}
+          </p>
+          
+          {/* Imagem do post (se houver) */}
+          {post.imageUrl && (
+            <div className="mb-4 rounded-xl overflow-hidden">
+              <img 
+                src={post.imageUrl} 
+                alt="Post content" 
+                className="w-full h-auto max-h-80 object-cover"
+              />
+            </div>
+          )}
+          
+          {/* Badge de categoria */}
+          <div className="mb-4">
             <span className={cn(
-              "text-xs px-2 py-1 rounded-full",
-              post.category === "focus" && "bg-[#8B5CF6]/10 text-[#8B5CF6]",
-              post.category === "expansion" && "bg-[#0EA5E9]/10 text-[#0EA5E9]",
-              post.category === "reflection" && "bg-[#10B981]/10 text-[#10B981]"
+              "text-xs px-3 py-1 rounded-full font-medium",
+              getCategoryStyles(post.category)
             )}>
-              {post.category === "focus" && "Clareza"}
-              {post.category === "expansion" && "Expansão"}
-              {post.category === "reflection" && "Reflexão"}
+              {getCategoryName(post.category)}
             </span>
           </div>
-        )}
-      </CardContent>
-      
-      <CardFooter className="px-4 py-3 border-t border-border/30 flex justify-between">
-        {/* Interaction counts */}
-        <div className="flex items-center space-x-4 text-xs text-muted-foreground">
-          <span>{post.likes} reações</span>
-          <span>{post.comments} comentários</span>
-          <span>{post.saves} salvos</span>
-        </div>
+        </CardContent>
         
-        {/* Action buttons */}
-        <div className="flex space-x-1">
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            onClick={onLike}
-            className={cn(post.liked && "text-[#8B5CF6]")}
-          >
-            <Brain className="h-4 w-4" />
-          </Button>
+        <CardFooter className="px-0 pt-4 border-t border-gray-700 flex justify-between items-center">
+          {/* Contadores de interação */}
+          <div className="flex items-center space-x-4 text-sm text-gray-400">
+            <span>{post.likes} reações</span>
+            <span>{post.comments} comentários</span>
+            <span>{post.saves} salvos</span>
+          </div>
           
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            onClick={onComment}
-          >
-            <MessageSquare className="h-4 w-4" />
-          </Button>
-          
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            onClick={onSave}
-            className={cn(post.saved && "text-[#0EA5E9]")}
-          >
-            <Bookmark className="h-4 w-4" />
-          </Button>
-          
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            onClick={onShare}
-          >
-            <Share className="h-4 w-4" />
-          </Button>
-        </div>
-      </CardFooter>
-    </Card>
+          {/* Botões de ação */}
+          <div className="flex space-x-1">
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={onLike}
+              className={cn(
+                "hover:bg-gray-600 transition-colors",
+                post.liked && "text-purple-400 hover:text-purple-300"
+              )}
+            >
+              <Brain className="h-5 w-5" />
+            </Button>
+            
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={onComment}
+              className="hover:bg-gray-600 hover:text-indigo-400 transition-colors"
+            >
+              <MessageSquare className="h-5 w-5" />
+            </Button>
+            
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={onSave}
+              className={cn(
+                "hover:bg-gray-600 transition-colors",
+                post.saved && "text-blue-400 hover:text-blue-300"
+              )}
+            >
+              <Bookmark className="h-5 w-5" />
+            </Button>
+            
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={onShare}
+              className="hover:bg-gray-600 hover:text-indigo-400 transition-colors"
+            >
+              <Share className="h-5 w-5" />
+            </Button>
+          </div>
+        </CardFooter>
+      </Card>
+    </motion.div>
   );
 }
