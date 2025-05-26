@@ -49,45 +49,50 @@
   }
 
   .light {
-    --background: 210 40% 98%;
-    --foreground: 222.2 47.4% 11.2%;
+    /* === CORES BASE === */
+    --background: 210 40% 98%;           /* Fundo principal - branco quase puro */
+    --foreground: 222.2 47.4% 11.2%;    /* Texto principal - cinza muito escuro */
     
-    --card: 220 20% 97%;
-    --card-foreground: 222.2 47.4% 11.2%;
+    /* === COMPONENTES === */
+    --card: 220 20% 97%;                 /* Fundo de cartões - cinza muito claro */
+    --card-foreground: 222.2 47.4% 11.2%; /* Texto em cartões */
     
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 47.4% 11.2%;
+    --popover: 0 0% 100%;                /* Fundo de popovers - branco puro */
+    --popover-foreground: 222.2 47.4% 11.2%; /* Texto em popovers */
     
-    --primary: 187 32% 54%;
-    --primary-foreground: 222.2 47.4% 11.2%;
+    /* === CORES DE MARCA === */
+    --primary: 187 32% 54%;              /* #60B5B5 - Verde-azulado (botões primários, links) */
+    --primary-foreground: 222.2 47.4% 11.2%; /* Texto sobre primary */
+    --secondary: 316 47% 41%;            /* #993887 - Roxo (elementos secundários) */
+    --secondary-foreground: 222.2 47.4% 11.2%; /* Texto sobre secondary */
     
-    --secondary: 316 47% 41%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    /* === ELEMENTOS SECUNDÁRIOS === */
+    --muted: 220 14% 96%;                /* Elementos desabilitados/secundários */
+    --muted-foreground: 215.4 16.3% 46.9%; /* Texto muted */
+    --accent: 213 100% 51%;              /* Azul vibrante para destaques */
+    --accent-foreground: 210 40% 98%;    /* Texto sobre accent */
     
-    --muted: 220 14% 96%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    /* === ESTADOS DE FEEDBACK === */
+    --success: 182 59% 51%;              /* Verde-azulado para sucesso */
+    --error: 0 84% 60%;                  /* Vermelho médio para erro */
     
-    --accent: 213 100% 51%;
-    --accent-foreground: 210 40% 98%;
+    --destructive: 0 100% 50%;           /* Vermelho forte para ações destrutivas */
+    --destructive-foreground: 210 40% 98%; /* Texto sobre destructive */
     
-    --success: 182 59% 51%;
-    --error: 0 84% 60%;
-    
-    --destructive: 0 100% 50%;
-    --destructive-foreground: 210 40% 98%;
-    
-    --border: 213 27% 84%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 187 32% 54%;
+    /* === BORDAS E INPUTS === */
+    --border: 213 27% 84%;               /* Bordas gerais - cinza médio */
+    --input: 214.3 31.8% 91.4%;         /* Fundo de campos de entrada */
+    --ring: 187 32% 54%;                 /* Rings de foco (mesma cor do primary) */
 
-    --sidebar-background: 210 40% 98%;
-    --sidebar-foreground: 222.2 47.4% 11.2%;
-    --sidebar-primary: 187 32% 54%;
-    --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 220 14% 96%;
-    --sidebar-accent-foreground: 222.2 47.4% 11.2%;
-    --sidebar-border: 213 27% 84%;
-    --sidebar-ring: 187 32% 54%;
+    /* === SIDEBAR === */
+    --sidebar-background: 210 40% 98%;   /* Fundo da sidebar */
+    --sidebar-foreground: 222.2 47.4% 11.2%; /* Texto da sidebar */
+    --sidebar-primary: 187 32% 54%;      /* Primary da sidebar */
+    --sidebar-primary-foreground: 0 0% 98%; /* Texto sobre primary da sidebar */
+    --sidebar-accent: 220 14% 96%;       /* Accent da sidebar */
+    --sidebar-accent-foreground: 222.2 47.4% 11.2%; /* Texto sobre accent da sidebar */
+    --sidebar-border: 213 27% 84%;       /* Bordas da sidebar */
+    --sidebar-ring: 187 32% 54%;         /* Ring da sidebar */
   }
 
   .dark {
@@ -148,7 +153,7 @@
   }
   
   .light .neon-anim {
-    text-shadow: none;
+    text-shadow: 0 0 8px rgba(96, 181, 181, 0.6), 0 0 12px rgba(96, 181, 181, 0.4);
   }
 
   /* Enhancing scrollbar */
@@ -222,6 +227,15 @@
   @apply backdrop-blur-lg bg-black/20 border border-white/10 rounded-2xl;
 }
 
+/* Light theme glassmorphism */
+.light .glass-card {
+  @apply backdrop-blur-md bg-white/70 border border-black/10 rounded-2xl;
+}
+
+.light .glass-panel {
+  @apply backdrop-blur-lg bg-white/80 border border-black/15 rounded-2xl;
+}
+
 /* Theme Transition */
 html.dark {
   color-scheme: dark;
@@ -262,4 +276,24 @@ html.light {
 
 .btn-glow:hover::after {
   @apply opacity-100;
+}
+
+/* Light theme button glow */
+.light .btn-glow:hover {
+  box-shadow: 0 0 12px rgba(96, 181, 181, 0.5), 0 0 8px rgba(153, 56, 135, 0.3);
+}
+
+/* Theme toggle animations */
+.theme-toggle-icon {
+  transition: transform 0.3s ease-in-out;
+}
+
+.theme-toggle:hover {
+  background-color: hsl(var(--accent) / 0.1);
+  transform: scale(1.05);
+}
+
+.theme-toggle:focus-visible {
+  outline: 2px solid hsl(var(--ring));
+  outline-offset: 2px;
 }

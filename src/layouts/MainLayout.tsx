@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { SidebarProvider, Sidebar as UISidebar, SidebarContent, SidebarRail, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
 import Sidebar from "@/components/Sidebar";
 import AthenaChatBox from "@/components/AthenaChatBox";
+import ThemeToggle from "@/components/ThemeToggle";
 import { useAuth } from "@/hooks/useAuth";
 import NotificationIndicator from "@/components/Notifications/NotificationIndicator";
 
@@ -39,6 +40,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
               transition={{ duration: 0.3 }}
             >
               {user && <NotificationIndicator />}
+              <ThemeToggle />
               <div className="text-sm sm:text-md text-foreground/70">
                 {user ? (
                   <span>Olá, {profile?.name || 'Usuário'}</span>
