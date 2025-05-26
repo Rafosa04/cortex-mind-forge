@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -59,23 +58,33 @@ export const useConnectaConnections = () => {
         .select(`
           *,
           participant1:profiles!conversations_participant_1_fkey(name, avatar_url),
-          participant2:profiles!conversations_participant_2_fkey(name, avatar_url),
-          messages(content, created_at, sender_id, read_at)
+          participant2:profiles!conversations_participant_2_fkey(name, avatar_url)
         `)
         .or(`participant_1.eq.${user.id},participant_2.eq.${user.id}`)
         .order('updated_at', { ascending: false });
 
       if (error) throw error;
 
+      // Buscar mensagens das conversas
+      const conversationIds = conversationsData?.map(conv => conv.id) || [];
+      const { data: messagesData } = await supabase
+        .from('messages')
+        .select('*')
+        .in('conversation_id', conversationIds)
+        .order('created_at', { ascending: false });
+
       const transformedConversations: ConversationType[] = conversationsData?.map(conv => {
         const isParticipant1 = conv.participant_1 === user.id;
         const otherParticipant = isParticipant1 ? conv.participant2 : conv.participant1;
-        const lastMessage = conv.messages?.[0];
+        
+        // Filtrar mensagens desta conversa
+        const conversationMessages = messagesData?.filter(msg => msg.conversation_id === conv.id) || [];
+        const lastMessage = conversationMessages[0];
         
         // Contar mensagens não lidas
-        const unreadCount = conv.messages?.filter(
-          (msg: any) => msg.sender_id !== user.id && !msg.read_at
-        ).length || 0;
+        const unreadCount = conversationMessages.filter(
+          msg => msg.sender_id !== user.id && !msg.read_at
+        ).length;
 
         return {
           id: conv.id,

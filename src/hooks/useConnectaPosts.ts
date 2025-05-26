@@ -20,13 +20,30 @@ export const useConnectaPosts = () => {
         .from('posts')
         .select(`
           *,
-          profiles!posts_user_id_fkey(name, avatar_url),
-          post_likes!inner(user_id),
-          post_saves!inner(user_id)
+          profiles!posts_user_id_fkey(name, avatar_url)
         `)
         .order('created_at', { ascending: false });
 
       if (postsError) throw postsError;
+
+      // Buscar likes e saves do usuário atual se estiver logado
+      let userLikes: string[] = [];
+      let userSaves: string[] = [];
+
+      if (user) {
+        const { data: likesData } = await supabase
+          .from('post_likes')
+          .select('post_id')
+          .eq('user_id', user.id);
+
+        const { data: savesData } = await supabase
+          .from('post_saves')
+          .select('post_id')
+          .eq('user_id', user.id);
+
+        userLikes = likesData?.map(like => like.post_id) || [];
+        userSaves = savesData?.map(save => save.post_id) || [];
+      }
 
       // Transformar dados para o formato esperado
       const transformedPosts: PostType[] = postsData?.map(post => ({
@@ -41,8 +58,8 @@ export const useConnectaPosts = () => {
         likes: post.likes_count || 0,
         comments: post.comments_count || 0,
         saves: post.saves_count || 0,
-        liked: user ? post.post_likes?.some((like: any) => like.user_id === user.id) || false : false,
-        saved: user ? post.post_saves?.some((save: any) => save.user_id === user.id) || false : false,
+        liked: userLikes.includes(post.id),
+        saved: userSaves.includes(post.id),
         category: post.category as 'focus' | 'expansion' | 'reflection',
         imageUrl: post.image_url || undefined
       })) || [];

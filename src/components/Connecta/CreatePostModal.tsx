@@ -16,9 +16,9 @@ interface CreatePostModalProps {
 }
 
 const categoryOptions = [
-  { value: 'focus', label: 'Clareza', icon: Brain, color: 'text-purple-400' },
-  { value: 'expansion', label: 'Expansão', icon: Lightbulb, color: 'text-blue-400' },
-  { value: 'reflection', label: 'Reflexão', icon: TreePine, color: 'text-green-400' }
+  { value: 'focus' as const, label: 'Clareza', icon: Brain, color: 'text-purple-400' },
+  { value: 'expansion' as const, label: 'Expansão', icon: Lightbulb, color: 'text-blue-400' },
+  { value: 'reflection' as const, label: 'Reflexão', icon: TreePine, color: 'text-green-400' }
 ];
 
 export default function CreatePostModal({ open, onClose, onSubmit, loading }: CreatePostModalProps) {
@@ -37,6 +37,10 @@ export default function CreatePostModal({ open, onClose, onSubmit, loading }: Cr
     setCategory('focus');
     setImageUrl('');
     onClose();
+  };
+
+  const handleCategoryChange = (value: string) => {
+    setCategory(value as 'focus' | 'expansion' | 'reflection');
   };
 
   const selectedCategory = categoryOptions.find(opt => opt.value === category);
@@ -63,7 +67,7 @@ export default function CreatePostModal({ open, onClose, onSubmit, loading }: Cr
 
           <div>
             <Label>Categoria</Label>
-            <Select value={category} onValueChange={setCategory}>
+            <Select value={category} onValueChange={handleCategoryChange}>
               <SelectTrigger className="mt-2 bg-gray-900 border-gray-600 text-white">
                 <SelectValue />
               </SelectTrigger>
