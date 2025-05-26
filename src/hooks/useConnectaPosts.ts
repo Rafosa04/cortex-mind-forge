@@ -15,16 +15,24 @@ export const useConnectaPosts = () => {
     try {
       setLoading(true);
       
-      // Buscar posts com informações do autor
+      // Primeiro buscar posts
       const { data: postsData, error: postsError } = await supabase
         .from('posts')
-        .select(`
-          *,
-          profiles!posts_user_id_fkey(name, avatar_url)
-        `)
+        .select('*')
         .order('created_at', { ascending: false });
 
       if (postsError) throw postsError;
+
+      // Depois buscar profiles separadamente
+      const userIds = [...new Set(postsData?.map(post => post.user_id) || [])];
+      const { data: profilesData, error: profilesError } = await supabase
+        .from('profiles')
+        .select('*')
+        .in('id', userIds);
+
+      if (profilesError) {
+        console.error('Erro ao buscar profiles:', profilesError);
+      }
 
       // Buscar likes e saves do usuário atual se estiver logado
       let userLikes: string[] = [];
@@ -46,23 +54,27 @@ export const useConnectaPosts = () => {
       }
 
       // Transformar dados para o formato esperado
-      const transformedPosts: PostType[] = postsData?.map(post => ({
-        id: post.id,
-        author: {
-          name: post.profiles?.name || 'Usuário',
-          avatar: post.profiles?.avatar_url || '/placeholder.svg',
-          username: post.profiles?.name?.toLowerCase().replace(/\s+/g, '') || 'usuario'
-        },
-        content: post.content,
-        createdAt: post.created_at,
-        likes: post.likes_count || 0,
-        comments: post.comments_count || 0,
-        saves: post.saves_count || 0,
-        liked: userLikes.includes(post.id),
-        saved: userSaves.includes(post.id),
-        category: post.category as 'focus' | 'expansion' | 'reflection',
-        imageUrl: post.image_url || undefined
-      })) || [];
+      const transformedPosts: PostType[] = postsData?.map(post => {
+        const profile = profilesData?.find(p => p.id === post.user_id);
+        
+        return {
+          id: post.id,
+          author: {
+            name: profile?.name || 'Usuário',
+            avatar: profile?.avatar_url || '/placeholder.svg',
+            username: profile?.name?.toLowerCase().replace(/\s+/g, '') || 'usuario'
+          },
+          content: post.content,
+          createdAt: post.created_at,
+          likes: post.likes_count || 0,
+          comments: post.comments_count || 0,
+          saves: post.saves_count || 0,
+          liked: userLikes.includes(post.id),
+          saved: userSaves.includes(post.id),
+          category: post.category as 'focus' | 'expansion' | 'reflection',
+          imageUrl: post.image_url || undefined
+        };
+      }) || [];
 
       setPosts(transformedPosts);
     } catch (error: any) {

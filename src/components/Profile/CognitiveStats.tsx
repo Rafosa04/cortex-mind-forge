@@ -12,6 +12,7 @@ import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Card, CardContent } from '@/components/ui/card';
 import { Brain, CheckCircle, Target, Star, TrendingUp, TrendingDown } from 'lucide-react';
+import { useProfile } from '@/hooks/useProfile';
 
 interface StatCard {
   icon: React.ReactNode;
@@ -21,38 +22,60 @@ interface StatCard {
   trendValue?: number;
 }
 
-export const CognitiveStats: React.FC = () => {
-  // TODO: fetch from Supabase tables "projects", "habits", "posts", etc.
+interface CognitiveStatsProps {
+  profileUserId?: string;
+}
+
+export const CognitiveStats: React.FC<CognitiveStatsProps> = ({ profileUserId }) => {
+  const { profileStats, loading } = useProfile(profileUserId);
+
   const stats: StatCard[] = [
     {
       icon: <Brain className="h-6 w-6 text-purple-400" />,
       label: 'Ideias Capturadas',
-      value: 247,
+      value: profileStats?.ideasCaptured || 0,
       trend: 'up',
       trendValue: 12
     },
     {
       icon: <CheckCircle className="h-6 w-6 text-green-400" />,
       label: 'Projetos Concluídos',
-      value: 18,
+      value: profileStats?.projectsCompleted || 0,
       trend: 'up',
       trendValue: 3
     },
     {
       icon: <Target className="h-6 w-6 text-blue-400" />,
       label: 'Hábitos Ativos',
-      value: 8,
+      value: profileStats?.activeHabits || 0,
       trend: 'up',
       trendValue: 2
     },
     {
       icon: <Star className="h-6 w-6 text-yellow-400" />,
       label: 'Conexões Ativas',
-      value: 42,
+      value: profileStats?.activeConnections || 0,
       trend: 'up',
       trendValue: 7
     }
   ];
+
+  if (loading) {
+    return (
+      <Card className="bg-gray-800/60 backdrop-blur-sm border-gray-700">
+        <CardContent className="p-6">
+          <div className="animate-pulse">
+            <div className="h-4 bg-gray-700 rounded w-1/3 mb-4"></div>
+            <div className="grid grid-cols-2 gap-4">
+              {[1, 2, 3, 4].map((i) => (
+                <div key={i} className="bg-gray-700/50 rounded-lg p-4 h-24"></div>
+              ))}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card className="bg-gray-800/60 backdrop-blur-sm border-gray-700">

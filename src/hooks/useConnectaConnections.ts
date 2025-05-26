@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -16,22 +17,28 @@ export const useConnectaConnections = () => {
     if (!user) return;
 
     try {
-      // Buscar conexões pendentes e aceitas
+      // Buscar conexões
       const { data: connectionsData, error } = await supabase
         .from('user_connections')
-        .select(`
-          *,
-          requester:profiles!user_connections_requester_id_fkey(name, avatar_url),
-          addressee:profiles!user_connections_addressee_id_fkey(name, avatar_url)
-        `)
+        .select('*')
         .or(`requester_id.eq.${user.id},addressee_id.eq.${user.id}`)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
 
+      // Buscar profiles dos usuários conectados
+      const userIds = connectionsData?.flatMap(conn => [conn.requester_id, conn.addressee_id])
+        .filter(id => id !== user.id) || [];
+      
+      const { data: profilesData } = await supabase
+        .from('profiles')
+        .select('*')
+        .in('id', userIds);
+
       const transformedConnections: ConnectionType[] = connectionsData?.map(conn => {
         const isRequester = conn.requester_id === user.id;
-        const otherUser = isRequester ? conn.addressee : conn.requester;
+        const otherUserId = isRequester ? conn.addressee_id : conn.requester_id;
+        const otherUser = profilesData?.find(p => p.id === otherUserId);
         
         return {
           id: conn.id,
@@ -53,17 +60,23 @@ export const useConnectaConnections = () => {
     if (!user) return;
 
     try {
+      // Buscar conversas
       const { data: conversationsData, error } = await supabase
         .from('conversations')
-        .select(`
-          *,
-          participant1:profiles!conversations_participant_1_fkey(name, avatar_url),
-          participant2:profiles!conversations_participant_2_fkey(name, avatar_url)
-        `)
+        .select('*')
         .or(`participant_1.eq.${user.id},participant_2.eq.${user.id}`)
         .order('updated_at', { ascending: false });
 
       if (error) throw error;
+
+      // Buscar profiles dos participantes
+      const participantIds = conversationsData?.flatMap(conv => [conv.participant_1, conv.participant_2])
+        .filter(id => id !== user.id) || [];
+      
+      const { data: profilesData } = await supabase
+        .from('profiles')
+        .select('*')
+        .in('id', participantIds);
 
       // Buscar mensagens das conversas
       const conversationIds = conversationsData?.map(conv => conv.id) || [];
@@ -75,7 +88,8 @@ export const useConnectaConnections = () => {
 
       const transformedConversations: ConversationType[] = conversationsData?.map(conv => {
         const isParticipant1 = conv.participant_1 === user.id;
-        const otherParticipant = isParticipant1 ? conv.participant2 : conv.participant1;
+        const otherParticipantId = isParticipant1 ? conv.participant_2 : conv.participant_1;
+        const otherParticipant = profilesData?.find(p => p.id === otherParticipantId);
         
         // Filtrar mensagens desta conversa
         const conversationMessages = messagesData?.filter(msg => msg.conversation_id === conv.id) || [];

@@ -27,57 +27,21 @@ import {
   ExternalLink,
   Clock
 } from 'lucide-react';
+import { useProfileHighlights } from '@/hooks/useProfileHighlights';
 
-export const Highlights: React.FC = () => {
-  // TODO: fetch from Supabase tables "projects", "habits", "posts", "favorites", "athena_suggestions"
-  const projects = [
-    {
-      id: '1',
-      title: 'IA Pessoal Assistant',
-      progress: 75,
-      status: 'em_andamento' as const,
-      thumbnail: '/placeholder.svg'
-    },
-    {
-      id: '2', 
-      title: 'Livro Produtividade',
-      progress: 30,
-      status: 'planejado' as const,
-      thumbnail: '/placeholder.svg'
-    },
-    {
-      id: '3',
-      title: 'Portfolio Redesign',
-      progress: 100,
-      status: 'concluido' as const,
-      thumbnail: '/placeholder.svg'
-    }
-  ];
+interface HighlightsProps {
+  profileUserId?: string;
+}
 
-  const achievements = [
-    { label: '30 dias de leitura', streak: 30, icon: '📚' },
-    { label: '15 dias de meditação', streak: 15, icon: '🧘' }
-  ];
-
-  const topPosts = [
-    {
-      id: '1',
-      content: 'Como organizo meus projetos criativos usando o método PARA...',
-      likes: 43,
-      comments: 12,
-      category: 'expansion' as const
-    }
-  ];
-
-  const recentFavorites = [
-    { title: 'Building a Second Brain', type: 'artigo', accessCount: 17 },
-    { title: 'Productivity with AI', type: 'video', accessCount: 12 }
-  ];
-
-  const athenaeSuggestion = {
-    content: "Notei que você está criando conteúdo sobre produtividade. Que tal conectar com seu projeto de IA pessoal para criar um sistema integrado?",
-    timestamp: "há 2 dias"
-  };
+export const Highlights: React.FC<HighlightsProps> = ({ profileUserId }) => {
+  const {
+    projects,
+    achievements,
+    topPosts,
+    recentFavorites,
+    athenaeSuggestion,
+    loading
+  } = useProfileHighlights(profileUserId);
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -91,6 +55,19 @@ export const Highlights: React.FC = () => {
     hidden: { opacity: 0, y: 20 },
     visible: { opacity: 1, y: 0 }
   };
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        {[1, 2, 3, 4, 5].map((i) => (
+          <div key={i} className="animate-pulse">
+            <div className="h-4 bg-gray-700 rounded w-1/4 mb-4"></div>
+            <div className="bg-gray-800/60 rounded-lg h-32"></div>
+          </div>
+        ))}
+      </div>
+    );
+  }
 
   return (
     <motion.div
@@ -106,7 +83,7 @@ export const Highlights: React.FC = () => {
           Projetos em Destaque
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {projects.map((project) => (
+          {projects.length > 0 ? projects.map((project) => (
             <Card key={project.id} className="bg-gray-700/50 border-gray-600 hover:bg-gray-700/70 transition-colors group">
               <CardContent className="p-4">
                 <div className="flex items-center justify-between mb-3">
@@ -138,7 +115,11 @@ export const Highlights: React.FC = () => {
                 </Button>
               </CardContent>
             </Card>
-          ))}
+          )) : (
+            <div className="col-span-3 text-center py-8 text-gray-400">
+              <p>Nenhum projeto encontrado</p>
+            </div>
+          )}
         </div>
       </motion.section>
 
@@ -149,7 +130,7 @@ export const Highlights: React.FC = () => {
           Conquistas de Hábito
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {achievements.map((achievement, index) => (
+          {achievements.length > 0 ? achievements.map((achievement, index) => (
             <Card key={index} className="bg-gray-700/50 border-gray-600 hover:bg-gray-700/70 transition-colors">
               <CardContent className="p-4 flex items-center gap-4">
                 <div className="text-3xl">{achievement.icon}</div>
@@ -162,7 +143,11 @@ export const Highlights: React.FC = () => {
                 </Badge>
               </CardContent>
             </Card>
-          ))}
+          )) : (
+            <div className="col-span-2 text-center py-8 text-gray-400">
+              <p>Nenhuma conquista ainda</p>
+            </div>
+          )}
         </div>
       </motion.section>
 
@@ -172,7 +157,7 @@ export const Highlights: React.FC = () => {
           <TrendingUp className="h-5 w-5 text-green-400" />
           Publicações em Destaque
         </h3>
-        {topPosts.map((post) => (
+        {topPosts.length > 0 ? topPosts.map((post) => (
           <Card key={post.id} className="bg-gray-700/50 border-gray-600">
             <CardContent className="p-4">
               <Badge className="mb-3 bg-blue-500/20 text-blue-400">Connecta</Badge>
@@ -183,7 +168,11 @@ export const Highlights: React.FC = () => {
               </div>
             </CardContent>
           </Card>
-        ))}
+        )) : (
+          <div className="text-center py-8 text-gray-400">
+            <p>Nenhuma publicação ainda</p>
+          </div>
+        )}
       </motion.section>
 
       {/* Favoritos Recentes */}
@@ -193,7 +182,7 @@ export const Highlights: React.FC = () => {
           Favoritos Mais Acessados
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {recentFavorites.map((favorite, index) => (
+          {recentFavorites.length > 0 ? recentFavorites.map((favorite, index) => (
             <Card key={index} className="bg-gray-700/50 border-gray-600 hover:bg-gray-700/70 transition-colors">
               <CardContent className="p-4">
                 <Badge className="mb-2 bg-purple-500/20 text-purple-400">
@@ -205,43 +194,49 @@ export const Highlights: React.FC = () => {
                 </p>
               </CardContent>
             </Card>
-          ))}
+          )) : (
+            <div className="col-span-2 text-center py-8 text-gray-400">
+              <p>Nenhum favorito ainda</p>
+            </div>
+          )}
         </div>
       </motion.section>
 
       {/* Sugestão da Athena */}
-      <motion.section variants={itemVariants}>
-        <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-          <Brain className="h-5 w-5 text-purple-400" />
-          Última Sugestão da Athena
-        </h3>
-        <Card className="bg-gradient-to-r from-purple-500/10 to-blue-500/10 border-purple-500/30">
-          <CardContent className="p-6">
-            <div className="flex items-start gap-4">
-              <div className="h-10 w-10 rounded-full bg-purple-500/20 flex items-center justify-center">
-                <Brain className="h-5 w-5 text-purple-400" />
-              </div>
-              <div className="flex-1">
-                <p className="text-white italic mb-3">"{athenaeSuggestion.content}"</p>
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-gray-400 flex items-center gap-1">
-                    <Clock className="h-3 w-3" />
-                    {athenaeSuggestion.timestamp}
-                  </span>
-                  <div className="flex gap-2">
-                    <Button variant="outline" size="sm" className="border-purple-500/50 text-purple-400">
-                      Explorar conexão
-                    </Button>
-                    <Button variant="ghost" size="sm" className="text-gray-400">
-                      Mais tarde
-                    </Button>
+      {athenaeSuggestion && (
+        <motion.section variants={itemVariants}>
+          <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+            <Brain className="h-5 w-5 text-purple-400" />
+            Última Sugestão da Athena
+          </h3>
+          <Card className="bg-gradient-to-r from-purple-500/10 to-blue-500/10 border-purple-500/30">
+            <CardContent className="p-6">
+              <div className="flex items-start gap-4">
+                <div className="h-10 w-10 rounded-full bg-purple-500/20 flex items-center justify-center">
+                  <Brain className="h-5 w-5 text-purple-400" />
+                </div>
+                <div className="flex-1">
+                  <p className="text-white italic mb-3">"{athenaeSuggestion.content}"</p>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-gray-400 flex items-center gap-1">
+                      <Clock className="h-3 w-3" />
+                      {athenaeSuggestion.timestamp}
+                    </span>
+                    <div className="flex gap-2">
+                      <Button variant="outline" size="sm" className="border-purple-500/50 text-purple-400">
+                        Explorar conexão
+                      </Button>
+                      <Button variant="ghost" size="sm" className="text-gray-400">
+                        Mais tarde
+                      </Button>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-          </CardContent>
-        </Card>
-      </motion.section>
+            </CardContent>
+          </Card>
+        </motion.section>
+      )}
     </motion.div>
   );
 };

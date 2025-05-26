@@ -10,6 +10,7 @@
  *   - bio: string — Biografia do usuário
  *   - location?: string — Localização (opcional)
  *   - publicLink: string — Link público do perfil
+ *   - isOwnProfile: boolean — Se é o próprio perfil
  */
 
 import React, { useState } from 'react';
@@ -18,6 +19,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Edit, MapPin, Link as LinkIcon, Share2, Lightbulb } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
+import { useProfile } from '@/hooks/useProfile';
 
 interface ProfileHeaderProps {
   avatarUrl: string;
@@ -27,6 +29,7 @@ interface ProfileHeaderProps {
   bio: string;
   location?: string;
   publicLink: string;
+  isOwnProfile?: boolean;
 }
 
 export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
@@ -36,10 +39,12 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
   username,
   bio,
   location,
-  publicLink
+  publicLink,
+  isOwnProfile = false
 }) => {
   const [isEditingBio, setIsEditingBio] = useState(false);
   const [currentBio, setCurrentBio] = useState(bio);
+  const { updateProfile } = useProfile();
 
   const handleAthenaeSuggestion = () => {
     // TODO: integrate with Athena endpoint "/profile/bio-suggestion"
@@ -47,13 +52,19 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
   };
 
   const handleShare = () => {
-    // TODO: implement share functionality
     if (navigator.share) {
       navigator.share({
         title: `Perfil de ${name}`,
-        url: publicLink
+        url: window.location.href
       });
     }
+  };
+
+  const handleSaveBio = async () => {
+    if (isOwnProfile && currentBio !== bio) {
+      await updateProfile({ bio: currentBio });
+    }
+    setIsEditingBio(false);
   };
 
   return (
@@ -109,7 +120,7 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
 
               {/* Bio Editável */}
               <div className="mb-4">
-                {isEditingBio ? (
+                {isEditingBio && isOwnProfile ? (
                   <div className="space-y-2">
                     <textarea
                       value={currentBio}
@@ -121,7 +132,7 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
                     <div className="flex gap-2">
                       <Button
                         size="sm"
-                        onClick={() => setIsEditingBio(false)}
+                        onClick={handleSaveBio}
                         className="bg-gradient-to-r from-purple-600 to-blue-500"
                       >
                         Salvar
@@ -149,8 +160,8 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
                   </div>
                 ) : (
                   <p
-                    className="text-gray-300 cursor-pointer hover:text-white transition-colors"
-                    onClick={() => setIsEditingBio(true)}
+                    className={`text-gray-300 ${isOwnProfile ? 'cursor-pointer hover:text-white' : ''} transition-colors`}
+                    onClick={() => isOwnProfile && setIsEditingBio(true)}
                   >
                     {currentBio}
                   </p>
@@ -180,14 +191,22 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
 
               {/* Botões de Ação */}
               <div className="flex gap-3">
-                <Button
-                  variant="outline"
-                  className="border-purple-500/50 text-purple-400 hover:bg-purple-500/10"
-                  onClick={() => setIsEditingBio(true)}
-                >
-                  <Edit className="h-4 w-4 mr-2" />
-                  Editar Perfil
-                </Button>
+                {isOwnProfile ? (
+                  <Button
+                    variant="outline"
+                    className="border-purple-500/50 text-purple-400 hover:bg-purple-500/10"
+                    onClick={() => setIsEditingBio(true)}
+                  >
+                    <Edit className="h-4 w-4 mr-2" />
+                    Editar Perfil
+                  </Button>
+                ) : (
+                  <Button
+                    className="bg-gradient-to-r from-purple-600 to-blue-500"
+                  >
+                    Seguir
+                  </Button>
+                )}
                 <Button
                   variant="ghost"
                   size="icon"

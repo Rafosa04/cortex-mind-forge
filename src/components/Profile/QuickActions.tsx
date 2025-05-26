@@ -48,7 +48,7 @@ export const QuickActions: React.FC<QuickActionsProps> = ({
       icon: isFollowing ? Heart : UserPlus,
       label: isFollowing ? 'Seguindo' : 'Seguir',
       onClick: onFollowToggle,
-      variant: isFollowing ? 'default' : 'outline' as const,
+      variant: (isFollowing ? 'default' : 'outline') as 'default' | 'outline',
       className: isFollowing ? 'bg-purple-600 hover:bg-purple-700' : 'border-purple-500/50 text-purple-400 hover:bg-purple-500/10'
     },
     {
@@ -86,7 +86,6 @@ export const QuickActions: React.FC<QuickActionsProps> = ({
   ];
 
   const handleAction = (actionId: string, onClick?: () => void) => {
-    // TODO: implement specific action handlers
     console.log(`Ação executada: ${actionId}`);
     onClick?.();
   };
