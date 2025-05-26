@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
@@ -39,168 +38,29 @@ import {
   CarouselNext,
   CarouselPrevious,
 } from "@/components/ui/carousel";
-
-// Mock data for saved items
-const SAVED_ITEMS = [
-  {
-    id: 1,
-    type: "article",
-    title: "Como criar seu segundo cérebro digital",
-    description: "Um guia completo para organizar todo seu conhecimento",
-    source: "Medium",
-    sourceType: "Navegador",
-    thumbnail: "https://placehold.co/300x200/191933/E6E6F0/png",
-    savedAt: "2023-05-15T14:30:00",
-    lastAccessed: null,
-    status: "Novo",
-    tags: ["produtividade", "organização", "digital"],
-    athenaInsight: "Relacionado ao seu interesse em produtividade"
-  },
-  {
-    id: 2,
-    type: "video",
-    title: "Método PARA explicado em detalhes",
-    description: "Como organizar sua segunda mente digital usando o método PARA",
-    source: "YouTube",
-    sourceType: "YouTube",
-    thumbnail: "https://placehold.co/300x200/0C0C1C/60B5B5/png",
-    savedAt: "2023-05-10T09:15:00",
-    lastAccessed: "2023-05-11T16:20:00",
-    status: "Conectado",
-    tags: ["método PARA", "organização", "produtividade"],
-    athenaInsight: "Relevante para seu projeto 'Sistema de Organização Pessoal'"
-  },
-  {
-    id: 3,
-    type: "post",
-    title: "Reflexões sobre produtividade digital",
-    description: "Como transformei minha organização digital em apenas 30 dias",
-    source: "Connecta",
-    sourceType: "Connecta",
-    thumbnail: "https://placehold.co/300x200/993887/FFFFFF/png",
-    savedAt: "2023-05-08T11:45:00",
-    lastAccessed: "2023-05-09T10:30:00",
-    status: "Reativado",
-    tags: ["reflexão", "produtividade", "transformação"],
-    athenaInsight: "Conecta com seu hábito de revisão semanal"
-  },
-  {
-    id: 4,
-    type: "link",
-    title: "Ferramentas essenciais para segundo cérebro",
-    description: "As 10 ferramentas que vão turbinar seu PKM",
-    source: "notion.site",
-    sourceType: "Navegador",
-    thumbnail: "https://placehold.co/300x200/191933/E6E6F0/png",
-    savedAt: "2023-05-05T16:20:00",
-    lastAccessed: null,
-    status: "Ignorado",
-    tags: ["ferramentas", "PKM", "recursos"],
-    athenaInsight: "Você já viu conteúdos similares recentemente"
-  },
-  {
-    id: 5,
-    type: "habit",
-    title: "Revisão diária de conhecimento",
-    description: "Como revisar seu segundo cérebro em apenas 10 minutos por dia",
-    source: "Córtex",
-    sourceType: "Navegador",
-    thumbnail: "https://placehold.co/300x200/0C0C1C/60B5B5/png",
-    savedAt: "2023-05-03T08:30:00",
-    lastAccessed: "2023-05-04T07:45:00",
-    status: "Conectado",
-    tags: ["hábito", "revisão", "rotina"],
-    athenaInsight: "Pode transformar em um hábito recorrente"
-  },
-  {
-    id: 6,
-    type: "link",
-    title: "Organizando conhecimento com PARA método",
-    description: "O sistema de organização que todos estão usando",
-    source: "fortelabs.co",
-    sourceType: "Navegador",
-    thumbnail: "https://placehold.co/300x200/993887/FFFFFF/png",
-    savedAt: "2023-05-01T19:10:00",
-    lastAccessed: "2023-05-02T20:15:00",
-    status: "Novo",
-    tags: ["PARA", "organização", "sistema"],
-    athenaInsight: null
-  },
-];
-
-// Mock data for AI highlight suggestions
-const AI_HIGHLIGHTS = [
-  {
-    id: 1,
-    type: "grouping",
-    title: "Agrupamento sugerido",
-    description: "Você salvou 3 conteúdos sobre método PARA. Deseja agrupá-los no projeto 'Sistema de Organização Pessoal'?",
-    action: "Agrupar agora",
-    icon: <BookOpen className="text-cyan-400" />
-  },
-  {
-    id: 2,
-    type: "old_content",
-    title: "Conteúdos não visitados",
-    description: "Há 2 artigos salvos há mais de 7 dias que você ainda não revisitou.",
-    action: "Revisar",
-    icon: <Clock className="text-violet-400" />
-  },
-  {
-    id: 3,
-    type: "compatibility",
-    title: "Compatibilidade alta",
-    description: "O vídeo 'Método PARA explicado' é altamente compatível com seu novo projeto.",
-    action: "Conectar ao projeto",
-    icon: <Brain className="text-emerald-400" />
-  }
-];
-
-// Mock data for reactivation feed
-const REACTIVATION_ITEMS = [
-  {
-    id: 1,
-    type: "unused",
-    title: "Método PARA explicado em detalhes",
-    description: "Você salvou este vídeo há 22 dias",
-    actionQuestion: "Você ainda pretende assistir isso?",
-    thumbnail: "https://placehold.co/300x200/0C0C1C/60B5B5/png",
-    contentType: "video"
-  },
-  {
-    id: 2,
-    type: "new_project",
-    title: "Ferramentas essenciais para segundo cérebro",
-    description: "Você criou um novo projeto relacionado",
-    actionQuestion: "Este artigo pode ajudar no seu novo projeto 'Sistema Digital'",
-    thumbnail: "https://placehold.co/300x200/191933/E6E6F0/png",
-    contentType: "article"
-  },
-  {
-    id: 3,
-    type: "habit_completed",
-    title: "Lo-Fi Focus Beats",
-    description: "Você completou seu hábito de meditação",
-    actionQuestion: "Esta música se conecta ao seu estado atual",
-    thumbnail: "https://placehold.co/300x200/993887/FFFFFF/png",
-    contentType: "music"
-  }
-];
+import { useSavedItems } from "@/hooks/useSavedItems";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 // Helper function to get icon by content type
 const getContentTypeIcon = (type: string) => {
   switch (type) {
     case "article":
+    case "artigo":
       return <FileText className="w-4 h-4 text-blue-400" />;
     case "video":
       return <Video className="w-4 h-4 text-red-400" />;
     case "post":
       return <MessageSquare className="w-4 h-4 text-violet-400" />;
     case "habit":
+    case "hábito":
       return <Calendar className="w-4 h-4 text-green-400" />;
     case "link":
       return <LinkIcon className="w-4 h-4 text-cyan-400" />;
     case "music":
+    case "musica":
+    case "música":
       return <Bookmark className="w-4 h-4 text-amber-400" />;
     default:
       return <Star className="w-4 h-4 text-yellow-400" />;
@@ -219,6 +79,21 @@ const formatDate = (dateString: string) => {
 };
 
 export default function Salvos() {
+  const {
+    savedItems,
+    athenaHighlights,
+    reactivationSuggestions,
+    isLoading,
+    createSavedItem,
+    updateSavedItem,
+    deleteSavedItem,
+    updateLastAccessed,
+    dismissHighlight,
+    dismissSuggestion,
+    isCreating,
+    isDeleting
+  } = useSavedItems();
+
   // State variables
   const [searchTerm, setSearchTerm] = useState("");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
@@ -229,12 +104,24 @@ export default function Salvos() {
   const [addItemModal, setAddItemModal] = useState(false);
   const [athenaModal, setAthenaModal] = useState(false);
 
+  // Form state for adding new item
+  const [newItem, setNewItem] = useState({
+    title: "",
+    description: "",
+    type: "",
+    source: "",
+    source_type: "Manual",
+    url: "",
+    tags: [] as string[],
+    thumbnail: ""
+  });
+
   // Filtered items based on search and filter selections
-  const filteredItems = SAVED_ITEMS.filter(item => {
+  const filteredItems = savedItems.filter(item => {
     // Apply search filter
     const matchesSearch = searchTerm === "" || 
       item.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      item.description.toLowerCase().includes(searchTerm.toLowerCase());
+      (item.description && item.description.toLowerCase().includes(searchTerm.toLowerCase()));
     
     // Apply type filter
     const matchesType = selectedTypeFilter === null || 
@@ -242,7 +129,7 @@ export default function Salvos() {
     
     // Apply source filter
     const matchesSource = selectedSourceFilter === null || 
-      item.sourceType === selectedSourceFilter;
+      item.source_type === selectedSourceFilter;
     
     // Apply status filter
     const matchesStatus = selectedStatusFilter === null || 
@@ -276,6 +163,64 @@ export default function Salvos() {
     }
   };
 
+  const handleCreateItem = () => {
+    if (!newItem.title || !newItem.type) return;
+
+    const tagsArray = typeof newItem.tags === 'string' 
+      ? newItem.tags.split(',').map(tag => tag.trim()).filter(tag => tag)
+      : newItem.tags;
+
+    createSavedItem({
+      ...newItem,
+      tags: tagsArray,
+      thumbnail: newItem.thumbnail || "https://placehold.co/300x200/191933/E6E6F0/png"
+    });
+
+    setNewItem({
+      title: "",
+      description: "",
+      type: "",
+      source: "",
+      source_type: "Manual",
+      url: "",
+      tags: [],
+      thumbnail: ""
+    });
+    setAddItemModal(false);
+  };
+
+  const handleOpenUrl = (item: any) => {
+    if (item.url) {
+      updateLastAccessed(item.id);
+      window.open(item.url, '_blank');
+    }
+  };
+
+  const handleArchiveItem = (id: string) => {
+    updateSavedItem({ id, updates: { status: 'Arquivado' } });
+  };
+
+  const handleReactivateItem = (id: string) => {
+    updateSavedItem({ id, updates: { status: 'Reativado' } });
+  };
+
+  const handleIgnoreItem = (id: string) => {
+    updateSavedItem({ id, updates: { status: 'Ignorado' } });
+  };
+
+  if (isLoading) {
+    return (
+      <div className="max-w-6xl mx-auto px-4 py-6">
+        <div className="flex items-center justify-center min-h-96">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+            <p className="text-muted-foreground">Carregando seus salvos...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-6xl mx-auto px-4 py-6">
       {/* Page Header */}
@@ -300,6 +245,7 @@ export default function Salvos() {
               onClick={() => setAddItemModal(true)}
               variant="default" 
               className="gap-1 bg-gradient-to-r from-blue-600 to-violet-600"
+              disabled={isCreating}
             >
               <Plus className="h-4 w-4" />
               <span className="hidden sm:inline">Adicionar manualmente</span>
@@ -312,7 +258,9 @@ export default function Salvos() {
               onClick={() => setAthenaModal(true)}
             >
               <Brain className="h-5 w-5 text-violet-400" />
-              <span className="absolute -top-1 -right-1 w-2 h-2 bg-cyan-400 rounded-full animate-pulse"></span>
+              {athenaHighlights.length > 0 && (
+                <span className="absolute -top-1 -right-1 w-2 h-2 bg-cyan-400 rounded-full animate-pulse"></span>
+              )}
             </Button>
           </div>
         </div>
@@ -329,6 +277,7 @@ export default function Salvos() {
             />
           </div>
           
+          {/* Filter popovers remain the same */}
           <Popover>
             <PopoverTrigger asChild>
               <Button variant="outline" size="sm" className="gap-1">
@@ -380,17 +329,18 @@ export default function Salvos() {
                   <LinkIcon className="h-3 w-3 mr-2" /> Link
                 </Button>
                 <Button 
-                  variant={selectedTypeFilter === "other" ? "default" : "ghost"} 
+                  variant={selectedTypeFilter === "music" ? "default" : "ghost"} 
                   size="sm" 
                   className="justify-start h-8"
-                  onClick={() => setSelectedTypeFilter(selectedTypeFilter === "other" ? null : "other")}
+                  onClick={() => setSelectedTypeFilter(selectedTypeFilter === "music" ? null : "music")}
                 >
-                  <Star className="h-3 w-3 mr-2" /> Outro
+                  <Star className="h-3 w-3 mr-2" /> Música
                 </Button>
               </div>
             </PopoverContent>
           </Popover>
 
+          {/* Additional filter popovers remain the same */}
           <Popover>
             <PopoverTrigger asChild>
               <Button variant="outline" size="sm" className="gap-1">
@@ -432,6 +382,14 @@ export default function Salvos() {
                   onClick={() => setSelectedSourceFilter(selectedSourceFilter === "Navegador" ? null : "Navegador")}
                 >
                   Navegador
+                </Button>
+                <Button 
+                  variant={selectedSourceFilter === "Manual" ? "default" : "ghost"} 
+                  size="sm" 
+                  className="justify-start h-8"
+                  onClick={() => setSelectedSourceFilter(selectedSourceFilter === "Manual" ? null : "Manual")}
+                >
+                  Manual
                 </Button>
               </div>
             </PopoverContent>
@@ -512,96 +470,120 @@ export default function Salvos() {
       </motion.div>
       
       {/* AI Highlights Section */}
-      <section className="mb-8">
-        <h2 className="text-lg font-medium mb-3 flex items-center gap-2">
-          <Brain className="h-5 w-5 text-cyan-400" /> 
-          <span>Destaques da Athena</span>
-        </h2>
-        
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {AI_HIGHLIGHTS.map(highlight => (
-            <motion.div
-              key={highlight.id}
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.3 }}
-              className="bg-gradient-to-br from-card/80 to-card/20 border border-violet-500/20 rounded-lg p-4 flex flex-col"
-            >
-              <div className="flex items-start gap-3">
-                <div className="mt-1 rounded-full bg-gradient-to-br from-violet-900/50 to-blue-900/30 p-2 border border-violet-500/20">
-                  {highlight.icon}
+      {athenaHighlights.length > 0 && (
+        <section className="mb-8">
+          <h2 className="text-lg font-medium mb-3 flex items-center gap-2">
+            <Brain className="h-5 w-5 text-cyan-400" /> 
+            <span>Destaques da Athena</span>
+          </h2>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {athenaHighlights.map(highlight => (
+              <motion.div
+                key={highlight.id}
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.3 }}
+                className="bg-gradient-to-br from-card/80 to-card/20 border border-violet-500/20 rounded-lg p-4 flex flex-col"
+              >
+                <div className="flex items-start gap-3">
+                  <div className="mt-1 rounded-full bg-gradient-to-br from-violet-900/50 to-blue-900/30 p-2 border border-violet-500/20">
+                    <Brain className="w-4 h-4 text-cyan-400" />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="font-medium text-violet-300">{highlight.title}</h3>
+                    <p className="text-sm text-muted-foreground mt-1">{highlight.description}</p>
+                  </div>
                 </div>
-                <div className="flex-1">
-                  <h3 className="font-medium text-violet-300">{highlight.title}</h3>
-                  <p className="text-sm text-muted-foreground mt-1">{highlight.description}</p>
+                <div className="flex gap-2 mt-3">
+                  <Button variant="ghost" size="sm" className="text-primary/80 hover:text-primary">
+                    {highlight.action}
+                  </Button>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={() => dismissHighlight(highlight.id)}
+                    className="text-muted-foreground hover:text-muted-foreground"
+                  >
+                    Dispensar
+                  </Button>
                 </div>
-              </div>
-              <Button variant="ghost" size="sm" className="self-start mt-3 text-primary/80 hover:text-primary">
-                {highlight.action}
-              </Button>
-            </motion.div>
-          ))}
-        </div>
-      </section>
+              </motion.div>
+            ))}
+          </div>
+        </section>
+      )}
       
       {/* Reactivation Feed */}
-      <section className="mb-10">
-        <h2 className="text-lg font-medium mb-3 flex items-center gap-2">
-          <Sparkles className="h-5 w-5 text-amber-400" /> 
-          <span>Reativação Inteligente</span>
-        </h2>
-        
-        <Carousel>
-          <CarouselContent>
-            {REACTIVATION_ITEMS.map((item) => (
-              <CarouselItem key={item.id} className="basis-full sm:basis-1/2 md:basis-1/3 lg:basis-1/4">
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5 }}
-                  className="h-full"
-                >
-                  <Card className="bg-card/30 border-violet-500/20 overflow-hidden h-full flex flex-col">
-                    <div className="relative">
-                      <img 
-                        src={item.thumbnail} 
-                        alt={item.title} 
-                        className="w-full h-32 object-cover" 
-                      />
-                      <div className="absolute bottom-2 left-2 bg-black/60 backdrop-blur-md rounded-md px-2 py-0.5 flex items-center">
-                        {getContentTypeIcon(item.contentType)}
-                        <span className="text-xs ml-1 text-white">
-                          {item.contentType.charAt(0).toUpperCase() + item.contentType.slice(1)}
-                        </span>
+      {reactivationSuggestions.length > 0 && (
+        <section className="mb-10">
+          <h2 className="text-lg font-medium mb-3 flex items-center gap-2">
+            <Sparkles className="h-5 w-5 text-amber-400" /> 
+            <span>Reativação Inteligente</span>
+          </h2>
+          
+          <Carousel>
+            <CarouselContent>
+              {reactivationSuggestions.map((item) => (
+                <CarouselItem key={item.id} className="basis-full sm:basis-1/2 md:basis-1/3 lg:basis-1/4">
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5 }}
+                    className="h-full"
+                  >
+                    <Card className="bg-card/30 border-violet-500/20 overflow-hidden h-full flex flex-col">
+                      <div className="relative">
+                        <img 
+                          src={item.thumbnail || "https://placehold.co/300x200/191933/E6E6F0/png"} 
+                          alt={item.title} 
+                          className="w-full h-32 object-cover" 
+                        />
+                        <div className="absolute bottom-2 left-2 bg-black/60 backdrop-blur-md rounded-md px-2 py-0.5 flex items-center">
+                          {getContentTypeIcon(item.content_type || '')}
+                          <span className="text-xs ml-1 text-white">
+                            {item.content_type?.charAt(0).toUpperCase() + (item.content_type?.slice(1) || '')}
+                          </span>
+                        </div>
                       </div>
-                    </div>
-                    <CardContent className="py-3 flex-grow">
-                      <h3 className="font-medium line-clamp-2">{item.title}</h3>
-                      <p className="text-xs text-muted-foreground mt-1">{item.description}</p>
-                      <div className="mt-3 text-xs border-l-2 border-cyan-500 pl-2 py-1 bg-cyan-950/20">
-                        <Brain className="inline-block w-3 h-3 text-cyan-400 mb-0.5 mr-1" />
-                        <span className="text-cyan-300">{item.actionQuestion}</span>
-                      </div>
-                    </CardContent>
-                    <CardFooter className="pt-0 pb-3 justify-end gap-2">
-                      <Button variant="ghost" size="sm" className="h-7 px-2 text-xs">
-                        Ignorar
-                      </Button>
-                      <Button variant="default" size="sm" className="h-7 px-2 text-xs">
-                        Ação sugerida
-                      </Button>
-                    </CardFooter>
-                  </Card>
-                </motion.div>
-              </CarouselItem>
-            ))}
-          </CarouselContent>
-          <div className="flex items-center justify-end gap-1 mt-2">
-            <CarouselPrevious className="relative h-8 w-8 left-0 -translate-y-0" />
-            <CarouselNext className="relative h-8 w-8 right-0 -translate-y-0" />
-          </div>
-        </Carousel>
-      </section>
+                      <CardContent className="py-3 flex-grow">
+                        <h3 className="font-medium line-clamp-2">{item.title}</h3>
+                        <p className="text-xs text-muted-foreground mt-1">{item.description}</p>
+                        <div className="mt-3 text-xs border-l-2 border-cyan-500 pl-2 py-1 bg-cyan-950/20">
+                          <Brain className="inline-block w-3 h-3 text-cyan-400 mb-0.5 mr-1" />
+                          <span className="text-cyan-300">{item.action_question}</span>
+                        </div>
+                      </CardContent>
+                      <CardFooter className="pt-0 pb-3 justify-end gap-2">
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="h-7 px-2 text-xs"
+                          onClick={() => dismissSuggestion(item.id)}
+                        >
+                          Ignorar
+                        </Button>
+                        <Button 
+                          variant="default" 
+                          size="sm" 
+                          className="h-7 px-2 text-xs"
+                          onClick={() => handleReactivateItem(item.related_item_id || '')}
+                        >
+                          Reativar
+                        </Button>
+                      </CardFooter>
+                    </Card>
+                  </motion.div>
+                </CarouselItem>
+              ))}
+            </CarouselContent>
+            <div className="flex items-center justify-end gap-1 mt-2">
+              <CarouselPrevious className="relative h-8 w-8 left-0 -translate-y-0" />
+              <CarouselNext className="relative h-8 w-8 right-0 -translate-y-0" />
+            </div>
+          </Carousel>
+        </section>
+      )}
 
       {/* Main Content Grid */}
       <section>
@@ -631,7 +613,7 @@ export default function Salvos() {
                 {viewMode === "grid" && (
                   <div className="relative">
                     <img 
-                      src={item.thumbnail} 
+                      src={item.thumbnail || "https://placehold.co/300x200/191933/E6E6F0/png"} 
                       alt={item.title} 
                       className="w-full h-40 object-cover" 
                     />
@@ -660,7 +642,7 @@ export default function Salvos() {
                 {viewMode === "list" && (
                   <div className="relative w-32 h-full shrink-0">
                     <img 
-                      src={item.thumbnail} 
+                      src={item.thumbnail || "https://placehold.co/300x200/191933/E6E6F0/png"} 
                       alt={item.title} 
                       className="w-full h-full object-cover" 
                     />
@@ -695,7 +677,7 @@ export default function Salvos() {
                     </p>
                     
                     <div className="flex flex-wrap gap-1 mt-3">
-                      {item.tags.map((tag, idx) => (
+                      {item.tags && item.tags.map((tag, idx) => (
                         <Badge 
                           key={idx} 
                           variant="outline" 
@@ -708,13 +690,13 @@ export default function Salvos() {
                     
                     <div className="flex items-center justify-between mt-3">
                       <div className="text-xs text-muted-foreground">
-                        {formatDate(item.savedAt)}
+                        {formatDate(item.saved_at)}
                       </div>
                       
-                      {item.athenaInsight && (
+                      {item.athena_insight && (
                         <div className="flex items-center gap-1 text-xs">
                           <Brain className="h-3 w-3 text-cyan-400" />
-                          <span className="text-cyan-300/80 text-xs">{item.athenaInsight}</span>
+                          <span className="text-cyan-300/80 text-xs">{item.athena_insight}</span>
                         </div>
                       )}
                     </div>
@@ -729,11 +711,16 @@ export default function Salvos() {
                       <div className="flex items-center gap-1">
                         <Tooltip>
                           <TooltipTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-8 w-8">
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              className="h-8 w-8"
+                              onClick={() => handleOpenUrl(item)}
+                            >
                               <LinkIcon className="h-4 w-4" />
                             </Button>
                           </TooltipTrigger>
-                          <TooltipContent side="bottom">Associar</TooltipContent>
+                          <TooltipContent side="bottom">Abrir</TooltipContent>
                         </Tooltip>
                         
                         <Tooltip>
@@ -763,14 +750,20 @@ export default function Salvos() {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end" className="w-48">
-                        <DropdownMenuItem>
-                          <FileText className="h-4 w-4 mr-2" /> Transformar em célula
+                        <DropdownMenuItem onClick={() => handleReactivateItem(item.id)}>
+                          <FileText className="h-4 w-4 mr-2" /> Reativar
                         </DropdownMenuItem>
-                        <DropdownMenuItem>
-                          <Clock className="h-4 w-4 mr-2" /> Deixar para depois
+                        <DropdownMenuItem onClick={() => handleIgnoreItem(item.id)}>
+                          <Clock className="h-4 w-4 mr-2" /> Ignorar
                         </DropdownMenuItem>
-                        <DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleArchiveItem(item.id)}>
                           <Archive className="h-4 w-4 mr-2" /> Arquivar
+                        </DropdownMenuItem>
+                        <DropdownMenuItem 
+                          onClick={() => deleteSavedItem(item.id)}
+                          className="text-destructive focus:text-destructive"
+                        >
+                          <Archive className="h-4 w-4 mr-2" /> Excluir
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
@@ -807,55 +800,89 @@ export default function Salvos() {
           
           <div className="grid gap-4">
             <div>
-              <h3 className="text-sm font-medium mb-2">Tipo de conteúdo</h3>
-              <div className="grid grid-cols-3 gap-2">
-                <Button variant="outline" size="sm" className="justify-start">
-                  <FileText className="h-4 w-4 mr-2" /> Artigo
-                </Button>
-                <Button variant="outline" size="sm" className="justify-start">
-                  <Video className="h-4 w-4 mr-2" /> Vídeo
-                </Button>
-                <Button variant="outline" size="sm" className="justify-start">
-                  <MessageSquare className="h-4 w-4 mr-2" /> Post
-                </Button>
-                <Button variant="outline" size="sm" className="justify-start">
-                  <Calendar className="h-4 w-4 mr-2" /> Hábito
-                </Button>
-                <Button variant="outline" size="sm" className="justify-start">
-                  <LinkIcon className="h-4 w-4 mr-2" /> Link
-                </Button>
-                <Button variant="outline" size="sm" className="justify-start">
-                  <Star className="h-4 w-4 mr-2" /> Outro
-                </Button>
-              </div>
+              <Label className="text-sm font-medium mb-2">Tipo de conteúdo</Label>
+              <Select value={newItem.type} onValueChange={(value) => setNewItem({...newItem, type: value})}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione o tipo" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="article">Artigo</SelectItem>
+                  <SelectItem value="video">Vídeo</SelectItem>
+                  <SelectItem value="post">Post</SelectItem>
+                  <SelectItem value="habit">Hábito</SelectItem>
+                  <SelectItem value="link">Link</SelectItem>
+                  <SelectItem value="music">Música</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
             
             <div className="space-y-2">
-              <label htmlFor="title" className="text-sm font-medium">
-                Título
-              </label>
-              <Input id="title" placeholder="Nome do conteúdo" />
+              <Label htmlFor="title" className="text-sm font-medium">
+                Título *
+              </Label>
+              <Input 
+                id="title" 
+                placeholder="Nome do conteúdo" 
+                value={newItem.title}
+                onChange={(e) => setNewItem({...newItem, title: e.target.value})}
+              />
             </div>
             
             <div className="space-y-2">
-              <label htmlFor="description" className="text-sm font-medium">
+              <Label htmlFor="description" className="text-sm font-medium">
                 Descrição
-              </label>
-              <Input id="description" placeholder="Descreva brevemente o conteúdo" />
+              </Label>
+              <Textarea 
+                id="description" 
+                placeholder="Descreva brevemente o conteúdo" 
+                value={newItem.description}
+                onChange={(e) => setNewItem({...newItem, description: e.target.value})}
+              />
             </div>
             
             <div className="space-y-2">
-              <label htmlFor="source" className="text-sm font-medium">
-                Origem
-              </label>
-              <Input id="source" placeholder="URL ou origem do conteúdo" />
+              <Label htmlFor="source" className="text-sm font-medium">
+                Fonte
+              </Label>
+              <Input 
+                id="source" 
+                placeholder="Nome da fonte (ex: YouTube, Medium)" 
+                value={newItem.source}
+                onChange={(e) => setNewItem({...newItem, source: e.target.value})}
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="url" className="text-sm font-medium">
+                URL
+              </Label>
+              <Input 
+                id="url" 
+                placeholder="URL do conteúdo" 
+                value={newItem.url}
+                onChange={(e) => setNewItem({...newItem, url: e.target.value})}
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="tags" className="text-sm font-medium">
+                Tags
+              </Label>
+              <Input 
+                id="tags" 
+                placeholder="Separadas por vírgula (ex: produtividade, organização)" 
+                value={Array.isArray(newItem.tags) ? newItem.tags.join(', ') : newItem.tags}
+                onChange={(e) => setNewItem({...newItem, tags: e.target.value})}
+              />
             </div>
             
             <div className="flex justify-end gap-2">
               <Button variant="ghost" onClick={() => setAddItemModal(false)}>
                 Cancelar
               </Button>
-              <Button>Adicionar Item</Button>
+              <Button onClick={handleCreateItem} disabled={!newItem.title || !newItem.type || isCreating}>
+                {isCreating ? "Adicionando..." : "Adicionar Item"}
+              </Button>
             </div>
           </div>
         </DialogContent>
@@ -880,34 +907,17 @@ export default function Salvos() {
                 Padrões Detectados
               </h3>
               <p className="text-sm">
-                Você salvou 4 itens relacionados a "organização digital" e "segundo cérebro" nos últimos 14 dias. 
-                Isso indica um forte interesse nesta área.
+                Você tem {savedItems.length} itens salvos. {savedItems.filter(item => item.status === 'Novo').length} são novos e aguardam sua atenção.
               </p>
             </div>
             
             <div className="p-3 rounded-lg bg-violet-950/20 border border-violet-900/40">
               <h3 className="text-sm font-medium text-violet-300 mb-2">
-                Conexões Potenciais
+                Recomendações
               </h3>
               <p className="text-sm">
-                Os artigos salvos sobre o método PARA se alinham com seu projeto 
-                "Sistema de Organização Pessoal" e com seu novo hábito 
-                "Revisão diária de conhecimento".
+                Considere revisar itens mais antigos para mantê-los organizados e relevantes ao seu aprendizado atual.
               </p>
-            </div>
-            
-            <div className="bg-gradient-to-br from-violet-950/40 to-blue-950/20 p-3 rounded-lg border border-violet-700/20">
-              <h3 className="text-sm font-medium text-violet-300 mb-2 flex items-center gap-1">
-                <Sparkles className="h-4 w-4 text-amber-400" />
-                <span>Recomendação personalizada</span>
-              </h3>
-              <p className="text-sm">
-                Sugiro criar um subcérebro dedicado a "Métodos de Organização" para 
-                agrupar estes conteúdos salvos e facilitar seu processo de implementação.
-              </p>
-              <Button variant="default" size="sm" className="mt-2 bg-gradient-to-r from-blue-600 to-violet-600">
-                Criar Subcérebro Sugerido
-              </Button>
             </div>
           </div>
         </DialogContent>

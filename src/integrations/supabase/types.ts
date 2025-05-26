@@ -9,6 +9,39 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      athena_highlights: {
+        Row: {
+          action: string | null
+          created_at: string
+          description: string | null
+          dismissed: boolean | null
+          id: string
+          title: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          action?: string | null
+          created_at?: string
+          description?: string | null
+          dismissed?: boolean | null
+          id?: string
+          title: string
+          type: string
+          user_id: string
+        }
+        Update: {
+          action?: string | null
+          created_at?: string
+          description?: string | null
+          dismissed?: boolean | null
+          id?: string
+          title?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       athena_logs: {
         Row: {
           context_id: string | null
@@ -41,6 +74,56 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      athena_reactivation_suggestions: {
+        Row: {
+          action_question: string | null
+          content_type: string | null
+          created_at: string
+          description: string | null
+          dismissed: boolean | null
+          id: string
+          related_item_id: string | null
+          thumbnail: string | null
+          title: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          action_question?: string | null
+          content_type?: string | null
+          created_at?: string
+          description?: string | null
+          dismissed?: boolean | null
+          id?: string
+          related_item_id?: string | null
+          thumbnail?: string | null
+          title: string
+          type: string
+          user_id: string
+        }
+        Update: {
+          action_question?: string | null
+          content_type?: string | null
+          created_at?: string
+          description?: string | null
+          dismissed?: boolean | null
+          id?: string
+          related_item_id?: string | null
+          thumbnail?: string | null
+          title?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "athena_reactivation_suggestions_related_item_id_fkey"
+            columns: ["related_item_id"]
+            isOneToOne: false
+            referencedRelation: "saved_items"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       external_connections: {
         Row: {
@@ -291,6 +374,63 @@ export type Database = {
           progress?: number | null
           status?: string | null
           tags?: string[] | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      saved_items: {
+        Row: {
+          athena_insight: string | null
+          created_at: string
+          description: string | null
+          id: string
+          last_accessed: string | null
+          saved_at: string
+          source: string | null
+          source_type: string | null
+          status: string | null
+          tags: string[] | null
+          thumbnail: string | null
+          title: string
+          type: string
+          updated_at: string
+          url: string | null
+          user_id: string
+        }
+        Insert: {
+          athena_insight?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          last_accessed?: string | null
+          saved_at?: string
+          source?: string | null
+          source_type?: string | null
+          status?: string | null
+          tags?: string[] | null
+          thumbnail?: string | null
+          title: string
+          type: string
+          updated_at?: string
+          url?: string | null
+          user_id: string
+        }
+        Update: {
+          athena_insight?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          last_accessed?: string | null
+          saved_at?: string
+          source?: string | null
+          source_type?: string | null
+          status?: string | null
+          tags?: string[] | null
+          thumbnail?: string | null
+          title?: string
+          type?: string
+          updated_at?: string
+          url?: string | null
           user_id?: string
         }
         Relationships: []
