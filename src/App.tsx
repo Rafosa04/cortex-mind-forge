@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -42,29 +41,27 @@ import {
   AdminDashboardPage,
 } from "./components/LazyPages";
 
-// Optimized Query Client configuration
+// ... keep existing code (queryClient configuration and InitializeRealtime component)
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 5 * 60 * 1000, // 5 minutes
-      gcTime: 10 * 60 * 1000, // 10 minutes
+      staleTime: 5 * 60 * 1000,
+      gcTime: 10 * 60 * 1000,
       retry: (failureCount, error: any) => {
-        // Don't retry on authentication errors
         if (error?.message?.includes('JWT') || error?.message?.includes('Row Level Security')) {
           return false;
         }
-        // Retry up to 3 times for other errors
         return failureCount < 3;
       },
       retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
     },
     mutations: {
-      retry: false, // Don't retry mutations by default
+      retry: false,
     },
   },
 });
 
-// Component to initialize Supabase realtime subscriptions
 interface InitializeRealtimeProps {
   children: ReactNode;
 }
@@ -73,7 +70,6 @@ function InitializeRealtime({ children }: InitializeRealtimeProps) {
   useEffect(() => {
     console.log('Initializing realtime subscriptions...');
 
-    // Subscribe to key tables for real-time updates
     const unsubscribeProjects = realtimeManager.subscribeToTable(
       'projects',
       (payload) => {
@@ -106,7 +102,6 @@ function InitializeRealtime({ children }: InitializeRealtimeProps) {
       }
     );
 
-    // Cleanup function
     return () => {
       unsubscribeProjects();
       unsubscribeProjectSteps();
@@ -130,11 +125,9 @@ const App = () => (
               <InitializeRealtime>
                 <MainLayout>
                   <Routes>
-                    {/* Public routes */}
                     <Route path="/login" element={<Login />} />
                     <Route path="/landing" element={<Landing />} />
                     
-                    {/* Protected routes */}
                     <Route element={<PrivateRoute />}>
                       <Route path="/" element={<Home />} />
                       <Route path="/dashboard" element={<DashboardPage />} />
@@ -159,12 +152,10 @@ const App = () => (
                       <Route path="/insights" element={<InsightsPage />} />
                     </Route>
 
-                    {/* Admin protected routes */}
                     <Route element={<PrivateRoute requiredRole="admin" />}>
                       <Route path="/admin/dashboard" element={<AdminDashboardPage />} />
                     </Route>
                     
-                    {/* 404 fallback */}
                     <Route path="*" element={<NotFound />} />
                   </Routes>
                 </MainLayout>

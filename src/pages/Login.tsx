@@ -1,453 +1,221 @@
+
 import { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { useNavigate } from "react-router-dom";
-import { Eye, EyeOff, Lock, Mail, User } from "lucide-react";
+import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Brain, Mail, Lock, User, ArrowRight } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
-import { toast } from "@/hooks/use-toast";
+import { useNavigate } from "react-router-dom";
+import { useEffect } from "react";
 
 export default function Login() {
-  const [isLogin, setIsLogin] = useState(true);
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [athenaQuote, setAthenaQuote] = useState("A mente que busca conhecer a si mesma expande todo o universo.");
-  const navigate = useNavigate();
-  const { signIn, signUp, user } = useAuth();
-  
-  // Form states
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [acceptTerms, setAcceptTerms] = useState(false);
-  const [rememberMe, setRememberMe] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  
-  const quotes = [
-    "Tudo que você pensa, sente e deseja… organizado.",
-    "Hoje você entra. Amanhã, sua mente se expande.",
-    "O caos da mente, com forma.",
-    "Seu cérebro pensa. O CÓRTEX conecta.",
-    "A mente que busca conhecer a si mesma expande todo o universo."
-  ];
-  
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsSubmitting(true);
-    
-    if (isLogin) {
-      // Login
-      const { error } = await signIn(email, password);
-      if (!error) {
-        navigate("/");
-      }
-    } else {
-      // Cadastro
-      if (password !== confirmPassword) {
-        toast({
-          title: "Senhas não correspondem",
-          description: "As senhas informadas não são iguais",
-          variant: "destructive"
-        });
-        setIsSubmitting(false);
-        return;
-      }
-      
-      if (!acceptTerms) {
-        toast({
-          title: "Termos não aceitos",
-          description: "Você precisa aceitar os termos de uso para criar uma conta",
-          variant: "destructive"
-        });
-        setIsSubmitting(false);
-        return;
-      }
-      
-      const { error, user } = await signUp(email, password, name);
-      if (!error && user) {
-        navigate("/onboarding");
-      }
+  const [isLoading, setIsLoading] = useState(false);
+  const { signIn, signUp, user } = useAuth();
+  const navigate = useNavigate();
+
+  // Redirecionar se já estiver logado
+  useEffect(() => {
+    if (user) {
+      navigate('/');
     }
+  }, [user, navigate]);
+
+  const handleSignIn = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email || !password) return;
     
-    setIsSubmitting(false);
-  };
-  
-  const toggleView = () => {
-    setIsLogin(!isLogin);
-    // Change Athena quote when switching views
-    setAthenaQuote(quotes[Math.floor(Math.random() * quotes.length)]);
-  };
-
-  // Handler functions for checkboxes to properly handle CheckedState
-  const handleRememberMeChange = (checked: boolean | "indeterminate") => {
-    setRememberMe(checked === true);
+    setIsLoading(true);
+    const { error } = await signIn(email, password);
+    setIsLoading(false);
+    
+    if (!error) {
+      navigate('/');
+    }
   };
 
-  const handleAcceptTermsChange = (checked: boolean | "indeterminate") => {
-    setAcceptTerms(checked === true);
+  const handleSignUp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email || !password || !name) return;
+    
+    setIsLoading(true);
+    const { error, user: newUser } = await signUp(email, password, name);
+    setIsLoading(false);
+    
+    if (!error && newUser) {
+      navigate('/');
+    }
   };
 
-  // Redirecionar se já estiver autenticado
-  if (user) {
-    navigate("/");
-    return null;
-  }
-  
   return (
-    <div className="w-full min-h-[100vh] md:min-h-[85vh] flex items-center justify-center p-4 md:p-8 bg-background">
-      {/* Background animated elements */}
-      <div className="fixed inset-0 z-0 pointer-events-none">
-        <div className="absolute inset-0 bg-[#0C0C1C]/50"></div>
-        <div className="animate-floating-dots"></div>
-      </div>
-      
-      {/* Content container - improved responsive grid */}
-      <div className="w-full max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-6 z-10">
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-800 flex items-center justify-center p-4">
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        className="w-full max-w-md"
+      >
+        {/* Logo e título */}
         <motion.div 
-          className="w-full max-w-md mx-auto flex flex-col justify-center"
+          className="text-center mb-8"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ duration: 0.7 }}
+          transition={{ delay: 0.2, duration: 0.5 }}
         >
-          {/* Cortex logo/title */}
-          <motion.div 
-            className="mb-6 sm:mb-10 text-center"
-            initial={{ y: -20, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ delay: 0.3, duration: 0.7 }}
-          >
-            <h1 className="text-3xl sm:text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-br from-primary via-primary to-secondary">
+          <div className="flex items-center justify-center mb-4">
+            <Brain className="h-12 w-12 text-purple-500 mr-3" />
+            <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">
               CÓRTEX
             </h1>
-            <p className="text-foreground/70 mt-2">Seu segundo cérebro digital</p>
-          </motion.div>
-          
-          {/* Login/Register container */}
-          <div className="w-full bg-[#111122]/80 rounded-2xl shadow-xl relative overflow-hidden p-4 sm:p-8">
-            {/* Tabs for switching between login and register */}
-            <div className="w-full flex gap-4 sm:gap-6 text-center mb-6 sm:mb-8">
-              <span 
-                onClick={() => setIsLogin(true)} 
-                className={`grow py-2 cursor-pointer transition-all ${isLogin ? 'border-b-2 border-primary font-medium text-primary' : 'text-foreground/60 hover:text-foreground'}`}
-              >
-                Login
-              </span>
-              <span 
-                onClick={() => setIsLogin(false)} 
-                className={`grow py-2 cursor-pointer transition-all ${!isLogin ? 'border-b-2 border-primary font-medium text-primary' : 'text-foreground/60 hover:text-foreground'}`}
-              >
-                Cadastro
-              </span>
-            </div>
-            
-            <AnimatePresence mode="wait">
-              {isLogin ? (
-                <motion.div
-                  key="login"
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: 20 }}
-                  transition={{ duration: 0.3 }}
-                >
-                  <motion.h2
-                    className="text-xl sm:text-2xl font-semibold mb-3 text-primary"
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.7 }}
-                  >
-                    <span className="text-gradient">Bem-vindo de volta!</span>
-                  </motion.h2>
-                  
-                  <motion.div
-                    className="text-sm sm:text-base text-foreground/80 mb-6 sm:mb-8"
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.2, duration: 0.7 }}
-                  >
-                    Athena diz: <span className="italic text-secondary">"{athenaQuote}"</span>
-                  </motion.div>
-                  
-                  <form onSubmit={handleSubmit} className="flex flex-col gap-5">
-                    <div className="space-y-2">
-                      <Label htmlFor="email">E-mail</Label>
-                      <div className="relative">
-                        <Input 
-                          id="email"
-                          type="email" 
-                          placeholder="seu@email.com" 
-                          required 
-                          value={email}
-                          onChange={(e) => setEmail(e.target.value)}
-                          className="pl-10"
-                        />
-                        <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-foreground/50" />
-                      </div>
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label htmlFor="password">Senha</Label>
-                      <div className="relative">
-                        <Input 
-                          id="password"
-                          type={showPassword ? "text" : "password"} 
-                          placeholder="Senha secreta" 
-                          required 
-                          value={password}
-                          onChange={(e) => setPassword(e.target.value)}
-                          className="pl-10"
-                        />
-                        <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-foreground/50" />
-                        <button
-                          type="button"
-                          onClick={() => setShowPassword(!showPassword)}
-                          className="absolute right-3 top-1/2 transform -translate-y-1/2"
-                          tabIndex={-1}
-                        >
-                          {showPassword ? (
-                            <EyeOff className="h-4 w-4 text-foreground/50" />
-                          ) : (
-                            <Eye className="h-4 w-4 text-foreground/50" />
-                          )}
-                        </button>
-                      </div>
-                    </div>
-                    
-                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0 mt-2">
-                      <div className="flex items-center space-x-2">
-                        <Checkbox 
-                          id="remember" 
-                          checked={rememberMe}
-                          onCheckedChange={handleRememberMeChange}
-                        />
-                        <label
-                          htmlFor="remember"
-                          className="text-sm text-foreground/70 leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                        >
-                          Lembrar de mim
-                        </label>
-                      </div>
-                      <div className="text-sm">
-                        <a href="#" className="text-secondary hover:underline">Esqueceu sua senha?</a>
-                      </div>
-                    </div>
-                    
-                    <Button type="submit" className="w-full mt-4">
-                      Entrar
-                    </Button>
-                  </form>
-                  
-                  <p className="text-center text-foreground/60 text-sm mt-6 sm:mt-8">
-                    Ainda não tem conta?{" "}
-                    <button 
-                      onClick={toggleView}
-                      className="text-primary hover:underline"
-                    >
-                      Criar conta
-                    </button>
-                  </p>
-                </motion.div>
-              ) : (
-                <motion.div
-                  key="register"
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -20 }}
-                  transition={{ duration: 0.3 }}
-                >
-                  <motion.h2
-                    className="text-xl sm:text-2xl font-semibold mb-3 text-primary"
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.7 }}
-                  >
-                    <span className="text-gradient">Ative seu CÓRTEX</span>
-                  </motion.h2>
-                  
-                  <motion.div
-                    className="text-sm sm:text-base text-foreground/80 mb-6 sm:mb-8"
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.2, duration: 0.7 }}
-                  >
-                    Athena diz: <span className="italic text-secondary">"Cada mente nova cria novas conexões. Seja bem-vindo."</span>
-                  </motion.div>
-                  
-                  <form onSubmit={handleSubmit} className="flex flex-col gap-5">
-                    <div className="space-y-2">
-                      <Label htmlFor="name">Nome completo</Label>
-                      <div className="relative">
-                        <Input 
-                          id="name"
-                          type="text" 
-                          placeholder="Seu nome" 
-                          required 
-                          value={name}
-                          onChange={(e) => setName(e.target.value)}
-                          className="pl-10"
-                        />
-                        <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-foreground/50" />
-                      </div>
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label htmlFor="register-email">E-mail</Label>
-                      <div className="relative">
-                        <Input 
-                          id="register-email"
-                          type="email" 
-                          placeholder="seu@email.com" 
-                          required 
-                          value={email}
-                          onChange={(e) => setEmail(e.target.value)}
-                          className="pl-10"
-                        />
-                        <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-foreground/50" />
-                      </div>
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label htmlFor="register-password">Senha</Label>
-                      <div className="relative">
-                        <Input 
-                          id="register-password"
-                          type={showPassword ? "text" : "password"} 
-                          placeholder="Mínimo 6 caracteres" 
-                          required 
-                          minLength={6}
-                          value={password}
-                          onChange={(e) => setPassword(e.target.value)}
-                          className="pl-10"
-                        />
-                        <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-foreground/50" />
-                        <button
-                          type="button"
-                          onClick={() => setShowPassword(!showPassword)}
-                          className="absolute right-3 top-1/2 transform -translate-y-1/2"
-                          tabIndex={-1}
-                        >
-                          {showPassword ? (
-                            <EyeOff className="h-4 w-4 text-foreground/50" />
-                          ) : (
-                            <Eye className="h-4 w-4 text-foreground/50" />
-                          )}
-                        </button>
-                      </div>
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label htmlFor="confirm-password">Confirme sua senha</Label>
-                      <div className="relative">
-                        <Input 
-                          id="confirm-password"
-                          type={showConfirmPassword ? "text" : "password"} 
-                          placeholder="Confirme sua senha" 
-                          required 
-                          minLength={6}
-                          value={confirmPassword}
-                          onChange={(e) => setConfirmPassword(e.target.value)}
-                          className="pl-10"
-                        />
-                        <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-foreground/50" />
-                        <button
-                          type="button"
-                          onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                          className="absolute right-3 top-1/2 transform -translate-y-1/2"
-                          tabIndex={-1}
-                        >
-                          {showConfirmPassword ? (
-                            <EyeOff className="h-4 w-4 text-foreground/50" />
-                          ) : (
-                            <Eye className="h-4 w-4 text-foreground/50" />
-                          )}
-                        </button>
-                      </div>
-                    </div>
-                    
-                    <div className="flex items-center space-x-2 mt-2">
-                      <Checkbox 
-                        id="terms" 
-                        required
-                        checked={acceptTerms}
-                        onCheckedChange={handleAcceptTermsChange}
-                      />
-                      <label
-                        htmlFor="terms"
-                        className="text-sm text-foreground/70 leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                      >
-                        Li e aceito os termos do CÓRTEX
-                      </label>
-                    </div>
-                    
-                    <Button type="submit" className="w-full mt-4">
-                      Ativar meu CÓRTEX
-                    </Button>
-                  </form>
-                  
-                  <p className="text-center text-foreground/60 text-sm mt-6 sm:mt-8">
-                    Já tem uma conta?{" "}
-                    <button 
-                      onClick={toggleView}
-                      className="text-primary hover:underline"
-                    >
-                      Fazer login
-                    </button>
-                  </p>
-                </motion.div>
-              )}
-            </AnimatePresence>
-            
-            <div className="mt-6 sm:mt-10 text-center text-xs text-foreground/40">
-              <p>"Conecte-se com quem você está se tornando."</p>
-            </div>
           </div>
+          <p className="text-gray-400 text-lg">Seu Segundo Cérebro Digital</p>
         </motion.div>
-        
-        {/* Right side decorative panel - hidden on mobile */}
-        <motion.div 
-          className="hidden md:flex flex-col justify-center items-center z-10"
+
+        <Card className="bg-gray-800/60 backdrop-blur-sm border-gray-700">
+          <CardHeader className="space-y-1">
+            <CardTitle className="text-2xl text-center text-white">Acesse sua conta</CardTitle>
+            <CardDescription className="text-center text-gray-400">
+              Entre ou crie uma nova conta para continuar
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Tabs defaultValue="signin" className="w-full">
+              <TabsList className="grid w-full grid-cols-2 bg-gray-700">
+                <TabsTrigger value="signin" className="text-white data-[state=active]:bg-purple-600">
+                  Entrar
+                </TabsTrigger>
+                <TabsTrigger value="signup" className="text-white data-[state=active]:bg-purple-600">
+                  Criar conta
+                </TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="signin" className="space-y-4 mt-6">
+                <form onSubmit={handleSignIn} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="signin-email" className="text-white">E-mail</Label>
+                    <div className="relative">
+                      <Mail className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                      <Input
+                        id="signin-email"
+                        type="email"
+                        placeholder="seu@email.com"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        className="pl-10 bg-gray-700 border-gray-600 text-white placeholder-gray-400"
+                        required
+                      />
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="signin-password" className="text-white">Senha</Label>
+                    <div className="relative">
+                      <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                      <Input
+                        id="signin-password"
+                        type="password"
+                        placeholder="••••••••"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        className="pl-10 bg-gray-700 border-gray-600 text-white placeholder-gray-400"
+                        required
+                      />
+                    </div>
+                  </div>
+                  
+                  <Button 
+                    type="submit" 
+                    className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
+                    disabled={isLoading}
+                  >
+                    {isLoading ? "Entrando..." : "Entrar"}
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </Button>
+                </form>
+              </TabsContent>
+              
+              <TabsContent value="signup" className="space-y-4 mt-6">
+                <form onSubmit={handleSignUp} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="signup-name" className="text-white">Nome completo</Label>
+                    <div className="relative">
+                      <User className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                      <Input
+                        id="signup-name"
+                        type="text"
+                        placeholder="Seu nome"
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
+                        className="pl-10 bg-gray-700 border-gray-600 text-white placeholder-gray-400"
+                        required
+                      />
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="signup-email" className="text-white">E-mail</Label>
+                    <div className="relative">
+                      <Mail className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                      <Input
+                        id="signup-email"
+                        type="email"
+                        placeholder="seu@email.com"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        className="pl-10 bg-gray-700 border-gray-600 text-white placeholder-gray-400"
+                        required
+                      />
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="signup-password" className="text-white">Senha</Label>
+                    <div className="relative">
+                      <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                      <Input
+                        id="signup-password"
+                        type="password"
+                        placeholder="••••••••"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        className="pl-10 bg-gray-700 border-gray-600 text-white placeholder-gray-400"
+                        required
+                        minLength={6}
+                      />
+                    </div>
+                  </div>
+                  
+                  <Button 
+                    type="submit" 
+                    className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
+                    disabled={isLoading}
+                  >
+                    {isLoading ? "Criando conta..." : "Criar conta"}
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </Button>
+                </form>
+              </TabsContent>
+            </Tabs>
+          </CardContent>
+        </Card>
+
+        <motion.p 
+          className="text-center text-gray-400 text-sm mt-6"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ delay: 0.4, duration: 0.7 }}
+          transition={{ delay: 0.4, duration: 0.5 }}
         >
-          <div className="relative w-full max-w-md">
-            {/* Decorative brain illustration */}
-            <motion.div 
-              className="w-40 h-40 sm:w-52 sm:h-52 mx-auto mb-6 sm:mb-8"
-              animate={{ 
-                scale: [1, 1.05, 1],
-                filter: ["brightness(1)", "brightness(1.2)", "brightness(1)"]
-              }}
-              transition={{ duration: 8, repeat: Infinity, repeatType: "reverse" }}
-            >
-              <div className="w-full h-full rounded-full bg-gradient-to-tr from-primary/30 via-secondary/40 to-primary/20 blur-2xl absolute" />
-              <div className="w-full h-full flex items-center justify-center relative">
-                <div className="text-5xl sm:text-6xl">🧠</div>
-              </div>
-            </motion.div>
-            
-            {/* Quotes */}
-            <motion.div 
-              className="text-center space-y-4 sm:space-y-6"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.6, duration: 0.7 }}
-            >
-              <p className="text-lg sm:text-xl font-light text-foreground/80 italic">
-                "{quotes[Math.floor(Math.random() * quotes.length)]}"
-              </p>
-              
-              <div className="flex flex-col gap-1.5">
-                <div className="h-px w-16 bg-gradient-to-r from-transparent via-primary/50 to-transparent mx-auto" />
-                <div className="h-px w-24 bg-gradient-to-r from-transparent via-secondary/50 to-transparent mx-auto" />
-                <div className="h-px w-16 bg-gradient-to-r from-transparent via-primary/50 to-transparent mx-auto" />
-              </div>
-            </motion.div>
-          </div>
-        </motion.div>
-      </div>
+          Ao continuar, você concorda com nossos{" "}
+          <a href="#" className="text-purple-400 hover:underline">Termos de Uso</a>
+          {" "}e{" "}
+          <a href="#" className="text-purple-400 hover:underline">Política de Privacidade</a>
+        </motion.p>
+      </motion.div>
     </div>
   );
 }
