@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useParams } from 'react-router-dom';
@@ -165,12 +164,11 @@ const Profile: React.FC = () => {
                 </TabsTrigger>
               </TabsList>
 
-              {/* TODO: dados reais via useProfileHighlights */}
+              {/* Conteúdo das Abas - dados reais */}
               <TabsContent value="highlights" className="mt-6">
                 <Highlights profileUserId={profileUserId} />
               </TabsContent>
 
-              {/* TODO: dados reais via useConnectaPosts */}
               <TabsContent value="feed" className="mt-6">
                 <PersonalFeed profileUserId={profileUserId} />
               </TabsContent>

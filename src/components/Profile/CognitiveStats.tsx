@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Card, CardContent } from '@/components/ui/card';
-import { Brain, CheckCircle, Target, Star, TrendingUp, TrendingDown } from 'lucide-react';
+import { Brain, CheckCircle, Target, Star, TrendingUp, TrendingDown, Users, Heart } from 'lucide-react';
 import { useProfile } from '@/hooks/useProfile';
 
 interface StatCard {
@@ -11,6 +11,7 @@ interface StatCard {
   value: number;
   trend?: 'up' | 'down';
   trendValue?: number;
+  color: string;
 }
 
 interface CognitiveStatsProps {
@@ -18,38 +19,56 @@ interface CognitiveStatsProps {
 }
 
 export const CognitiveStats: React.FC<CognitiveStatsProps> = ({ profileUserId }) => {
-  // TODO: dados reais via useProfile - integração completa com Supabase
   const { profileStats, loading } = useProfile(profileUserId);
 
-  // TODO: dados reais via useProfile - stats baseados em dados reais do banco
   const stats: StatCard[] = [
     {
       icon: <Brain className="h-6 w-6 text-purple-400" />,
       label: 'Ideias Capturadas',
       value: profileStats?.ideasCaptured || 0,
       trend: 'up',
-      trendValue: 12
+      trendValue: 12,
+      color: 'purple'
     },
     {
       icon: <CheckCircle className="h-6 w-6 text-green-400" />,
       label: 'Projetos Concluídos',
       value: profileStats?.projectsCompleted || 0,
       trend: 'up',
-      trendValue: 3
+      trendValue: 3,
+      color: 'green'
     },
     {
       icon: <Target className="h-6 w-6 text-blue-400" />,
       label: 'Hábitos Ativos',
       value: profileStats?.activeHabits || 0,
       trend: 'up',
-      trendValue: 2
+      trendValue: 2,
+      color: 'blue'
     },
     {
-      icon: <Star className="h-6 w-6 text-yellow-400" />,
+      icon: <Users className="h-6 w-6 text-yellow-400" />,
       label: 'Conexões Ativas',
       value: profileStats?.activeConnections || 0,
       trend: 'up',
-      trendValue: 7
+      trendValue: 7,
+      color: 'yellow'
+    },
+    {
+      icon: <Star className="h-6 w-6 text-orange-400" />,
+      label: 'Posts Publicados',
+      value: profileStats?.totalPosts || 0,
+      trend: 'up',
+      trendValue: 5,
+      color: 'orange'
+    },
+    {
+      icon: <Heart className="h-6 w-6 text-red-400" />,
+      label: 'Curtidas Recebidas',
+      value: profileStats?.totalLikes || 0,
+      trend: 'up',
+      trendValue: 24,
+      color: 'red'
     }
   ];
 
@@ -61,7 +80,7 @@ export const CognitiveStats: React.FC<CognitiveStatsProps> = ({ profileUserId })
           <div className="animate-pulse">
             <div className="h-4 bg-gray-700 rounded w-1/3 mb-4"></div>
             <div className="grid grid-cols-2 gap-4">
-              {[1, 2, 3, 4].map((i) => (
+              {[1, 2, 3, 4, 5, 6].map((i) => (
                 <div key={i} className="bg-gray-700/50 rounded-lg p-4 h-24"></div>
               ))}
             </div>

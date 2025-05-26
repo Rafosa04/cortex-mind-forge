@@ -20,7 +20,9 @@ interface ProfileData {
   username: string;
   bio: string;
   location?: string;
+  website?: string;
   publicLink: string;
+  joinedDate: string;
 }
 
 export const useProfile = (profileUserId?: string) => {
@@ -47,12 +49,17 @@ export const useProfile = (profileUserId?: string) => {
 
       setProfileData({
         avatarUrl: profile.avatar_url || '/placeholder.svg',
-        coverUrl: 'https://images.unsplash.com/photo-1510936111840-65e151ad71bb?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1190&q=80',
+        coverUrl: profile.cover_url || 'https://images.unsplash.com/photo-1510936111840-65e151ad71bb?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1190&q=80',
         name: profile.name || 'Usuário',
-        username: profile.name?.toLowerCase().replace(/\s+/g, '_') || 'usuario',
-        bio: 'Designer, pesquisador e apaixonado por conectar ideias. Construindo um segundo cérebro para explorar o potencial da mente humana.',
-        location: 'São Paulo, Brasil',
-        publicLink: `cortex.ai/${profile.name?.toLowerCase().replace(/\s+/g, '_') || 'usuario'}`
+        username: profile.username || profile.name?.toLowerCase().replace(/\s+/g, '_') || 'usuario',
+        bio: profile.bio || 'Designer, pesquisador e apaixonado por conectar ideias. Construindo um segundo cérebro para explorar o potencial da mente humana.',
+        location: profile.location || 'São Paulo, Brasil',
+        website: profile.website || '',
+        publicLink: `cortex.ai/${profile.username || profile.name?.toLowerCase().replace(/\s+/g, '_') || 'usuario'}`,
+        joinedDate: new Date(profile.created_at || Date.now()).toLocaleDateString('pt-BR', { 
+          month: 'long', 
+          year: 'numeric' 
+        })
       });
     } catch (error: any) {
       console.error('Erro ao buscar dados do perfil:', error);
@@ -115,7 +122,10 @@ export const useProfile = (profileUserId?: string) => {
     }
   };
 
-  const updateProfile = async (updates: Partial<ProfileData>) => {
+  const updateProfile = async (updates: Partial<ProfileData & { 
+    avatarUrl?: string; 
+    coverUrl?: string; 
+  }>) => {
     if (!user || !isOwnProfile) return;
 
     try {
@@ -123,7 +133,12 @@ export const useProfile = (profileUserId?: string) => {
         .from('profiles')
         .update({
           name: updates.name,
+          username: updates.username,
+          bio: updates.bio,
+          location: updates.location,
+          website: updates.website,
           avatar_url: updates.avatarUrl,
+          cover_url: updates.coverUrl,
         })
         .eq('id', user.id);
 
@@ -139,7 +154,7 @@ export const useProfile = (profileUserId?: string) => {
       console.error('Erro ao atualizar perfil:', error);
       toast({
         title: "Erro",
-        description: "Não foi possível atualizar o perfil",
+        description: `Não foi possível atualizar o perfil: ${error.message}`,
         variant: "destructive"
       });
     }
