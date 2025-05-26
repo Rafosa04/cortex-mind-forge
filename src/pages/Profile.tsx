@@ -1,14 +1,4 @@
 
-/**
- * Profile.tsx
- * Página principal do perfil do usuário - layout em duas colunas em desktop
- * Integra todos os componentes do ecossistema cognitivo
- * 
- * Layout:
- *   - Desktop: coluna esquerda fixa 30%, coluna direita flexível 70%
- *   - Mobile: colunas empilhadas em ordem lógica
- */
-
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useParams } from 'react-router-dom';
@@ -20,6 +10,7 @@ import { MindMirror } from '@/components/Profile/MindMirror';
 import { QuickActions } from '@/components/Profile/QuickActions';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useProfile } from '@/hooks/useProfile';
+import { useProfileHighlights } from '@/hooks/useProfileHighlights';
 import { useAuth } from '@/hooks/useAuth';
 
 const Profile: React.FC = () => {
@@ -27,15 +18,22 @@ const Profile: React.FC = () => {
   const { username } = useParams<{ username?: string }>();
   const { user } = useAuth();
   
-  // Se tem username na URL, buscar o ID do usuário, senão usar o usuário atual
+  // TODO: dados reais via useProfile - integração completa com Supabase
   const [profileUserId, setProfileUserId] = useState<string | undefined>();
   
-  const { profileData, loading, isOwnProfile } = useProfile(profileUserId);
+  const { profileData, loading: profileLoading, isOwnProfile } = useProfile(profileUserId);
+  const { 
+    projects, 
+    achievements, 
+    topPosts, 
+    recentFavorites, 
+    athenaeSuggestion, 
+    loading: highlightsLoading 
+  } = useProfileHighlights(profileUserId);
 
   useEffect(() => {
     if (username && username !== user?.id) {
       // TODO: buscar userId pelo username no futuro
-      // Por enquanto, se tem username diferente, usar undefined para mostrar perfil próprio
       setProfileUserId(undefined);
     } else {
       setProfileUserId(user?.id);
@@ -80,14 +78,19 @@ const Profile: React.FC = () => {
     }
   };
 
-  if (loading) {
+  // Loading state - while any hook is loading
+  if (profileLoading || highlightsLoading) {
     return (
       <div className="min-h-screen bg-gray-900 text-white flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-purple-500"></div>
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-purple-500 mx-auto mb-4"></div>
+          <p className="text-gray-400" aria-label="Carregando perfil">Carregando perfil...</p>
+        </div>
       </div>
     );
   }
 
+  // Error state - if profile is not found
   if (!profileData) {
     return (
       <div className="min-h-screen bg-gray-900 text-white flex items-center justify-center">
@@ -107,7 +110,7 @@ const Profile: React.FC = () => {
         initial="hidden"
         animate="visible"
       >
-        {/* Header do Perfil */}
+        {/* Header do Perfil - dados reais via useProfile */}
         <motion.div variants={itemVariants} className="mb-8">
           <ProfileHeader 
             {...profileData}
@@ -122,12 +125,15 @@ const Profile: React.FC = () => {
             variants={itemVariants}
             className="lg:col-span-4 space-y-6"
           >
-            {/* Estatísticas Cognitivas */}
+            {/* Estatísticas Cognitivas - dados reais via useProfile */}
             <CognitiveStats profileUserId={profileUserId} />
             
-            {/* Espelho Mental */}
+            {/* Espelho Mental - dados reais com athenaeSuggestion */}
             <div className="lg:sticky lg:top-6">
-              <MindMirror profileUserId={profileUserId} />
+              <MindMirror 
+                profileUserId={profileUserId} 
+                diagnostic={athenaeSuggestion?.content}
+              />
             </div>
           </motion.div>
 
@@ -159,10 +165,12 @@ const Profile: React.FC = () => {
                 </TabsTrigger>
               </TabsList>
 
+              {/* TODO: dados reais via useProfileHighlights */}
               <TabsContent value="highlights" className="mt-6">
                 <Highlights profileUserId={profileUserId} />
               </TabsContent>
 
+              {/* TODO: dados reais via useConnectaPosts */}
               <TabsContent value="feed" className="mt-6">
                 <PersonalFeed profileUserId={profileUserId} />
               </TabsContent>
@@ -187,7 +195,7 @@ const Profile: React.FC = () => {
         </motion.div>
       </motion.div>
 
-      {/* Ações Sociais Rápidas - Fixas */}
+      {/* Ações Sociais Rápidas - Fixas - apenas para perfis de outros usuários */}
       {!isOwnProfile && (
         <QuickActions 
           {...handleQuickActions}

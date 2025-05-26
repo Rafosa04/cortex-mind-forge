@@ -1,13 +1,4 @@
 
-/**
- * CognitiveStats.tsx
- * Exibe estatísticas cognitivas do usuário com animações
- * Props: dados das estatísticas com tendências e valores
- * 
- * Layout: grid responsivo 2×3 (desktop) / carrossel (mobile)
- * Animações: números contam dinamicamente
- */
-
 import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Card, CardContent } from '@/components/ui/card';
@@ -27,8 +18,10 @@ interface CognitiveStatsProps {
 }
 
 export const CognitiveStats: React.FC<CognitiveStatsProps> = ({ profileUserId }) => {
+  // TODO: dados reais via useProfile - integração completa com Supabase
   const { profileStats, loading } = useProfile(profileUserId);
 
+  // TODO: dados reais via useProfile - stats baseados em dados reais do banco
   const stats: StatCard[] = [
     {
       icon: <Brain className="h-6 w-6 text-purple-400" />,
@@ -60,6 +53,7 @@ export const CognitiveStats: React.FC<CognitiveStatsProps> = ({ profileUserId })
     }
   ];
 
+  // Loading state com skeleton
   if (loading) {
     return (
       <Card className="bg-gray-800/60 backdrop-blur-sm border-gray-700">

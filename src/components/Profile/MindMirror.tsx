@@ -1,15 +1,4 @@
 
-/**
- * MindMirror.tsx
- * Espelho mental dinâmico com círculos pulsantes e interativos
- * Props:
- *   - profileUserId: string opcional para visualizar perfil de outro usuário
- *   - diagnostic: string com diagnóstico da Athena
- * 
- * Visual: SVG com círculos animados e conectados
- * Interatividade: hover para tooltip, clique para navegação
- */
-
 import React, { useState, useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Card, CardContent } from '@/components/ui/card';
@@ -47,7 +36,7 @@ export const MindMirror: React.FC<MindMirrorProps> = ({
   const [circles, setCircles] = useState<MindCircle[]>([]);
   const [hoveredCircle, setHoveredCircle] = useState<string | null>(null);
 
-  // Generate mind circles based on user data
+  // TODO: dados reais via useProfile e useProfileHighlights - Generate mind circles based on real user data
   useEffect(() => {
     if (profileStats) {
       const newCircles: MindCircle[] = [
@@ -157,6 +146,20 @@ export const MindMirror: React.FC<MindMirrorProps> = ({
 
   const defaultDiagnostic = diagnostic || "Sua mente está mais ativa em criatividade e foco. Que tal equilibrar com saúde?";
 
+  // Loading state
+  if (!profileStats) {
+    return (
+      <Card className="bg-gray-800/60 backdrop-blur-sm border-gray-700">
+        <CardContent className="p-6">
+          <div className="animate-pulse">
+            <div className="h-4 bg-gray-700 rounded w-1/3 mb-4"></div>
+            <div className="bg-gray-700/50 rounded-xl h-80"></div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <Card className="bg-gray-800/60 backdrop-blur-sm border-gray-700">
       <CardContent className="p-6">
@@ -176,12 +179,12 @@ export const MindMirror: React.FC<MindMirrorProps> = ({
           </Button>
         </div>
 
-        {/* Diagnóstico da Athena */}
+        {/* Diagnóstico da Athena - dados reais */}
         <div className="text-center mb-6 p-3 bg-purple-500/10 border border-purple-500/20 rounded-lg">
           <p className="text-sm italic text-purple-300">"{defaultDiagnostic}"</p>
         </div>
 
-        {/* Espelho Mental SVG */}
+        {/* Espelho Mental SVG - dados reais calculados */}
         <div 
           ref={containerRef}
           className="relative w-full h-80 bg-gray-900/50 rounded-xl overflow-hidden border border-gray-700"
@@ -216,7 +219,7 @@ export const MindMirror: React.FC<MindMirrorProps> = ({
               })
             ))}
 
-            {/* Círculos mentais */}
+            {/* Círculos mentais - dados reais */}
             {circles.map((circle) => {
               if (!circle.x || !circle.y) return null;
               
@@ -266,7 +269,7 @@ export const MindMirror: React.FC<MindMirrorProps> = ({
             })}
           </svg>
 
-          {/* Tooltip */}
+          {/* Tooltip - dados reais */}
           {hoveredCircle && (
             <div className="absolute top-4 left-4 bg-gray-800 border border-gray-600 rounded-lg p-3 text-sm">
               {(() => {
@@ -282,7 +285,7 @@ export const MindMirror: React.FC<MindMirrorProps> = ({
           )}
         </div>
 
-        {/* Legenda */}
+        {/* Legenda - dados reais */}
         <div className="mt-4 grid grid-cols-2 gap-2">
           {circles.map((circle) => (
             <div key={circle.id} className="flex items-center gap-2 text-sm">
@@ -297,14 +300,9 @@ export const MindMirror: React.FC<MindMirrorProps> = ({
         </div>
 
         {/* Como interpretar */}
-        <div className="mt-4 p-3 bg-gray-700/30 rounded-lg">
-          <h4 className="text-sm font-medium text-white mb-2">Como interpretar</h4>
-          <ul className="text-xs text-gray-400 space-y-1">
-            <li>• Tamanho reflete intensidade atual</li>
-            <li>• Movimento mostra dinâmica mental</li>
-            <li>• Conexões indicam áreas relacionadas</li>
-            <li>• Clique para navegar até a seção</li>
-          </ul>
+        <div className="mt-4 p-3 bg-gray-700/50 rounded-lg text-xs text-gray-400">
+          <p><strong>Como interpretar:</strong> Círculos maiores indicam maior atividade mental nessa área. 
+          Conexões mostram relações entre diferentes aspectos cognitivos.</p>
         </div>
       </CardContent>
     </Card>

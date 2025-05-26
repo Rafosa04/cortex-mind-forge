@@ -42,7 +42,7 @@ export const useConnectaPosts = () => {
           comments_count,
           saves_count,
           user_id,
-          profiles (
+          profiles:user_id (
             name,
             avatar_url
           )
@@ -138,20 +138,17 @@ export const useConnectaPosts = () => {
       if (!post) return;
 
       if (post.liked) {
-        // Remove like
         await supabase
           .from('post_likes')
           .delete()
           .eq('post_id', postId)
           .eq('user_id', user.id);
       } else {
-        // Add like
         await supabase
           .from('post_likes')
           .insert([{ post_id: postId, user_id: user.id }]);
       }
 
-      // Atualizar estado local
       setPosts(prevPosts => 
         prevPosts.map(p => 
           p.id === postId 
@@ -176,20 +173,17 @@ export const useConnectaPosts = () => {
       if (!post) return;
 
       if (post.saved) {
-        // Remove save
         await supabase
           .from('post_saves')
           .delete()
           .eq('post_id', postId)
           .eq('user_id', user.id);
       } else {
-        // Add save
         await supabase
           .from('post_saves')
           .insert([{ post_id: postId, user_id: user.id }]);
       }
 
-      // Atualizar estado local
       setPosts(prevPosts => 
         prevPosts.map(p => 
           p.id === postId 
