@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useParams } from 'react-router-dom';
-import { ProfileHeader } from '@/components/Profile/ProfileHeader';
-import { CognitiveStats } from '@/components/Profile/CognitiveStats';
-import { Highlights } from '@/components/Profile/Highlights';
-import { PersonalFeed } from '@/components/Profile/PersonalFeed';
-import { MindMirror } from '@/components/Profile/MindMirror';
-import { QuickActions } from '@/components/Profile/QuickActions';
+import { ProfileHeader } from '@/components/Perfil/ProfileHeader';
+import { CognitiveStats } from '@/components/Perfil/CognitiveStats';
+import { Highlights } from '@/components/Perfil/Highlights';
+import { PersonalFeed } from '@/components/Perfil/PersonalFeed';
+import { MindMirror } from '@/components/Perfil/MentalMirror';
+import { QuickActions } from '@/components/Perfil/QuickActions';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useProfile } from '@/hooks/useProfile';
 import { useProfileHighlights } from '@/hooks/useProfileHighlights';
@@ -17,7 +17,6 @@ const Profile: React.FC = () => {
   const { username } = useParams<{ username?: string }>();
   const { user } = useAuth();
   
-  // TODO: dados reais via useProfile - integração completa com Supabase
   const [profileUserId, setProfileUserId] = useState<string | undefined>();
   
   const { profileData, loading: profileLoading, isOwnProfile } = useProfile(profileUserId);
@@ -32,7 +31,6 @@ const Profile: React.FC = () => {
 
   useEffect(() => {
     if (username && username !== user?.id) {
-      // TODO: buscar userId pelo username no futuro
       setProfileUserId(undefined);
     } else {
       setProfileUserId(user?.id);
@@ -77,7 +75,6 @@ const Profile: React.FC = () => {
     }
   };
 
-  // Loading state - while any hook is loading
   if (profileLoading || highlightsLoading) {
     return (
       <div className="min-h-screen bg-gray-900 text-white flex items-center justify-center">
@@ -89,7 +86,6 @@ const Profile: React.FC = () => {
     );
   }
 
-  // Error state - if profile is not found
   if (!profileData) {
     return (
       <div className="min-h-screen bg-gray-900 text-white flex items-center justify-center">
@@ -109,7 +105,6 @@ const Profile: React.FC = () => {
         initial="hidden"
         animate="visible"
       >
-        {/* Header do Perfil - dados reais via useProfile */}
         <motion.div variants={itemVariants} className="mb-8">
           <ProfileHeader 
             {...profileData}
@@ -117,17 +112,13 @@ const Profile: React.FC = () => {
           />
         </motion.div>
 
-        {/* Layout em duas colunas - Desktop */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-          {/* Coluna Esquerda - Fixa 30% */}
           <motion.div 
             variants={itemVariants}
             className="lg:col-span-4 space-y-6"
           >
-            {/* Estatísticas Cognitivas - dados reais via useProfile */}
             <CognitiveStats profileUserId={profileUserId} />
             
-            {/* Espelho Mental - dados reais com athenaeSuggestion */}
             <div className="lg:sticky lg:top-6">
               <MindMirror 
                 profileUserId={profileUserId} 
@@ -136,12 +127,10 @@ const Profile: React.FC = () => {
             </div>
           </motion.div>
 
-          {/* Coluna Direita - Flexível 70% */}
           <motion.div 
             variants={itemVariants}
             className="lg:col-span-8 space-y-6"
           >
-            {/* Navegação por Abas */}
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
               <TabsList className="grid w-full grid-cols-3 bg-gray-800 border border-gray-700">
                 <TabsTrigger 
@@ -164,7 +153,6 @@ const Profile: React.FC = () => {
                 </TabsTrigger>
               </TabsList>
 
-              {/* Conteúdo das Abas - dados reais */}
               <TabsContent value="highlights" className="mt-6">
                 <Highlights profileUserId={profileUserId} />
               </TabsContent>
@@ -182,7 +170,6 @@ const Profile: React.FC = () => {
           </motion.div>
         </div>
 
-        {/* Frase de Identidade */}
         <motion.div 
           variants={itemVariants}
           className="text-center py-12"
@@ -193,7 +180,6 @@ const Profile: React.FC = () => {
         </motion.div>
       </motion.div>
 
-      {/* Ações Sociais Rápidas - Fixas - apenas para perfis de outros usuários */}
       {!isOwnProfile && (
         <QuickActions 
           {...handleQuickActions}

@@ -1,13 +1,3 @@
-
-/**
- * Highlights.tsx
- * Componente de destaques do CÓRTEX - projetos, conquistas, posts e favoritos
- * Props:
- *   - profileUserId: string opcional para visualizar perfil de outro usuário
- * 
- * Exibe os principais destaques do usuário de forma organizada
- */
-
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Card, CardContent } from '@/components/ui/card';
@@ -65,14 +55,9 @@ export const Highlights: React.FC<HighlightsProps> = ({ profileUserId }) => {
   }
 
   return (
-    <motion.div
-      variants={containerVariants}
-      initial="hidden"
-      animate="visible"
-      className="space-y-8"
-    >
+    <motion.div className="space-y-8">
       {/* Projetos em Destaque */}
-      <motion.section variants={itemVariants} className="space-y-4">
+      <motion.section className="space-y-4">
         <div className="flex items-center justify-between">
           <h3 className="text-lg font-semibold text-white flex items-center gap-2">
             <Activity className="h-5 w-5 text-purple-400" />
@@ -122,7 +107,7 @@ export const Highlights: React.FC<HighlightsProps> = ({ profileUserId }) => {
       </motion.section>
 
       {/* Conquistas de Hábito */}
-      <motion.section variants={itemVariants} className="space-y-4">
+      <motion.section className="space-y-4">
         <div className="flex items-center justify-between">
           <h3 className="text-lg font-semibold text-white flex items-center gap-2">
             <CheckCircle className="h-5 w-5 text-green-400" />
@@ -155,7 +140,7 @@ export const Highlights: React.FC<HighlightsProps> = ({ profileUserId }) => {
       </motion.section>
 
       {/* Posts com Maior Impacto */}
-      <motion.section variants={itemVariants} className="space-y-4">
+      <motion.section className="space-y-4">
         <div className="flex items-center justify-between">
           <h3 className="text-lg font-semibold text-white flex items-center gap-2">
             <TrendingUp className="h-5 w-5 text-blue-400" />
@@ -195,7 +180,7 @@ export const Highlights: React.FC<HighlightsProps> = ({ profileUserId }) => {
       </motion.section>
 
       {/* Favoritos Recentes */}
-      <motion.section variants={itemVariants} className="space-y-4">
+      <motion.section className="space-y-4">
         <div className="flex items-center justify-between">
           <h3 className="text-lg font-semibold text-white flex items-center gap-2">
             <Star className="h-5 w-5 text-yellow-400" />
@@ -231,7 +216,7 @@ export const Highlights: React.FC<HighlightsProps> = ({ profileUserId }) => {
 
       {/* Sugestão da Athena */}
       {athenaeSuggestion && (
-        <motion.section variants={itemVariants} className="space-y-4">
+        <motion.section className="space-y-4">
           <h3 className="text-lg font-semibold text-white flex items-center gap-2">
             <Brain className="h-5 w-5 text-purple-400" />
             Sugestão da Athena

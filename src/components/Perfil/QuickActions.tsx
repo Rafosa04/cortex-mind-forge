@@ -1,17 +1,3 @@
-
-/**
- * QuickActions.tsx
- * Ações sociais rápidas - barra fixa em mobile, sidebar em desktop
- * Props:
- *   - onFollowToggle: callback para seguir/conectar
- *   - onMessage: callback para enviar mensagem
- *   - onSilentFollow: callback para seguir evolução
- *   - onCloneBrains: callback para clonar subcérebros
- *   - onShare: callback para compartilhar perfil
- * 
- * Layout: responsivo - barra inferior (mobile) / sidebar compacta (desktop)
- */
-
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
@@ -85,11 +71,6 @@ export const QuickActions: React.FC<QuickActionsProps> = ({
     }
   ];
 
-  const handleAction = (actionId: string, onClick?: () => void) => {
-    console.log(`Ação executada: ${actionId}`);
-    onClick?.();
-  };
-
   return (
     <>
       {/* Desktop - Sidebar fixa */}
@@ -110,7 +91,7 @@ export const QuickActions: React.FC<QuickActionsProps> = ({
                     variant={action.variant}
                     size="icon"
                     className={action.className}
-                    onClick={() => handleAction(action.id, action.onClick)}
+                    onClick={action.onClick}
                     aria-label={action.label}
                   >
                     <Icon className="h-4 w-4" />
@@ -140,7 +121,7 @@ export const QuickActions: React.FC<QuickActionsProps> = ({
                     variant={action.variant}
                     size="sm"
                     className={`flex flex-col items-center gap-1 h-auto py-2 px-1 ${action.className}`}
-                    onClick={() => handleAction(action.id, action.onClick)}
+                    onClick={action.onClick}
                   >
                     <Icon className="h-4 w-4" />
                     <span className="text-xs">{action.label.split(' ')[0]}</span>
@@ -152,7 +133,6 @@ export const QuickActions: React.FC<QuickActionsProps> = ({
         </Card>
       </motion.div>
 
-      {/* Espaçamento para mobile */}
       <div className="lg:hidden h-24" />
     </>
   );

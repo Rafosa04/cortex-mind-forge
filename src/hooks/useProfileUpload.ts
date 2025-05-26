@@ -22,7 +22,6 @@ export const useProfileUpload = () => {
     try {
       setUploading(true);
 
-      // Validar tipo de arquivo
       if (!file.type.startsWith('image/')) {
         toast({
           title: "Erro",
@@ -32,7 +31,6 @@ export const useProfileUpload = () => {
         return null;
       }
 
-      // Validar tamanho (máximo 5MB)
       if (file.size > 5 * 1024 * 1024) {
         toast({
           title: "Erro",
@@ -45,7 +43,6 @@ export const useProfileUpload = () => {
       const fileExt = file.name.split('.').pop();
       const fileName = `${user.id}/${type}-${Date.now()}.${fileExt}`;
 
-      // Fazer upload do arquivo
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from('profiles')
         .upload(fileName, file, {
@@ -57,14 +54,12 @@ export const useProfileUpload = () => {
         throw uploadError;
       }
 
-      // Obter URL público
       const { data: urlData } = supabase.storage
         .from('profiles')
         .getPublicUrl(fileName);
 
       const publicUrl = urlData.publicUrl;
 
-      // Atualizar perfil no banco de dados
       const updateField = type === 'avatar' ? 'avatar_url' : 'cover_url';
       const { error: updateError } = await supabase
         .from('profiles')
