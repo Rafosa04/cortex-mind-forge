@@ -125,6 +125,42 @@ export type Database = {
           },
         ]
       }
+      diary_entries: {
+        Row: {
+          content: string
+          created_at: string
+          date: string
+          emotion: string
+          id: string
+          title: string | null
+          type: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          date?: string
+          emotion: string
+          id?: string
+          title?: string | null
+          type?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          date?: string
+          emotion?: string
+          id?: string
+          title?: string | null
+          type?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       external_connections: {
         Row: {
           created_at: string | null
