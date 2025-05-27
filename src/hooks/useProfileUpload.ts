@@ -43,6 +43,7 @@ export const useProfileUpload = () => {
       const fileExt = file.name.split('.').pop();
       const fileName = `${user.id}/${type}-${Date.now()}.${fileExt}`;
 
+      // Fazer upload do arquivo
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from('profiles')
         .upload(fileName, file, {
@@ -51,15 +52,18 @@ export const useProfileUpload = () => {
         });
 
       if (uploadError) {
+        console.error('Erro no upload:', uploadError);
         throw uploadError;
       }
 
+      // Obter URL pública
       const { data: urlData } = supabase.storage
         .from('profiles')
         .getPublicUrl(fileName);
 
       const publicUrl = urlData.publicUrl;
 
+      // Atualizar perfil no banco de dados
       const updateField = type === 'avatar' ? 'avatar_url' : 'cover_url';
       const { error: updateError } = await supabase
         .from('profiles')
@@ -67,6 +71,7 @@ export const useProfileUpload = () => {
         .eq('id', user.id);
 
       if (updateError) {
+        console.error('Erro ao atualizar perfil:', updateError);
         throw updateError;
       }
 
