@@ -79,7 +79,7 @@ const lifetimePlans = [
     id: "founder", 
     nome: "Fundador", 
     icon: <Diamond className="h-6 w-6" />,
-    preco: "R$297 vitalício", 
+    preco: "R$497 vitalício", 
     destaque: true,
     color: "border-secondary/80",
     selo: "dourado",
@@ -95,7 +95,7 @@ const lifetimePlans = [
     id: "pioneer", 
     nome: "Pioneiro", 
     icon: <Rocket className="h-6 w-6" />,
-    preco: "R$197 vitalício", 
+    preco: "R$297 vitalício", 
     destaque: false,
     color: "border-blue-400/60",
     selo: "prateado",
@@ -177,7 +177,13 @@ export default function Planos() {
   }, [toast, checkSubscription]);
 
   const onSubmit = async (data: FormValues) => {
-    const result = await submitInvestmentProposal(data);
+    const result = await submitInvestmentProposal({
+      name: data.name,
+      email: data.email,
+      amount: data.amount,
+      expectations: data.expectations,
+      contact: data.contact
+    });
     if (result) {
       setShowInvestForm(false);
       form.reset();

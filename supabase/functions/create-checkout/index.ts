@@ -53,26 +53,37 @@ serve(async (req) => {
       customerId = customers.data[0].id;
     }
 
+    // IDs dos preços do Stripe
+    const planPriceIds = {
+      free: "price_1RTBApPMM4YiFlIELgiMqHSp",
+      personal: "price_1RTBBXPMM4YiFlIESs6rdUQ1",
+      expansive: "price_1RTBC1PMM4YiFlIE3XDtWvXA",
+      founder: "price_1RTBD1PMM4YiFlIEnyWOo99l",
+      pioneer: "price_1RTBDmPMM4YiFlIECDKovPFX"
+    };
+
     // Configurar preços baseado no tipo de plano
     const planConfigs = {
       personal: {
         mode: "subscription",
-        price: 1900, // R$ 19,00
-        interval: "month"
+        priceId: planPriceIds.personal,
+        amount: 1900 // R$ 19,00
       },
       expansive: {
         mode: "subscription", 
-        price: 4900, // R$ 49,00
-        interval: "month"
+        priceId: planPriceIds.expansive,
+        amount: 4900 // R$ 49,00
       },
       founder: {
         mode: "payment",
-        price: 29700, // R$ 297,00
+        priceId: planPriceIds.founder,
+        amount: 49700, // R$ 497,00
         lifetime: true
       },
       pioneer: {
         mode: "payment", 
-        price: 19700, // R$ 197,00
+        priceId: planPriceIds.pioneer,
+        amount: 29700, // R$ 297,00
         lifetime: true
       }
     };
@@ -88,14 +99,7 @@ serve(async (req) => {
         customer_email: customerId ? undefined : user.email,
         line_items: [
           {
-            price_data: {
-              currency: "brl",
-              product_data: { 
-                name: planType === "personal" ? "CÓRTEX Pessoal" : "CÓRTEX Expansivo"
-              },
-              unit_amount: config.price,
-              recurring: { interval: config.interval },
-            },
+            price: config.priceId,
             quantity: 1,
           },
         ],
@@ -113,13 +117,7 @@ serve(async (req) => {
         customer_email: customerId ? undefined : user.email,
         line_items: [
           {
-            price_data: {
-              currency: "brl",
-              product_data: { 
-                name: planType === "founder" ? "CÓRTEX Fundador (Vitalício)" : "CÓRTEX Pioneiro (Vitalício)"
-              },
-              unit_amount: config.price,
-            },
+            price: config.priceId,
             quantity: 1,
           },
         ],
@@ -144,7 +142,7 @@ serve(async (req) => {
       status: "pending",
       stripe_customer_id: customerId,
       is_lifetime: config.lifetime || false,
-      amount: config.price,
+      amount: config.amount,
       currency: "BRL"
     }, { onConflict: 'user_id' });
 

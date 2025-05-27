@@ -105,12 +105,12 @@ serve(async (req) => {
 
       if (subscriptions.data.length > 0) {
         const subscription = subscriptions.data[0];
-        const price = subscription.items.data[0].price;
-        const amount = price.unit_amount || 0;
+        const priceId = subscription.items.data[0].price.id;
         
         let planType = "free";
-        if (amount === 1900) planType = "personal";
-        else if (amount === 4900) planType = "expansive";
+        // Mapear IDs de preços para tipos de planos
+        if (priceId === "price_1RTBBXPMM4YiFlIESs6rdUQ1") planType = "personal";
+        else if (priceId === "price_1RTBC1PMM4YiFlIE3XDtWvXA") planType = "expansive";
 
         subscriptionData = {
           ...subscriptionData,
@@ -119,13 +119,13 @@ serve(async (req) => {
           stripe_subscription_id: subscription.id,
           current_period_start: new Date(subscription.current_period_start * 1000).toISOString(),
           current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
-          amount: amount
+          amount: subscription.items.data[0].price.unit_amount || 0
         };
 
         logStep("Active subscription found", { 
           subscriptionId: subscription.id, 
           planType,
-          amount
+          priceId
         });
       }
     }
