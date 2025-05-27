@@ -93,8 +93,9 @@ export const useSubscription = () => {
     if (!user?.id) return null;
 
     try {
+      // Usar insert direto já que a tabela pode não estar nos tipos ainda
       const { data, error } = await supabase
-        .from('investment_proposals')
+        .from('investment_proposals' as any)
         .insert({
           user_id: user.id,
           name: proposalData.name,

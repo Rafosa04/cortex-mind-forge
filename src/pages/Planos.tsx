@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel } from "@/components/ui/form";
-import { Check, Rocket, Diamond, CircleDot, CreditCard, Settings } from "lucide-react";
+import { Check, Rocket, Diamond, CircleDot, Settings } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -20,7 +21,7 @@ const formSchema = z.object({
   name: z.string().min(2, { message: "Nome é obrigatório" }),
   email: z.string().email({ message: "Email inválido" }),
   amount: z.string().min(1, { message: "Valor é obrigatório" }),
-  expectations: z.string(),
+  expectations: z.string().min(1, { message: "Expectativas são obrigatórias" }),
   contact: z.boolean().default(true)
 });
 
