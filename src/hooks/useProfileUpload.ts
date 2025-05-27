@@ -22,6 +22,7 @@ export const useProfileUpload = () => {
     try {
       setUploading(true);
 
+      // Validar tipo de arquivo
       if (!file.type.startsWith('image/')) {
         toast({
           title: "Erro",
@@ -31,6 +32,7 @@ export const useProfileUpload = () => {
         return null;
       }
 
+      // Validar tamanho do arquivo (5MB)
       if (file.size > 5 * 1024 * 1024) {
         toast({
           title: "Erro",
@@ -40,10 +42,28 @@ export const useProfileUpload = () => {
         return null;
       }
 
-      const fileExt = file.name.split('.').pop();
+      // Gerar nome único para o arquivo
+      const fileExt = file.name.split('.').pop()?.toLowerCase() || 'jpg';
       const fileName = `${user.id}/${type}-${Date.now()}.${fileExt}`;
 
-      // Fazer upload do arquivo
+      console.log('Iniciando upload do arquivo:', fileName);
+
+      // Remover arquivo anterior se existir
+      const { data: existingFiles } = await supabase.storage
+        .from('profiles')
+        .list(user.id, {
+          search: `${type}-`
+        });
+
+      if (existingFiles && existingFiles.length > 0) {
+        for (const existingFile of existingFiles) {
+          await supabase.storage
+            .from('profiles')
+            .remove([`${user.id}/${existingFile.name}`]);
+        }
+      }
+
+      // Fazer upload do novo arquivo
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from('profiles')
         .upload(fileName, file, {
@@ -53,8 +73,10 @@ export const useProfileUpload = () => {
 
       if (uploadError) {
         console.error('Erro no upload:', uploadError);
-        throw uploadError;
+        throw new Error(`Erro no upload: ${uploadError.message}`);
       }
+
+      console.log('Upload realizado com sucesso:', uploadData);
 
       // Obter URL pública
       const { data: urlData } = supabase.storage
@@ -62,6 +84,7 @@ export const useProfileUpload = () => {
         .getPublicUrl(fileName);
 
       const publicUrl = urlData.publicUrl;
+      console.log('URL pública gerada:', publicUrl);
 
       // Atualizar perfil no banco de dados
       const updateField = type === 'avatar' ? 'avatar_url' : 'cover_url';
@@ -72,8 +95,10 @@ export const useProfileUpload = () => {
 
       if (updateError) {
         console.error('Erro ao atualizar perfil:', updateError);
-        throw updateError;
+        throw new Error(`Erro ao atualizar perfil: ${updateError.message}`);
       }
+
+      console.log('Perfil atualizado com sucesso');
 
       toast({
         title: "Sucesso",
@@ -82,10 +107,10 @@ export const useProfileUpload = () => {
 
       return publicUrl;
     } catch (error: any) {
-      console.error('Erro no upload:', error);
+      console.error('Erro completo no upload:', error);
       toast({
         title: "Erro",
-        description: `Erro ao fazer upload: ${error.message}`,
+        description: error.message || "Erro desconhecido ao fazer upload",
         variant: "destructive"
       });
       return null;
