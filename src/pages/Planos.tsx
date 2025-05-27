@@ -1,5 +1,4 @@
-
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,10 +7,13 @@ import { Input } from "@/components/ui/input";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel } from "@/components/ui/form";
-import { Check, Rocket, Diamond, CircleDot } from "lucide-react";
+import { Check, Rocket, Diamond, CircleDot, CreditCard, Settings } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useSubscription } from "@/hooks/useSubscription";
+import { useAuth } from "@/hooks/useAuth";
+import { useToast } from "@/hooks/use-toast";
 
 // Form schema
 const formSchema = z.object({
@@ -125,25 +127,162 @@ const faqItems = [
 ];
 
 export default function Planos() {
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const {
+    subscription,
+    loading,
+    createCheckout,
+    openCustomerPortal,
+    submitInvestmentProposal,
+    checkSubscription
+  } = useSubscription();
+
   const [showInvestForm, setShowInvestForm] = useState(false);
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: "",
-      email: "",
+      email: user?.email || "",
       amount: "",
       expectations: "",
       contact: true
     }
   });
 
-  const onSubmit = (data: FormValues) => {
-    console.log("Proposta enviada:", data);
-    // Aqui você implementaria a lógica para enviar os dados
+  useEffect(() => {
+    // Verificar parâmetros de URL para success/cancel
+    const urlParams = new URLSearchParams(window.location.search);
+    const success = urlParams.get('success');
+    const canceled = urlParams.get('canceled');
+    const planType = urlParams.get('plan');
+
+    if (success && planType) {
+      toast({
+        title: "Pagamento realizado com sucesso!",
+        description: `Bem-vindo ao plano ${planType}! Sua assinatura foi ativada.`,
+      });
+      // Limpar URL e recarregar dados
+      window.history.replaceState({}, '', '/planos');
+      checkSubscription();
+    } else if (canceled) {
+      toast({
+        title: "Pagamento cancelado",
+        description: "Você pode tentar novamente quando quiser.",
+        variant: "destructive"
+      });
+      window.history.replaceState({}, '', '/planos');
+    }
+  }, [toast, checkSubscription]);
+
+  const onSubmit = async (data: FormValues) => {
+    const result = await submitInvestmentProposal(data);
+    if (result) {
+      setShowInvestForm(false);
+      form.reset();
+    }
+  };
+
+  const handlePlanSelection = async (planId: string) => {
+    if (!user) {
+      toast({
+        title: "Login necessário",
+        description: "Faça login para assinar um plano",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (planId === "free") {
+      toast({
+        title: "Plano gratuito",
+        description: "Você já está no plano gratuito!",
+      });
+      return;
+    }
+
+    await createCheckout(planId);
+  };
+
+  const getCurrentPlanName = () => {
+    if (!subscription) return "Carregando...";
+    
+    const planNames = {
+      free: "Camada Inicial",
+      personal: "CÓRTEX Pessoal", 
+      expansive: "CÓRTEX Expansivo",
+      founder: "Fundador",
+      pioneer: "Pioneiro"
+    };
+    
+    return planNames[subscription.plan_type] || "Desconhecido";
+  };
+
+  const isCurrentPlan = (planId: string) => {
+    return subscription?.plan_type === planId && subscription?.status === 'active';
+  };
+
+  const canUpgrade = (planId: string) => {
+    if (!subscription) return true;
+    
+    const planHierarchy = {
+      free: 0,
+      personal: 1,
+      expansive: 2,
+      founder: 3,
+      pioneer: 3
+    };
+    
+    return planHierarchy[planId] > planHierarchy[subscription.plan_type];
   };
 
   return (
     <div className="w-full max-w-6xl mx-auto space-y-16 pb-16">
+      {/* Current Plan Status */}
+      {user && (
+        <motion.section 
+          className="bg-card/50 border border-border/50 rounded-xl p-6"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+        >
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-lg font-semibold text-foreground">Seu Plano Atual</h3>
+              <p className="text-foreground/70">
+                {loading ? "Carregando..." : getCurrentPlanName()}
+                {subscription?.is_lifetime && " (Vitalício)"}
+              </p>
+              {subscription?.current_period_end && !subscription.is_lifetime && (
+                <p className="text-sm text-foreground/50">
+                  Renovação: {new Date(subscription.current_period_end).toLocaleDateString('pt-BR')}
+                </p>
+              )}
+            </div>
+            <div className="flex gap-2">
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={checkSubscription}
+                disabled={loading}
+              >
+                Atualizar Status
+              </Button>
+              {subscription?.stripe_customer_id && subscription?.plan_type !== 'free' && (
+                <Button 
+                  variant="secondary" 
+                  size="sm"
+                  onClick={openCustomerPortal}
+                >
+                  <Settings className="h-4 w-4 mr-2" />
+                  Gerenciar Assinatura
+                </Button>
+              )}
+            </div>
+          </div>
+        </motion.section>
+      )}
+
       {/* Hero Section */}
       <motion.section 
         className="text-center space-y-6 pt-8"
@@ -197,6 +336,9 @@ export default function Planos() {
                     {plan.destaque && (
                       <Badge variant="secondary" className="ml-auto">Recomendado</Badge>
                     )}
+                    {isCurrentPlan(plan.id) && (
+                      <Badge variant="default" className="ml-auto">Atual</Badge>
+                    )}
                   </div>
                   <CardDescription>
                     <span className="text-2xl font-bold text-foreground">{plan.preco}</span>
@@ -213,8 +355,18 @@ export default function Planos() {
                   </ul>
                 </CardContent>
                 <CardFooter>
-                  <Button className="w-full" variant={plan.destaque ? "secondary" : "outline"}>
-                    Assinar agora
+                  <Button 
+                    className="w-full" 
+                    variant={plan.destaque ? "secondary" : "outline"}
+                    onClick={() => handlePlanSelection(plan.id)}
+                    disabled={isCurrentPlan(plan.id) || (!canUpgrade(plan.id) && plan.id !== 'free')}
+                  >
+                    {isCurrentPlan(plan.id) 
+                      ? "Plano Atual" 
+                      : plan.id === "free" 
+                        ? "Plano Gratuito"
+                        : "Assinar agora"
+                    }
                   </Button>
                 </CardFooter>
               </Card>
@@ -272,8 +424,18 @@ export default function Planos() {
                   </ul>
                 </CardContent>
                 <CardFooter>
-                  <Button className="w-full" variant={plan.destaque ? "secondary" : "default"}>
-                    Contribuir como {plan.nome}
+                  <Button 
+                    className="w-full" 
+                    variant={plan.destaque ? "secondary" : "default"}
+                    onClick={() => handlePlanSelection(plan.id)}
+                    disabled={isCurrentPlan(plan.id) || (!canUpgrade(plan.id) && plan.id !== 'free')}
+                  >
+                    {isCurrentPlan(plan.id) 
+                      ? "Plano Atual" 
+                      : canUpgrade(plan.id)
+                        ? `Contribuir como ${plan.nome}`
+                        : "Impossível contribuir"
+                    }
                   </Button>
                 </CardFooter>
               </Card>
