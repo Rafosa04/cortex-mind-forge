@@ -58,48 +58,44 @@ export default function AdminDashboard() {
   // Função para tornar o usuário específico um super usuário
   const makeUserSuperAdmin = async () => {
     try {
-      // Buscar o usuário pelo email
-      const { data: userData, error: userError } = await supabase.auth.admin.listUsers();
+      // Buscar o usuário pelo email na tabela profiles
+      const { data: userData, error: userError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', user?.id)
+        .single();
       
       if (userError) {
-        console.error('Erro ao buscar usuários:', userError);
+        console.error('Erro ao buscar usuário:', userError);
         return;
       }
 
-      const targetUser = userData.users.find(u => u.email === 'brunowayne8@gmail.com');
-      
-      if (!targetUser) {
+      // Verificar se é o usuário específico que deve ser promovido
+      if (user?.email === 'brunowayne8@gmail.com') {
+        // Atualizar o perfil para master
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .update({ role: 'master' })
+          .eq('id', user.id);
+
+        if (profileError) {
+          console.error('Erro ao atualizar perfil:', profileError);
+          toast({
+            title: "Erro ao atualizar usuário",
+            description: "Não foi possível atualizar o usuário para super admin",
+            variant: "destructive"
+          });
+          return;
+        }
+
         toast({
-          title: "Usuário não encontrado",
-          description: "O usuário brunowayne8@gmail.com não foi encontrado",
-          variant: "destructive"
+          title: "Usuário atualizado",
+          description: "O usuário brunowayne8@gmail.com agora é um super admin",
         });
-        return;
+
+        // Recarregar dados
+        refetch();
       }
-
-      // Atualizar o perfil para master
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .update({ role: 'master' })
-        .eq('id', targetUser.id);
-
-      if (profileError) {
-        console.error('Erro ao atualizar perfil:', profileError);
-        toast({
-          title: "Erro ao atualizar usuário",
-          description: "Não foi possível atualizar o usuário para super admin",
-          variant: "destructive"
-        });
-        return;
-      }
-
-      toast({
-        title: "Usuário atualizado",
-        description: "O usuário brunowayne8@gmail.com agora é um super admin",
-      });
-
-      // Recarregar dados
-      refetch();
     } catch (error) {
       console.error('Erro:', error);
       toast({
