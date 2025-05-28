@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Search, Plus, Brain, Link, X, Edit, Trash2, Target, BarChart3, Focus, RefreshCw } from "lucide-react";
@@ -143,13 +142,6 @@ export default function Subcerebros() {
     setFilterArea("all");
     setViewMode("default");
     setFocusNodeId("");
-  };
-
-  // Prepare data for NeuralGraph
-  const graphData = {
-    subcerebros,
-    connections,
-    loading
   };
 
   if (loading) {
@@ -337,7 +329,6 @@ export default function Subcerebros() {
           filterArea={filterArea}
           viewMode={viewMode}
           focusNodeId={focusNodeId}
-          graphData={graphData}
         />
       </motion.div>
 
