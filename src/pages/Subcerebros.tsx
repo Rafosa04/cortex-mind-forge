@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Search, Plus, Brain, Link, X, Edit, Trash2, Target, BarChart3, Focus, RefreshCw } from "lucide-react";
@@ -17,9 +18,12 @@ import {
 } from "@/components/ui/select";
 import { NeuralGraph } from "@/components/Subcerebros/NeuralGraph";
 import { SubcerebroCreationForm } from "@/components/Subcerebros/SubcerebroCreationForm";
+import { SubcerebroManager } from "@/components/Subcerebros/SubcerebroManager";
+import { useSubcerebros, Subcerebro } from "@/hooks/useSubcerebros";
 import { timeAgo } from "@/lib/utils";
 
 export default function Subcerebros() {
+  const { subcerebros, connections, loading, deleteSubcerebro } = useSubcerebros();
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isDetailsPanelOpen, setIsDetailsPanelOpen] = useState(false);
   const [selectedNode, setSelectedNode] = useState<any>(null);
@@ -30,9 +34,10 @@ export default function Subcerebros() {
   const [focusNodeId, setFocusNodeId] = useState<string>('');
   const [isAthenaAnalyzing, setIsAthenaAnalyzing] = useState(false);
   const [athenaInsight, setAthenaInsight] = useState<string | null>(null);
-  
+
   // Handle node click - show sidebar with details
   const handleNodeClick = (node: any) => {
+    console.log('Node clicked:', node);
     setSelectedNode(node);
     setIsDetailsPanelOpen(true);
   };
@@ -50,7 +55,7 @@ export default function Subcerebros() {
     setViewMode('focus');
     setFocusNodeId(nodeId);
   };
-  
+
   // Handle Athena analysis with enhanced insights
   const handleAthenaAnalysis = () => {
     if (!selectedNode) return;
@@ -64,52 +69,24 @@ export default function Subcerebros() {
       // Generate enhanced insight based on node type and connections
       let insight = "";
       const connectionCount = selectedNode.connections?.length || 0;
-      const relevance = selectedNode.relevancia || 5;
+      const relevance = selectedNode.relevancia || selectedNode.relevance || 5;
       
-      if (selectedNode.type === "subcerebro") {
-        insight = `📊 **Análise do Subcérebro "${selectedNode.label}"**
+      if (selectedNode.type === "subcerebro" || selectedNode.tipo === "subcerebro") {
+        insight = `📊 **Análise do Subcérebro "${selectedNode.label || selectedNode.nome}"**
         
         Este subcérebro possui ${connectionCount} conexões ativas e relevância de ${relevance}/10. 
         
         🔍 **Insights Identificados:**
-        • Baseado no seu padrão de acesso, você interage mais com este subcérebro ${getAccessPattern(selectedNode.lastAccess)}
-        • As conexões indicam forte correlação com atividades de ${selectedNode.tags?.[0] || 'desenvolvimento'} e ${selectedNode.tags?.[1] || 'produtividade'}
+        • Baseado no seu padrão de acesso, você interage mais com este subcérebro ${getAccessPattern(selectedNode.lastAccess || selectedNode.last_access)}
+        • As conexões indicam forte correlação com atividades de ${selectedNode.tags?.[0] || selectedNode.area || 'desenvolvimento'} e ${selectedNode.tags?.[1] || 'produtividade'}
         • Recomendo fortalecer a conexão com nós de menor relevância para equilibrar seu grafo mental
         
         💡 **Sugestões de Otimização:**
         • Conectar ao nó "Cronograma Semanal" pode aumentar sua produtividade em 25%
         • Considere criar hábitos específicos relacionados a este subcérebro
         • Agende revisões quinzenais para manter a relevância alta`;
-      } else if (selectedNode.type === "projeto") {
-        insight = `🎯 **Análise do Projeto "${selectedNode.label}"**
-        
-        Projeto com ${connectionCount} conexões e relevância ${relevance}/10.
-        
-        📈 **Status Cognitivo:**
-        • Baseado em ${getProjectDays(selectedNode.createdAt)} dias de existência
-        • Padrão de acesso ${getAccessPattern(selectedNode.lastAccess)}
-        • Integração com ${connectionCount} entidades do seu CÓRTEX
-        
-        🎯 **Otimizações Recomendadas:**
-        • Probabilidade de conclusão atual: ${Math.min(95, relevance * 9 + connectionCount * 2)}%
-        • Conectar ao subcérebro de Planejamento pode acelerar o progresso
-        • Considere quebrar em tarefas menores se a relevância estiver baixa`;
-      } else if (selectedNode.type === "habito") {
-        insight = `🔄 **Análise do Hábito "${selectedNode.label}"**
-        
-        Hábito com consistência de ${relevance * 10}% e ${connectionCount} conexões.
-        
-        📊 **Métricas Comportamentais:**
-        • Último check-in: ${timeAgo(selectedNode.lastAccess || '2024-05-10')}
-        • Integração neural: ${connectionCount} pontos de conexão
-        • Força do hábito: ${relevance >= 8 ? 'Alta' : relevance >= 6 ? 'Média' : 'Baixa'}
-        
-        💪 **Recomendações Athena:**
-        • ${relevance >= 8 ? 'Continue assim! Hábito bem estabelecido.' : 'Que tal um reforço positivo para fortalecer este hábito?'}
-        • Conectar ao subcérebro de Saúde pode aumentar a aderência
-        • Considere horário fixo se ainda não tiver estabelecido`;
       } else {
-        insight = `🧠 **Análise Neural "${selectedNode.label}"**
+        insight = `🧠 **Análise Neural "${selectedNode.label || selectedNode.nome}"**
         
         Esta entidade possui ${connectionCount} conexões e relevância ${relevance}/10.
         
@@ -130,11 +107,12 @@ export default function Subcerebros() {
         title: "🧠 Análise da Athena completada",
         description: "Novos insights neurais disponíveis para otimização.",
       });
-    }, 2000); // Increased delay for more realistic "thinking" time
+    }, 2000);
   };
 
   // Helper functions for enhanced insights
   const getAccessPattern = (lastAccess: string) => {
+    if (!lastAccess) return "raramente (necessita reativação)";
     const days = Math.floor((Date.now() - new Date(lastAccess).getTime()) / (1000 * 60 * 60 * 24));
     if (days <= 1) return "diariamente (excelente padrão!)";
     if (days <= 7) return "semanalmente (bom ritmo)";
@@ -142,26 +120,20 @@ export default function Subcerebros() {
     return "raramente (necessita reativação)";
   };
 
-  const getProjectDays = (createdAt: string) => {
-    return Math.floor((Date.now() - new Date(createdAt).getTime()) / (1000 * 60 * 60 * 24));
-  };
-  
   // Close the Athena insight dialog
   const handleCloseInsight = () => {
     setAthenaInsight(null);
   };
-  
+
   // Handle node removal
-  const handleRemoveNode = () => {
+  const handleRemoveNode = async () => {
     if (!selectedNode) return;
     
-    toast({
-      title: `${formatNodeType(selectedNode.type)} removido`,
-      description: `${selectedNode.label} foi removido do seu CÓRTEX.`,
-    });
-    
-    setIsDetailsPanelOpen(false);
-    setSelectedNode(null);
+    const success = await deleteSubcerebro(selectedNode.id);
+    if (success) {
+      setIsDetailsPanelOpen(false);
+      setSelectedNode(null);
+    }
   };
 
   // Reset all filters
@@ -172,7 +144,25 @@ export default function Subcerebros() {
     setViewMode("default");
     setFocusNodeId("");
   };
-  
+
+  // Prepare data for NeuralGraph
+  const graphData = {
+    subcerebros,
+    connections,
+    loading
+  };
+
+  if (loading) {
+    return (
+      <div className="w-full h-[calc(100vh-60px)] flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-foreground/60">Carregando subcérebros...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="w-full h-[calc(100vh-60px)] max-w-7xl mx-auto relative overflow-hidden">
       {/* Enhanced Header Section */}
@@ -193,7 +183,7 @@ export default function Subcerebros() {
               <Brain className="h-6 w-6" />
               Subcérebros
               <Badge variant="outline" className="ml-2 bg-primary/10 text-primary">
-                Neural Graph 2.0
+                {subcerebros.length} criados
               </Badge>
             </motion.h2>
             
@@ -347,6 +337,7 @@ export default function Subcerebros() {
           filterArea={filterArea}
           viewMode={viewMode}
           focusNodeId={focusNodeId}
+          graphData={graphData}
         />
       </motion.div>
 
@@ -363,7 +354,7 @@ export default function Subcerebros() {
                       backgroundColor: selectedNode?.type ? getNodeColor(selectedNode.type) : undefined 
                     }}
                   ></span>
-                  <span className="line-clamp-1">{selectedNode?.label || "Detalhes do Nó"}</span>
+                  <span className="line-clamp-1">{selectedNode?.label || selectedNode?.nome || "Detalhes do Nó"}</span>
                 </SheetTitle>
               </SheetHeader>
               
@@ -631,6 +622,24 @@ export default function Subcerebros() {
           <SubcerebroCreationForm onSubmit={() => setIsCreateModalOpen(false)} />
         </DialogContent>
       </Dialog>
+
+      {/* Subcérebro Manager Panel (for development/admin) */}
+      {process.env.NODE_ENV === 'development' && (
+        <div className="fixed bottom-4 right-4 z-50">
+          <Dialog>
+            <Button variant="outline" size="sm">
+              <Brain className="h-4 w-4 mr-2" />
+              Gerenciar
+            </Button>
+            <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>Gerenciar Subcérebros</DialogTitle>
+              </DialogHeader>
+              <SubcerebroManager />
+            </DialogContent>
+          </Dialog>
+        </div>
+      )}
     </div>
   );
 }

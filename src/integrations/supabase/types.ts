@@ -728,6 +728,84 @@ export type Database = {
         }
         Relationships: []
       }
+      subcerebro_connections: {
+        Row: {
+          connection_strength: number | null
+          created_at: string
+          id: string
+          source_id: string
+          source_type: string
+          target_id: string
+          target_type: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          connection_strength?: number | null
+          created_at?: string
+          id?: string
+          source_id: string
+          source_type: string
+          target_id: string
+          target_type: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          connection_strength?: number | null
+          created_at?: string
+          id?: string
+          source_id?: string
+          source_type?: string
+          target_id?: string
+          target_type?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      subcerebros: {
+        Row: {
+          area: string | null
+          created_at: string
+          descricao: string | null
+          id: string
+          last_access: string | null
+          nome: string
+          relevancia: number | null
+          tags: string[] | null
+          tipo: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          area?: string | null
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          last_access?: string | null
+          nome: string
+          relevancia?: number | null
+          tags?: string[] | null
+          tipo?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          area?: string | null
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          last_access?: string | null
+          nome?: string
+          relevancia?: number | null
+          tags?: string[] | null
+          tipo?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_connections: {
         Row: {
           addressee_id: string
