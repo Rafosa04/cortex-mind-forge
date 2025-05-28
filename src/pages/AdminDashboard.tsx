@@ -6,7 +6,6 @@ import { Card, CardContent } from "@/components/ui/card";
 import {
   Table,
   TableBody,
-  TableCaption,
   TableCell,
   TableHead,
   TableHeader,
@@ -23,107 +22,106 @@ import {
   Database, 
   FileText, 
   Shield,
-  Bell
+  Bell,
+  Inbox,
+  ListChecks,
+  MessageSquare,
+  Book,
+  RefreshCw
 } from "lucide-react";
-import { ChartContainer } from "@/components/ui/chart";
 import { Area, AreaChart, ResponsiveContainer, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Bar, BarChart } from "recharts";
-
-// Mock data for demonstration
-const mockMetrics = {
-  registeredUsers: 7814,
-  activeUsersToday: 1064,
-  projectsLastDay: 1209,
-  activeHabits: 5324,
-  diaryEntries: 2798,
-  athenaCallsWeek: 12408,
-  mrrRevenue: 42750,
-  oneTimeContributions: 88312
-};
-
-const mockUserGrowth = [
-  { month: 'Jan', users: 2100 },
-  { month: 'Feb', users: 3200 },
-  { month: 'Mar', users: 4500 },
-  { month: 'Apr', users: 5100 },
-  { month: 'May', users: 6300 },
-  { month: 'Jun', users: 7814 }
-];
-
-const mockRevenueData = [
-  { month: 'Jan', recorrente: 15200, unica: 24000 },
-  { month: 'Feb', recorrente: 22800, unica: 18000 },
-  { month: 'Mar', recorrente: 28500, unica: 35000 },
-  { month: 'Apr', recorrente: 32100, unica: 22000 },
-  { month: 'May', recorrente: 38400, unica: 30000 },
-  { month: 'Jun', recorrente: 42750, unica: 88312 }
-];
-
-const mockModuleUsage = [
-  { name: 'Projetos', value: 42 },
-  { name: 'Hábitos', value: 28 },
-  { name: 'Subcérebros', value: 18 },
-  { name: 'Diário', value: 12 }
-];
-
-const mockUsersTable = [
-  { id: 1, name: 'Ana Silva', email: 'ana@exemplo.com', plan: 'Premium', status: 'Ativo', lastAccess: '2 horas atrás' },
-  { id: 2, name: 'Carlos Mendes', email: 'carlos@exemplo.com', plan: 'Fundador', status: 'Vitalício', lastAccess: '15 min atrás' },
-  { id: 3, name: 'Mariana Costa', email: 'mari@exemplo.com', plan: 'Básico', status: 'Ativo', lastAccess: '1 dia atrás' },
-  { id: 4, name: 'Pedro Santos', email: 'pedro@exemplo.com', plan: 'Premium', status: 'Inadimplente', lastAccess: '7 dias atrás' },
-  { id: 5, name: 'Júlia Rocha', email: 'julia@exemplo.com', plan: 'Pioneiro', status: 'Vitalício', lastAccess: '5 horas atrás' }
-];
-
-const mockSubscriptions = [
-  { id: 1, name: 'Ana Silva', plan: 'Premium (R$49)', email: 'ana@exemplo.com', date: '12/03/2023', status: 'Ativo', gateway: 'Stripe' },
-  { id: 2, name: 'Mariana Costa', email: 'mari@exemplo.com', plan: 'Básico (R$19)', date: '05/01/2023', status: 'Ativo', gateway: 'Pix' },
-  { id: 3, name: 'Pedro Santos', email: 'pedro@exemplo.com', plan: 'Premium (R$49)', date: '22/04/2023', status: 'Inadimplente', gateway: 'Stripe' },
-  { id: 4, name: 'Roberto Almeida', email: 'roberto@exemplo.com', plan: 'Básico (R$19)', date: '17/05/2023', status: 'Ativo', gateway: 'Pix' },
-  { id: 5, name: 'Teresa Martins', email: 'teresa@exemplo.com', plan: 'Premium (R$49)', date: '30/05/2023', status: 'Ativo', gateway: 'Stripe' }
-];
-
-const mockContributions = [
-  { id: 1, name: 'Carlos Mendes', email: 'carlos@exemplo.com', value: 'R$297', type: 'Fundador', timestamp: '12/05/2023' },
-  { id: 2, name: 'Júlia Rocha', email: 'julia@exemplo.com', value: 'R$197', type: 'Pioneiro', timestamp: '15/05/2023' },
-  { id: 3, name: 'Fernando Lima', email: 'fernando@exemplo.com', value: 'R$297', type: 'Fundador', timestamp: '01/06/2023' },
-  { id: 4, name: 'Amanda Souza', email: 'amanda@exemplo.com', value: 'R$197', type: 'Pioneiro', timestamp: '10/06/2023' },
-  { id: 5, name: 'Rodrigo Pereira', email: 'rodrigo@exemplo.com', value: 'R$297', type: 'Fundador', timestamp: '17/06/2023' }
-];
-
-const mockInvestors = [
-  { id: 1, name: 'João Macedo', value: 'R$5.000', expectation: 'Quota futura', status: 'Pendente' },
-  { id: 2, name: 'Luciana Martins', value: 'R$10.000', expectation: 'Consultoria', status: 'Em análise' },
-  { id: 3, name: 'Victor Gonçalves', value: 'R$25.000', expectation: 'Quota futura', status: 'Aprovado' }
-];
+import { useAuth } from "@/hooks/useAuth";
+import { useAdminData } from "@/hooks/useAdminData";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
+  const { user, profile } = useAuth();
+  const { metrics, userStats, activityData, loading, refetch, updateUserRole } = useAdminData();
   const [activeTab, setActiveTab] = useState("overview");
-  const [isAuthorized, setIsAuthorized] = useState(false);
+  const { toast } = useToast();
   
-  // Admin authentication check - This would typically connect to your backend
+  // Verificar se o usuário tem permissão de admin
   useEffect(() => {
-    // Mock authentication check - Replace with your actual auth logic
-    const checkAdminAuth = async () => {
-      // This would be a call to your authentication service
-      // For now, we'll just simulate a successful auth
-      const mockIsAdmin = true;
-      
-      if (mockIsAdmin) {
-        setIsAuthorized(true);
-      } else {
-        // Redirect non-admins
-        navigate("/");
-      }
-    };
+    if (!user) {
+      navigate("/login");
+      return;
+    }
     
-    checkAdminAuth();
-  }, [navigate]);
-  
-  if (!isAuthorized) {
+    if (profile && profile.role !== 'admin' && profile.role !== 'master') {
+      navigate("/");
+      return;
+    }
+  }, [user, profile, navigate]);
+
+  // Função para tornar o usuário específico um super usuário
+  const makeUserSuperAdmin = async () => {
+    try {
+      // Buscar o usuário pelo email
+      const { data: userData, error: userError } = await supabase.auth.admin.listUsers();
+      
+      if (userError) {
+        console.error('Erro ao buscar usuários:', userError);
+        return;
+      }
+
+      const targetUser = userData.users.find(u => u.email === 'brunowayne8@gmail.com');
+      
+      if (!targetUser) {
+        toast({
+          title: "Usuário não encontrado",
+          description: "O usuário brunowayne8@gmail.com não foi encontrado",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      // Atualizar o perfil para master
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .update({ role: 'master' })
+        .eq('id', targetUser.id);
+
+      if (profileError) {
+        console.error('Erro ao atualizar perfil:', profileError);
+        toast({
+          title: "Erro ao atualizar usuário",
+          description: "Não foi possível atualizar o usuário para super admin",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      toast({
+        title: "Usuário atualizado",
+        description: "O usuário brunowayne8@gmail.com agora é um super admin",
+      });
+
+      // Recarregar dados
+      refetch();
+    } catch (error) {
+      console.error('Erro:', error);
+      toast({
+        title: "Erro",
+        description: "Ocorreu um erro ao atualizar o usuário",
+        variant: "destructive"
+      });
+    }
+  };
+
+  // Executar a função para tornar o usuário super admin na primeira vez
+  useEffect(() => {
+    if (profile?.role === 'admin' || profile?.role === 'master') {
+      makeUserSuperAdmin();
+    }
+  }, [profile]);
+
+  if (loading) {
     return (
       <div className="flex h-screen items-center justify-center bg-background">
         <div className="text-center">
-          <h2 className="text-2xl font-bold text-primary">Verificando credenciais...</h2>
+          <h2 className="text-2xl font-bold text-primary">Carregando dashboard...</h2>
           <p className="text-muted-foreground mt-2">Por favor, aguarde.</p>
         </div>
       </div>
@@ -139,56 +137,56 @@ export default function AdminDashboard() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               <MetricCard 
                 title="Usuários cadastrados" 
-                value={mockMetrics.registeredUsers} 
+                value={metrics?.totalUsers || 0} 
                 icon={<Users className="h-6 w-6 text-primary" />} 
               />
               <MetricCard 
-                title="Usuários ativos hoje" 
-                value={mockMetrics.activeUsersToday} 
+                title="Usuários ativos" 
+                value={metrics?.activeUsers || 0} 
                 icon={<Users className="h-6 w-6 text-green-500" />} 
               />
               <MetricCard 
-                title="Projetos (24h)" 
-                value={mockMetrics.projectsLastDay}
-                icon={<Calendar className="h-6 w-6 text-blue-500" />} 
+                title="Total de Projetos" 
+                value={metrics?.totalProjects || 0}
+                icon={<Inbox className="h-6 w-6 text-blue-500" />} 
               />
               <MetricCard 
-                title="Hábitos ativos" 
-                value={mockMetrics.activeHabits} 
-                icon={<TrendingUp className="h-6 w-6 text-yellow-500" />} 
+                title="Total de Hábitos" 
+                value={metrics?.totalHabits || 0} 
+                icon={<ListChecks className="h-6 w-6 text-yellow-500" />} 
               />
               <MetricCard 
-                title="Entradas de diário" 
-                value={mockMetrics.diaryEntries} 
-                icon={<FileText className="h-6 w-6 text-purple-500" />} 
+                title="Total de Subcérebros" 
+                value={metrics?.totalSubcerebros || 0} 
+                icon={<Brain className="h-6 w-6 text-purple-500" />} 
               />
               <MetricCard 
-                title="Chamadas à Athena (7 dias)" 
-                value={mockMetrics.athenaCallsWeek} 
-                icon={<Brain className="h-6 w-6 text-cyan-500" />} 
+                title="Posts no Connecta" 
+                value={metrics?.totalPosts || 0} 
+                icon={<MessageSquare className="h-6 w-6 text-cyan-500" />} 
               />
               <MetricCard 
-                title="Receita MRR (R$)" 
-                value={mockMetrics.mrrRevenue} 
-                icon={<CreditCard className="h-6 w-6 text-emerald-500" />} 
+                title="Entradas de Diário" 
+                value={metrics?.totalDiaryEntries || 0} 
+                icon={<Book className="h-6 w-6 text-emerald-500" />} 
               />
               <MetricCard 
-                title="Contribuições únicas (R$)" 
-                value={mockMetrics.oneTimeContributions} 
-                icon={<CreditCard className="h-6 w-6 text-amber-500" />} 
+                title="Consultas à Athena" 
+                value={metrics?.totalAthenaLogs || 0} 
+                icon={<Brain className="h-6 w-6 text-amber-500" />} 
               />
             </div>
 
             {/* Charts */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* User Growth Chart */}
+              {/* Activity Chart */}
               <Card className="bg-[#141429]/80 border-border/50">
                 <CardContent className="p-6">
-                  <h3 className="text-lg font-medium mb-4">Evolução de Usuários</h3>
+                  <h3 className="text-lg font-medium mb-4">Atividade dos Últimos 30 Dias</h3>
                   <div className="h-80">
                     <ResponsiveContainer width="100%" height="100%">
                       <AreaChart
-                        data={mockUserGrowth}
+                        data={activityData}
                         margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
                       >
                         <defs>
@@ -197,7 +195,7 @@ export default function AdminDashboard() {
                             <stop offset="95%" stopColor="#8884d8" stopOpacity={0}/>
                           </linearGradient>
                         </defs>
-                        <XAxis dataKey="month" />
+                        <XAxis dataKey="date" />
                         <YAxis />
                         <CartesianGrid strokeDasharray="3 3" stroke="#333" />
                         <Tooltip 
@@ -213,6 +211,7 @@ export default function AdminDashboard() {
                           stroke="#8884d8" 
                           fillOpacity={1} 
                           fill="url(#colorUsers)" 
+                          name="Novos Usuários"
                         />
                       </AreaChart>
                     </ResponsiveContainer>
@@ -220,18 +219,18 @@ export default function AdminDashboard() {
                 </CardContent>
               </Card>
 
-              {/* Revenue Chart */}
+              {/* Content Creation Chart */}
               <Card className="bg-[#141429]/80 border-border/50">
                 <CardContent className="p-6">
-                  <h3 className="text-lg font-medium mb-4">Receita por Tipo</h3>
+                  <h3 className="text-lg font-medium mb-4">Criação de Conteúdo</h3>
                   <div className="h-80">
                     <ResponsiveContainer width="100%" height="100%">
                       <BarChart
-                        data={mockRevenueData}
+                        data={activityData.slice(-7)}
                         margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
                       >
                         <CartesianGrid strokeDasharray="3 3" stroke="#333" />
-                        <XAxis dataKey="month" />
+                        <XAxis dataKey="date" />
                         <YAxis />
                         <Tooltip 
                           contentStyle={{ 
@@ -241,65 +240,11 @@ export default function AdminDashboard() {
                           }}
                         />
                         <Legend />
-                        <Bar dataKey="recorrente" name="Assinatura" fill="#82ca9d" />
-                        <Bar dataKey="unica" name="Contribuição" fill="#8884d8" />
+                        <Bar dataKey="projects" name="Projetos" fill="#82ca9d" />
+                        <Bar dataKey="habits" name="Hábitos" fill="#8884d8" />
+                        <Bar dataKey="athena_calls" name="Consultas Athena" fill="#ffc658" />
                       </BarChart>
                     </ResponsiveContainer>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* System status and quick links */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              <Card className="bg-[#141429]/80 border-border/50 col-span-2">
-                <CardContent className="p-6">
-                  <h3 className="text-lg font-medium mb-4">Estado do Sistema</h3>
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <span>API Athena</span>
-                      <span className="bg-green-500/20 text-green-500 px-2 py-1 rounded-md text-xs">Online</span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span>Banco de Dados (Supabase)</span>
-                      <span className="bg-green-500/20 text-green-500 px-2 py-1 rounded-md text-xs">Online</span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span>Gateway de Pagamento</span>
-                      <span className="bg-green-500/20 text-green-500 px-2 py-1 rounded-md text-xs">Online</span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span>Última sincronização</span>
-                      <span className="text-xs text-muted-foreground">Hoje às 15:42</span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span>Último backup</span>
-                      <span className="text-xs text-muted-foreground">Hoje às 04:00</span>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card className="bg-[#141429]/80 border-border/50">
-                <CardContent className="p-6">
-                  <h3 className="text-lg font-medium mb-4">Ações Rápidas</h3>
-                  <div className="space-y-2">
-                    <Button className="w-full flex justify-between items-center">
-                      <span>Enviar broadcast</span>
-                      <Bell size={16} />
-                    </Button>
-                    <Button variant="outline" className="w-full flex justify-between items-center">
-                      <span>Ativar função beta</span>
-                      <Database size={16} />
-                    </Button>
-                    <Button variant="outline" className="w-full flex justify-between items-center">
-                      <span>Backup manual</span>
-                      <Shield size={16} />
-                    </Button>
-                    <Button variant="outline" className="w-full flex justify-between items-center">
-                      <span>Exportar relatório</span>
-                      <FileText size={16} />
-                    </Button>
                   </div>
                 </CardContent>
               </Card>
@@ -308,36 +253,50 @@ export default function AdminDashboard() {
             {/* Latest users table */}
             <Card className="bg-[#141429]/80 border-border/50">
               <CardContent className="p-6">
-                <h3 className="text-lg font-medium mb-4">Últimos Usuários</h3>
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="text-lg font-medium">Usuários Recentes</h3>
+                  <Button variant="outline" size="sm" onClick={refetch}>
+                    <RefreshCw className="h-4 w-4 mr-2" />
+                    Atualizar
+                  </Button>
+                </div>
                 <Table>
                   <TableHeader>
                     <TableRow>
                       <TableHead>Nome</TableHead>
-                      <TableHead>Email</TableHead>
-                      <TableHead>Plano</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Último Acesso</TableHead>
+                      <TableHead>Role</TableHead>
+                      <TableHead>Projetos</TableHead>
+                      <TableHead>Hábitos</TableHead>
+                      <TableHead>Subcérebros</TableHead>
+                      <TableHead>Criado em</TableHead>
                       <TableHead>Ações</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {mockUsersTable.map(user => (
+                    {userStats.slice(0, 10).map(user => (
                       <TableRow key={user.id}>
                         <TableCell>{user.name}</TableCell>
-                        <TableCell>{user.email}</TableCell>
-                        <TableCell>{user.plan}</TableCell>
                         <TableCell>
                           <span className={`px-2 py-1 rounded-full text-xs ${
-                            user.status === 'Ativo' ? 'bg-green-500/20 text-green-500' :
-                            user.status === 'Vitalício' ? 'bg-purple-500/20 text-purple-500' :
-                            'bg-red-500/20 text-red-500'
+                            user.role === 'master' ? 'bg-red-500/20 text-red-500' :
+                            user.role === 'admin' ? 'bg-purple-500/20 text-purple-500' :
+                            'bg-green-500/20 text-green-500'
                           }`}>
-                            {user.status}
+                            {user.role}
                           </span>
                         </TableCell>
-                        <TableCell>{user.lastAccess}</TableCell>
+                        <TableCell>{user.total_projects}</TableCell>
+                        <TableCell>{user.total_habits}</TableCell>
+                        <TableCell>{user.total_subcerebros}</TableCell>
+                        <TableCell>{new Date(user.created_at).toLocaleDateString('pt-BR')}</TableCell>
                         <TableCell>
-                          <Button variant="ghost" size="sm">Ver</Button>
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            onClick={() => updateUserRole(user.id, user.role === 'admin' ? 'user' : 'admin')}
+                          >
+                            Toggle Admin
+                          </Button>
                         </TableCell>
                       </TableRow>
                     ))}
@@ -356,20 +315,12 @@ export default function AdminDashboard() {
       case "users":
         return (
           <div className="space-y-8">
-            <h2 className="text-2xl font-bold">Usuários</h2>
-            
-            <div className="flex justify-between items-center mb-6">
-              <div className="flex gap-2">
-                <Button variant="outline" size="sm">Todos</Button>
-                <Button variant="outline" size="sm">Ativos</Button>
-                <Button variant="outline" size="sm">Fundadores</Button>
-                <Button variant="outline" size="sm">Pioneiros</Button>
-              </div>
-              
-              <div className="flex gap-2">
-                <Button variant="outline" size="sm">Exportar CSV</Button>
-                <Button variant="outline" size="sm">Filtrar</Button>
-              </div>
+            <div className="flex justify-between items-center">
+              <h2 className="text-2xl font-bold">Usuários</h2>
+              <Button variant="outline" size="sm" onClick={refetch}>
+                <RefreshCw className="h-4 w-4 mr-2" />
+                Atualizar
+              </Button>
             </div>
             
             <Card className="bg-[#141429]/80 border-border/50">
@@ -378,32 +329,41 @@ export default function AdminDashboard() {
                   <TableHeader>
                     <TableRow>
                       <TableHead>Nome</TableHead>
-                      <TableHead>Email</TableHead>
-                      <TableHead>Plano</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Último Acesso</TableHead>
+                      <TableHead>Role</TableHead>
+                      <TableHead>Projetos</TableHead>
+                      <TableHead>Hábitos</TableHead>
+                      <TableHead>Subcérebros</TableHead>
+                      <TableHead>Último acesso</TableHead>
+                      <TableHead>Criado em</TableHead>
                       <TableHead>Ações</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {mockUsersTable.map(user => (
+                    {userStats.map(user => (
                       <TableRow key={user.id}>
                         <TableCell>{user.name}</TableCell>
-                        <TableCell>{user.email}</TableCell>
-                        <TableCell>{user.plan}</TableCell>
                         <TableCell>
                           <span className={`px-2 py-1 rounded-full text-xs ${
-                            user.status === 'Ativo' ? 'bg-green-500/20 text-green-500' :
-                            user.status === 'Vitalício' ? 'bg-purple-500/20 text-purple-500' :
-                            'bg-red-500/20 text-red-500'
+                            user.role === 'master' ? 'bg-red-500/20 text-red-500' :
+                            user.role === 'admin' ? 'bg-purple-500/20 text-purple-500' :
+                            'bg-green-500/20 text-green-500'
                           }`}>
-                            {user.status}
+                            {user.role}
                           </span>
                         </TableCell>
-                        <TableCell>{user.lastAccess}</TableCell>
+                        <TableCell>{user.total_projects}</TableCell>
+                        <TableCell>{user.total_habits}</TableCell>
+                        <TableCell>{user.total_subcerebros}</TableCell>
+                        <TableCell>{new Date(user.last_sign_in_at).toLocaleDateString('pt-BR')}</TableCell>
+                        <TableCell>{new Date(user.created_at).toLocaleDateString('pt-BR')}</TableCell>
                         <TableCell className="space-x-2">
-                          <Button variant="ghost" size="sm">Ver</Button>
-                          <Button variant="ghost" size="sm">Editar</Button>
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            onClick={() => updateUserRole(user.id, user.role === 'admin' ? 'user' : 'admin')}
+                          >
+                            Toggle Admin
+                          </Button>
                         </TableCell>
                       </TableRow>
                     ))}
@@ -414,253 +374,64 @@ export default function AdminDashboard() {
           </div>
         );
       
-      case "financial":
+      case "content":
         return (
           <div className="space-y-8">
-            <h2 className="text-2xl font-bold">Financeiro</h2>
+            <h2 className="text-2xl font-bold">Conteúdo do Sistema</h2>
             
-            {/* Financial Overview Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               <MetricCard 
-                title="Total de assinantes" 
-                value={1487} 
-                icon={<Users className="h-6 w-6 text-primary" />} 
+                title="Total de Projetos" 
+                value={metrics?.totalProjects || 0} 
+                icon={<Inbox className="h-6 w-6 text-blue-500" />} 
               />
               <MetricCard 
-                title="Plano R$19/mês" 
-                value={982} 
-                icon={<CreditCard className="h-6 w-6 text-green-500" />} 
+                title="Total de Hábitos" 
+                value={metrics?.totalHabits || 0} 
+                icon={<ListChecks className="h-6 w-6 text-green-500" />} 
               />
               <MetricCard 
-                title="Plano R$49/mês" 
-                value={505} 
-                icon={<CreditCard className="h-6 w-6 text-blue-500" />} 
+                title="Total de Subcérebros" 
+                value={metrics?.totalSubcerebros || 0} 
+                icon={<Brain className="h-6 w-6 text-purple-500" />} 
               />
               <MetricCard 
-                title="Receita mensal (MRR)" 
-                value={"R$ " + mockMetrics.mrrRevenue} 
-                icon={<TrendingUp className="h-6 w-6 text-emerald-500" />} 
+                title="Consultas à Athena" 
+                value={metrics?.totalAthenaLogs || 0} 
+                icon={<MessageSquare className="h-6 w-6 text-cyan-500" />} 
               />
             </div>
-            
-            {/* Subscriptions Tab */}
-            <div>
-              <h3 className="text-xl font-medium mb-4">Assinaturas Recorrentes</h3>
-              <Card className="bg-[#141429]/80 border-border/50">
-                <CardContent className="p-6">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Nome</TableHead>
-                        <TableHead>Plano</TableHead>
-                        <TableHead>Email</TableHead>
-                        <TableHead>Data</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Gateway</TableHead>
-                        <TableHead>Ações</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {mockSubscriptions.map(sub => (
-                        <TableRow key={sub.id}>
-                          <TableCell>{sub.name}</TableCell>
-                          <TableCell>{sub.plan}</TableCell>
-                          <TableCell>{sub.email}</TableCell>
-                          <TableCell>{sub.date}</TableCell>
-                          <TableCell>
-                            <span className={`px-2 py-1 rounded-full text-xs ${
-                              sub.status === 'Ativo' ? 'bg-green-500/20 text-green-500' :
-                              'bg-red-500/20 text-red-500'
-                            }`}>
-                              {sub.status}
-                            </span>
-                          </TableCell>
-                          <TableCell>{sub.gateway}</TableCell>
-                          <TableCell>
-                            <Button variant="ghost" size="sm">Ver transações</Button>
+
+            <Card className="bg-[#141429]/80 border-border/50">
+              <CardContent className="p-6">
+                <h3 className="text-xl font-medium mb-4">Distribuição de Conteúdo por Usuário</h3>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Usuário</TableHead>
+                      <TableHead>Projetos</TableHead>
+                      <TableHead>Hábitos</TableHead>
+                      <TableHead>Subcérebros</TableHead>
+                      <TableHead>Total</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {userStats
+                      .sort((a, b) => (b.total_projects + b.total_habits + b.total_subcerebros) - (a.total_projects + a.total_habits + a.total_subcerebros))
+                      .slice(0, 20)
+                      .map(user => (
+                        <TableRow key={user.id}>
+                          <TableCell>{user.name}</TableCell>
+                          <TableCell>{user.total_projects}</TableCell>
+                          <TableCell>{user.total_habits}</TableCell>
+                          <TableCell>{user.total_subcerebros}</TableCell>
+                          <TableCell className="font-semibold">
+                            {user.total_projects + user.total_habits + user.total_subcerebros}
                           </TableCell>
                         </TableRow>
                       ))}
-                    </TableBody>
-                  </Table>
-                </CardContent>
-              </Card>
-            </div>
-            
-            {/* One-time contributions */}
-            <div>
-              <h3 className="text-xl font-medium mb-4">Contribuições Únicas</h3>
-              <Card className="bg-[#141429]/80 border-border/50">
-                <CardContent className="p-6">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Nome</TableHead>
-                        <TableHead>Email</TableHead>
-                        <TableHead>Valor</TableHead>
-                        <TableHead>Tipo</TableHead>
-                        <TableHead>Data</TableHead>
-                        <TableHead>Ações</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {mockContributions.map(contrib => (
-                        <TableRow key={contrib.id}>
-                          <TableCell>{contrib.name}</TableCell>
-                          <TableCell>{contrib.email}</TableCell>
-                          <TableCell>{contrib.value}</TableCell>
-                          <TableCell>
-                            <span className={`px-2 py-1 rounded-full text-xs ${
-                              contrib.type === 'Fundador' ? 'bg-purple-500/20 text-purple-500' :
-                              'bg-blue-500/20 text-blue-500'
-                            }`}>
-                              {contrib.type}
-                            </span>
-                          </TableCell>
-                          <TableCell>{contrib.timestamp}</TableCell>
-                          <TableCell>
-                            <Button variant="ghost" size="sm">Ver comprovante</Button>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </CardContent>
-              </Card>
-            </div>
-            
-            {/* Investment proposals */}
-            <div>
-              <h3 className="text-xl font-medium mb-4">Propostas de Investimento</h3>
-              <Card className="bg-[#141429]/80 border-border/50">
-                <CardContent className="p-6">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Nome</TableHead>
-                        <TableHead>Valor proposto</TableHead>
-                        <TableHead>Expectativa</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Ações</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {mockInvestors.map(investor => (
-                        <TableRow key={investor.id}>
-                          <TableCell>{investor.name}</TableCell>
-                          <TableCell>{investor.value}</TableCell>
-                          <TableCell>{investor.expectation}</TableCell>
-                          <TableCell>
-                            <span className={`px-2 py-1 rounded-full text-xs ${
-                              investor.status === 'Aprovado' ? 'bg-green-500/20 text-green-500' :
-                              investor.status === 'Pendente' ? 'bg-yellow-500/20 text-yellow-500' :
-                              'bg-blue-500/20 text-blue-500'
-                            }`}>
-                              {investor.status}
-                            </span>
-                          </TableCell>
-                          <TableCell className="space-x-2">
-                            <Button variant="ghost" size="sm">Responder</Button>
-                            <Button variant="ghost" size="sm">Marcar</Button>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </CardContent>
-              </Card>
-            </div>
-          </div>
-        );
-      
-      case "operations":
-        return (
-          <div className="space-y-8">
-            <h2 className="text-2xl font-bold">Operações</h2>
-            
-            {/* System Status */}
-            <Card className="bg-[#141429]/80 border-border/50">
-              <CardContent className="p-6">
-                <h3 className="text-xl font-medium mb-4">Estado do Sistema</h3>
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <span>API Athena</span>
-                    <span className="bg-green-500/20 text-green-500 px-2 py-1 rounded-md text-xs">Online</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span>Banco de Dados (Supabase)</span>
-                    <span className="bg-green-500/20 text-green-500 px-2 py-1 rounded-md text-xs">Online</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span>Gateway de Pagamento</span>
-                    <span className="bg-green-500/20 text-green-500 px-2 py-1 rounded-md text-xs">Online</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span>Integração com Email</span>
-                    <span className="bg-green-500/20 text-green-500 px-2 py-1 rounded-md text-xs">Online</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span>Sistema de Notificações</span>
-                    <span className="bg-green-500/20 text-green-500 px-2 py-1 rounded-md text-xs">Online</span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-            
-            {/* Critical Error Logs */}
-            <Card className="bg-[#141429]/80 border-border/50">
-              <CardContent className="p-6">
-                <h3 className="text-xl font-medium mb-4">Logs de Erro Críticos</h3>
-                <div className="space-y-4">
-                  <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-md">
-                    <div className="flex justify-between">
-                      <span className="font-medium text-red-400">Falha na sincronização</span>
-                      <span className="text-xs text-muted-foreground">Hoje às 14:22</span>
-                    </div>
-                    <p className="text-sm mt-1">Tentativa de sincronização com serviço externo falhou após 3 tentativas</p>
-                  </div>
-                  <div className="p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-md">
-                    <div className="flex justify-between">
-                      <span className="font-medium text-yellow-400">Acesso não autorizado</span>
-                      <span className="text-xs text-muted-foreground">Ontem às 23:15</span>
-                    </div>
-                    <p className="text-sm mt-1">Múltiplas tentativas de acesso não autorizado detectadas</p>
-                  </div>
-                </div>
-                <Button className="mt-4" variant="outline" size="sm">Ver todos os logs</Button>
-              </CardContent>
-            </Card>
-            
-            {/* Actions */}
-            <Card className="bg-[#141429]/80 border-border/50">
-              <CardContent className="p-6">
-                <h3 className="text-xl font-medium mb-4">Ações Operacionais</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <Button className="w-full flex justify-between items-center">
-                    <span>Enviar broadcast</span>
-                    <Bell size={16} />
-                  </Button>
-                  <Button variant="outline" className="w-full flex justify-between items-center">
-                    <span>Ativar função beta</span>
-                    <Database size={16} />
-                  </Button>
-                  <Button variant="outline" className="w-full flex justify-between items-center">
-                    <span>Backup manual</span>
-                    <Shield size={16} />
-                  </Button>
-                  <Button variant="outline" className="w-full flex justify-between items-center">
-                    <span>Exportar relatório</span>
-                    <FileText size={16} />
-                  </Button>
-                  <Button variant="outline" className="w-full flex justify-between items-center">
-                    <span>Agendar manutenção</span>
-                    <Calendar size={16} />
-                  </Button>
-                  <Button variant="outline" className="w-full flex justify-between items-center">
-                    <span>Limpar cache</span>
-                    <Database size={16} />
-                  </Button>
-                </div>
+                  </TableBody>
+                </Table>
               </CardContent>
             </Card>
           </div>
@@ -717,33 +488,22 @@ export default function AdminDashboard() {
               <span>Usuários</span>
             </div>
             <div
-              onClick={() => setActiveTab("financial")}
+              onClick={() => setActiveTab("content")}
               className={`flex items-center gap-3 px-3 py-2 rounded-md cursor-pointer ${
-                activeTab === "financial"
+                activeTab === "content"
                   ? "bg-primary/20 text-primary"
                   : "hover:bg-accent/10"
               }`}
             >
-              <CreditCard className="h-5 w-5" />
-              <span>Financeiro</span>
-            </div>
-            <div
-              onClick={() => setActiveTab("operations")}
-              className={`flex items-center gap-3 px-3 py-2 rounded-md cursor-pointer ${
-                activeTab === "operations"
-                  ? "bg-primary/20 text-primary"
-                  : "hover:bg-accent/10"
-              }`}
-            >
-              <Database className="h-5 w-5" />
-              <span>Operações</span>
+              <FileText className="h-5 w-5" />
+              <span>Conteúdo</span>
             </div>
           </nav>
           
           <div className="mt-auto pt-4 border-t border-border/30">
             <Button variant="ghost" className="w-full justify-start gap-2" onClick={() => navigate("/")}>
               <Shield className="h-4 w-4" />
-              <span>Sair</span>
+              <span>Voltar ao App</span>
             </Button>
           </div>
         </motion.div>
@@ -752,8 +512,8 @@ export default function AdminDashboard() {
         <div className="flex-1 flex flex-col overflow-y-auto">
           <header className="bg-[#141429]/80 backdrop-blur-sm border-b border-border/50 p-4 sticky top-0 z-10">
             <div className="flex justify-between items-center">
-              <h2 className="text-xl font-bold">Painel Administrativo</h2>
-              <p className="text-sm text-muted-foreground">Aqui nasce o controle da mente coletiva.</p>
+              <h2 className="text-xl font-bold">Dashboard Administrativo - CÓRTEX</h2>
+              <p className="text-sm text-muted-foreground">Dados em tempo real do sistema</p>
             </div>
           </header>
           
@@ -774,7 +534,7 @@ function MetricCard({ title, value, icon }) {
         <div className="flex justify-between items-center">
           <div>
             <p className="text-muted-foreground text-sm">{title}</p>
-            <p className="text-2xl font-bold mt-1">{value.toLocaleString()}</p>
+            <p className="text-2xl font-bold mt-1">{typeof value === 'number' ? value.toLocaleString() : value}</p>
           </div>
           <div className="bg-primary/10 p-2 rounded-md">
             {icon}
@@ -784,4 +544,3 @@ function MetricCard({ title, value, icon }) {
     </Card>
   );
 }
-

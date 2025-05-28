@@ -24,9 +24,16 @@ export function PrivateRoute({
   }
   
   // Se requerer role específica, verificar
-  if (requiredRole === 'admin' || requiredRole === 'master') {
+  if (requiredRole === 'admin') {
     if (!profile || (profile.role !== 'admin' && profile.role !== 'master')) {
       // Não tem permissão, redirecionar para a página principal
+      return <Navigate to="/" replace />;
+    }
+  }
+  
+  if (requiredRole === 'master') {
+    if (!profile || profile.role !== 'master') {
+      // Só masters podem acessar
       return <Navigate to="/" replace />;
     }
   }
