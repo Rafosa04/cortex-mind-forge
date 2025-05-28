@@ -32,17 +32,14 @@ import {
 import { Area, AreaChart, ResponsiveContainer, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Bar, BarChart } from "recharts";
 import { useAuth } from "@/hooks/useAuth";
 import { useAdminData } from "@/hooks/useAdminData";
-import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
   const { user, profile } = useAuth();
   const { metrics, userStats, activityData, loading, refetch, updateUserRole } = useAdminData();
   const [activeTab, setActiveTab] = useState("overview");
-  const { toast } = useToast();
   
-  // Verificar se o usuário tem permissão de admin
+  // Verificar se o usuário tem permissão de admin (essa verificação é redundante pois já é feita no PrivateRoute, mas mantemos por segurança)
   useEffect(() => {
     if (!user) {
       navigate("/login");
@@ -54,64 +51,6 @@ export default function AdminDashboard() {
       return;
     }
   }, [user, profile, navigate]);
-
-  // Função para tornar o usuário específico um super usuário
-  const makeUserSuperAdmin = async () => {
-    try {
-      // Buscar o usuário pelo email na tabela profiles
-      const { data: userData, error: userError } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', user?.id)
-        .single();
-      
-      if (userError) {
-        console.error('Erro ao buscar usuário:', userError);
-        return;
-      }
-
-      // Verificar se é o usuário específico que deve ser promovido
-      if (user?.email === 'brunowayne8@gmail.com') {
-        // Atualizar o perfil para master
-        const { error: profileError } = await supabase
-          .from('profiles')
-          .update({ role: 'master' })
-          .eq('id', user.id);
-
-        if (profileError) {
-          console.error('Erro ao atualizar perfil:', profileError);
-          toast({
-            title: "Erro ao atualizar usuário",
-            description: "Não foi possível atualizar o usuário para super admin",
-            variant: "destructive"
-          });
-          return;
-        }
-
-        toast({
-          title: "Usuário atualizado",
-          description: "O usuário brunowayne8@gmail.com agora é um super admin",
-        });
-
-        // Recarregar dados
-        refetch();
-      }
-    } catch (error) {
-      console.error('Erro:', error);
-      toast({
-        title: "Erro",
-        description: "Ocorreu um erro ao atualizar o usuário",
-        variant: "destructive"
-      });
-    }
-  };
-
-  // Executar a função para tornar o usuário super admin na primeira vez
-  useEffect(() => {
-    if (profile?.role === 'admin' || profile?.role === 'master') {
-      makeUserSuperAdmin();
-    }
-  }, [profile]);
 
   if (loading) {
     return (
@@ -458,6 +397,11 @@ export default function AdminDashboard() {
               CÓRTEX ADMIN
             </h1>
             <p className="text-sm text-muted-foreground mt-1">Painel de Controle</p>
+            {profile?.role === 'master' && (
+              <div className="mt-2 px-2 py-1 bg-red-500/20 text-red-500 text-xs rounded-full">
+                Super Admin
+              </div>
+            )}
           </div>
           
           <nav className="space-y-1">
@@ -509,7 +453,10 @@ export default function AdminDashboard() {
           <header className="bg-[#141429]/80 backdrop-blur-sm border-b border-border/50 p-4 sticky top-0 z-10">
             <div className="flex justify-between items-center">
               <h2 className="text-xl font-bold">Dashboard Administrativo - CÓRTEX</h2>
-              <p className="text-sm text-muted-foreground">Dados em tempo real do sistema</p>
+              <div className="text-right">
+                <p className="text-sm text-muted-foreground">Dados em tempo real do sistema</p>
+                <p className="text-xs text-primary">Conectado como: {profile?.role}</p>
+              </div>
             </div>
           </header>
           
