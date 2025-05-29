@@ -1171,6 +1171,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      accept_subcerebro_recommendation: {
+        Args: { recommendation_id: string; user_id_param: string }
+        Returns: boolean
+      }
       calculate_habit_streak: {
         Args: { habit_id_param: string }
         Returns: number
@@ -1184,6 +1188,20 @@ export type Database = {
           action_suggestion: string
           priority: number
         }[]
+      }
+      generate_subcerebro_recommendations: {
+        Args: { target_user_id: string }
+        Returns: {
+          recommended_subcerebro_id: string
+          source_subcerebro_id: string
+          recommendation_type: string
+          similarity_score: number
+          reasoning: string
+        }[]
+      }
+      reject_subcerebro_recommendation: {
+        Args: { recommendation_id: string; user_id_param: string }
+        Returns: boolean
       }
     }
     Enums: {

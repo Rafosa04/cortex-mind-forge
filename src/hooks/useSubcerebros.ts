@@ -189,7 +189,7 @@ export const useSubcerebros = () => {
         .from('subcerebros')
         .update({
           ...updateData,
-          last_access: new Date().toISOString()
+          updated_at: new Date().toISOString()
         })
         .eq('id', id)
         .eq('user_id', user.id)
@@ -206,10 +206,13 @@ export const useSubcerebros = () => {
         prev.map(s => s.id === id ? updatedSubcerebro : s)
       );
 
-      toast({
-        title: "Sucesso",
-        description: "Subcérebro atualizado com sucesso!"
-      });
+      // Só mostrar toast se não for apenas atualização de último acesso
+      if (!data.last_access || Object.keys(data).length > 2) {
+        toast({
+          title: "Sucesso",
+          description: "Subcérebro atualizado com sucesso!"
+        });
+      }
 
       return true;
     } catch (err: any) {

@@ -1,14 +1,17 @@
 
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Brain, Plus, Search, Filter, X } from 'lucide-react';
+import { Brain, Plus, Search, Filter, X, Target } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useSubcerebros, Subcerebro } from '@/hooks/useSubcerebros';
+import { useSubcerebroRecommendations } from '@/hooks/useSubcerebroRecommendations';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { SubcerebroCreationForm } from './SubcerebroCreationForm';
+import { SubcerebroDetail } from './SubcerebroDetail';
+import { RecommendationCard } from './RecommendationCard';
 
 interface SubcerebroManagerProps {
   onSubcerebroSelect?: (subcerebro: Subcerebro) => void;
@@ -16,10 +19,21 @@ interface SubcerebroManagerProps {
 }
 
 export const SubcerebroManager = ({ onSubcerebroSelect, selectedSubcerebroId }: SubcerebroManagerProps) => {
-  const { subcerebros, loading, deleteSubcerebro } = useSubcerebros();
+  const { subcerebros, loading, deleteSubcerebro, updateSubcerebro } = useSubcerebros();
+  const { 
+    recommendations, 
+    loading: recommendationsLoading,
+    generateRecommendations,
+    acceptRecommendation,
+    rejectRecommendation
+  } = useSubcerebroRecommendations();
+
   const [searchQuery, setSearchQuery] = useState('');
   const [filterArea, setFilterArea] = useState('all');
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [selectedSubcerebro, setSelectedSubcerebro] = useState<Subcerebro | null>(null);
+  const [isDetailOpen, setIsDetailOpen] = useState(false);
+  const [showRecommendations, setShowRecommendations] = useState(false);
 
   // Filtrar subcérebros
   const filteredSubcerebros = subcerebros.filter(sub => {
@@ -41,6 +55,24 @@ export const SubcerebroManager = ({ onSubcerebroSelect, selectedSubcerebroId }: 
     }
   };
 
+  const handleSubcerebroClick = (subcerebro: Subcerebro) => {
+    // Atualizar último acesso
+    updateSubcerebro({
+      id: subcerebro.id,
+      last_access: new Date().toISOString()
+    });
+
+    setSelectedSubcerebro(subcerebro);
+    setIsDetailOpen(true);
+    onSubcerebroSelect?.(subcerebro);
+  };
+
+  const handleEdit = (subcerebro: Subcerebro) => {
+    setSelectedSubcerebro(subcerebro);
+    setIsDetailOpen(false);
+    setIsCreateModalOpen(true);
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center p-8">
@@ -58,10 +90,22 @@ export const SubcerebroManager = ({ onSubcerebroSelect, selectedSubcerebroId }: 
             <Brain className="h-5 w-5" />
             Meus Subcérebros ({filteredSubcerebros.length})
           </h3>
-          <Button onClick={() => setIsCreateModalOpen(true)} className="flex items-center gap-2">
-            <Plus className="h-4 w-4" />
-            Novo Subcérebro
-          </Button>
+          <div className="flex gap-2">
+            {recommendations.length > 0 && (
+              <Button 
+                variant="outline" 
+                onClick={() => setShowRecommendations(true)}
+                className="flex items-center gap-2"
+              >
+                <Target className="h-4 w-4" />
+                {recommendations.length} Sugestões
+              </Button>
+            )}
+            <Button onClick={() => setIsCreateModalOpen(true)} className="flex items-center gap-2">
+              <Plus className="h-4 w-4" />
+              Novo Subcérebro
+            </Button>
+          </div>
         </div>
 
         {/* Filtros */}
@@ -89,6 +133,17 @@ export const SubcerebroManager = ({ onSubcerebroSelect, selectedSubcerebroId }: 
               ))}
             </SelectContent>
           </Select>
+
+          {recommendations.length > 0 && (
+            <Button 
+              variant="outline"
+              onClick={generateRecommendations}
+              disabled={recommendationsLoading}
+            >
+              <Target className="h-4 w-4 mr-2" />
+              Gerar Novas
+            </Button>
+          )}
         </div>
       </div>
 
@@ -124,13 +179,13 @@ export const SubcerebroManager = ({ onSubcerebroSelect, selectedSubcerebroId }: 
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               className={`
-                relative p-4 rounded-lg border transition-all cursor-pointer
+                group relative p-4 rounded-lg border transition-all cursor-pointer hover:shadow-md
                 ${selectedSubcerebroId === subcerebro.id 
                   ? 'border-primary bg-primary/5' 
                   : 'border-border hover:border-primary/50'
                 }
               `}
-              onClick={() => onSubcerebroSelect?.(subcerebro)}
+              onClick={() => handleSubcerebroClick(subcerebro)}
             >
               {/* Cabeçalho */}
               <div className="flex items-start justify-between mb-3">
@@ -192,18 +247,73 @@ export const SubcerebroManager = ({ onSubcerebroSelect, selectedSubcerebroId }: 
         </div>
       )}
 
-      {/* Modal de criação */}
+      {/* Modal de criação/edição */}
       <Dialog open={isCreateModalOpen} onOpenChange={setIsCreateModalOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Brain className="h-5 w-5" />
-              Criar Novo Subcérebro
+              {selectedSubcerebro ? 'Editar Subcérebro' : 'Criar Novo Subcérebro'}
             </DialogTitle>
           </DialogHeader>
-          <SubcerebroCreationForm onSubmit={() => setIsCreateModalOpen(false)} />
+          <SubcerebroCreationForm 
+            subcerebro={selectedSubcerebro}
+            onSubmit={() => {
+              setIsCreateModalOpen(false);
+              setSelectedSubcerebro(null);
+            }} 
+          />
         </DialogContent>
       </Dialog>
+
+      {/* Modal de recomendações */}
+      <Dialog open={showRecommendations} onOpenChange={setShowRecommendations}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Target className="h-5 w-5" />
+              Recomendações de Conexões ({recommendations.length})
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 mt-4">
+            {recommendations.length > 0 ? (
+              recommendations.map((recommendation) => (
+                <RecommendationCard
+                  key={recommendation.id}
+                  recommendation={recommendation}
+                  onAccept={acceptRecommendation}
+                  onReject={rejectRecommendation}
+                  isLoading={recommendationsLoading}
+                />
+              ))
+            ) : (
+              <div className="text-center py-8 text-muted-foreground">
+                <Target className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                <p>Nenhuma recomendação disponível</p>
+                <Button 
+                  onClick={generateRecommendations}
+                  className="mt-4"
+                  disabled={recommendationsLoading}
+                >
+                  Gerar Recomendações
+                </Button>
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Drawer de detalhes */}
+      <SubcerebroDetail
+        subcerebro={selectedSubcerebro}
+        isOpen={isDetailOpen}
+        onClose={() => {
+          setIsDetailOpen(false);
+          setSelectedSubcerebro(null);
+        }}
+        onEdit={handleEdit}
+        onDelete={handleDelete}
+      />
     </div>
   );
 };
