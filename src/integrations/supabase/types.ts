@@ -84,6 +84,63 @@ export type Database = {
         }
         Relationships: []
       }
+      athena_insights: {
+        Row: {
+          action_suggestion: string | null
+          category: string
+          confidence_score: number | null
+          context_data: Json | null
+          created_at: string
+          description: string
+          expires_at: string | null
+          id: string
+          priority: number | null
+          related_item_id: string | null
+          related_item_type: string | null
+          status: string | null
+          title: string
+          type: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          action_suggestion?: string | null
+          category: string
+          confidence_score?: number | null
+          context_data?: Json | null
+          created_at?: string
+          description: string
+          expires_at?: string | null
+          id?: string
+          priority?: number | null
+          related_item_id?: string | null
+          related_item_type?: string | null
+          status?: string | null
+          title: string
+          type: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          action_suggestion?: string | null
+          category?: string
+          confidence_score?: number | null
+          context_data?: Json | null
+          created_at?: string
+          description?: string
+          expires_at?: string | null
+          id?: string
+          priority?: number | null
+          related_item_id?: string | null
+          related_item_type?: string | null
+          status?: string | null
+          title?: string
+          type?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       athena_logs: {
         Row: {
           context_id: string | null
@@ -114,6 +171,48 @@ export type Database = {
           prompt?: string
           response?: string | null
           user_id?: string
+        }
+        Relationships: []
+      }
+      athena_predictions: {
+        Row: {
+          accuracy_score: number | null
+          created_at: string
+          factors: Json | null
+          id: string
+          prediction_label: string | null
+          prediction_type: string
+          prediction_value: number | null
+          target_id: string | null
+          target_type: string
+          user_id: string
+          valid_until: string | null
+        }
+        Insert: {
+          accuracy_score?: number | null
+          created_at?: string
+          factors?: Json | null
+          id?: string
+          prediction_label?: string | null
+          prediction_type: string
+          prediction_value?: number | null
+          target_id?: string | null
+          target_type: string
+          user_id: string
+          valid_until?: string | null
+        }
+        Update: {
+          accuracy_score?: number | null
+          created_at?: string
+          factors?: Json | null
+          id?: string
+          prediction_label?: string | null
+          prediction_type?: string
+          prediction_value?: number | null
+          target_id?: string | null
+          target_type?: string
+          user_id?: string
+          valid_until?: string | null
         }
         Relationships: []
       }
@@ -193,33 +292,42 @@ export type Database = {
       }
       diary_entries: {
         Row: {
+          athena_analysis: Json | null
           content: string
           created_at: string
           date: string
           emotion: string
           id: string
+          sentiment_label: string | null
+          sentiment_score: number | null
           title: string | null
           type: string
           updated_at: string
           user_id: string
         }
         Insert: {
+          athena_analysis?: Json | null
           content: string
           created_at?: string
           date?: string
           emotion: string
           id?: string
+          sentiment_label?: string | null
+          sentiment_score?: number | null
           title?: string | null
           type?: string
           updated_at?: string
           user_id: string
         }
         Update: {
+          athena_analysis?: Json | null
           content?: string
           created_at?: string
           date?: string
           emotion?: string
           id?: string
+          sentiment_label?: string | null
+          sentiment_score?: number | null
           title?: string | null
           type?: string
           updated_at?: string
@@ -764,6 +872,57 @@ export type Database = {
         }
         Relationships: []
       }
+      subcerebro_recommendations: {
+        Row: {
+          created_at: string
+          id: string
+          reasoning: string | null
+          recommendation_type: string
+          recommended_subcerebro_id: string | null
+          similarity_score: number | null
+          source_subcerebro_id: string | null
+          status: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          reasoning?: string | null
+          recommendation_type: string
+          recommended_subcerebro_id?: string | null
+          similarity_score?: number | null
+          source_subcerebro_id?: string | null
+          status?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          reasoning?: string | null
+          recommendation_type?: string
+          recommended_subcerebro_id?: string | null
+          similarity_score?: number | null
+          source_subcerebro_id?: string | null
+          status?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subcerebro_recommendations_recommended_subcerebro_id_fkey"
+            columns: ["recommended_subcerebro_id"]
+            isOneToOne: false
+            referencedRelation: "subcerebros"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "subcerebro_recommendations_source_subcerebro_id_fkey"
+            columns: ["source_subcerebro_id"]
+            isOneToOne: false
+            referencedRelation: "subcerebros"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       subcerebros: {
         Row: {
           area: string | null
@@ -1015,6 +1174,16 @@ export type Database = {
       calculate_habit_streak: {
         Args: { habit_id_param: string }
         Returns: number
+      }
+      generate_proactive_insights: {
+        Args: { target_user_id: string }
+        Returns: {
+          insight_type: string
+          title: string
+          description: string
+          action_suggestion: string
+          priority: number
+        }[]
       }
     }
     Enums: {
