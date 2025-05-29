@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/useAuth';
 
 export interface DiaryEntry {
   id: string;
@@ -13,19 +14,26 @@ export interface DiaryEntry {
   date: string;
   created_at: string;
   updated_at: string;
+  sentiment_score?: number | null;
+  sentiment_label?: string | null;
+  athena_analysis?: any;
 }
 
 export function useDiary() {
   const [entries, setEntries] = useState<DiaryEntry[]>([]);
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
+  const { user } = useAuth();
 
   const fetchEntries = async () => {
+    if (!user) return;
+    
     setLoading(true);
     try {
       const { data, error } = await supabase
         .from('diary_entries')
         .select('*')
+        .eq('user_id', user.id)
         .order('date', { ascending: false });
 
       if (error) throw error;
@@ -47,9 +55,10 @@ export function useDiary() {
     content: string;
     emotion: string;
     type: string;
+    sentiment_score?: number;
+    sentiment_label?: string;
   }) => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('User not authenticated');
 
       const { data, error } = await supabase
@@ -57,6 +66,7 @@ export function useDiary() {
         .insert([{
           ...entryData,
           user_id: user.id,
+          date: new Date().toISOString()
         }])
         .select()
         .single();
@@ -86,8 +96,12 @@ export function useDiary() {
     try {
       const { data, error } = await supabase
         .from('diary_entries')
-        .update(updates)
+        .update({
+          ...updates,
+          updated_at: new Date().toISOString()
+        })
         .eq('id', id)
+        .eq('user_id', user?.id)
         .select()
         .single();
 
@@ -97,10 +111,13 @@ export function useDiary() {
         entry.id === id ? { ...entry, ...data } : entry
       ));
 
-      toast({
-        title: "Sucesso",
-        description: "Entrada atualizada com sucesso!",
-      });
+      // Só mostrar toast se não for apenas atualização de análise
+      if (!updates.sentiment_score || Object.keys(updates).length > 2) {
+        toast({
+          title: "Sucesso",
+          description: "Entrada atualizada com sucesso!",
+        });
+      }
 
       return data;
     } catch (error) {
@@ -119,7 +136,8 @@ export function useDiary() {
       const { error } = await supabase
         .from('diary_entries')
         .delete()
-        .eq('id', id);
+        .eq('id', id)
+        .eq('user_id', user?.id);
 
       if (error) throw error;
 
@@ -141,11 +159,14 @@ export function useDiary() {
   };
 
   const searchEntries = async (searchTerm: string) => {
+    if (!user) return;
+    
     setLoading(true);
     try {
       const { data, error } = await supabase
         .from('diary_entries')
         .select('*')
+        .eq('user_id', user.id)
         .or(`title.ilike.%${searchTerm}%,content.ilike.%${searchTerm}%,emotion.ilike.%${searchTerm}%`)
         .order('date', { ascending: false });
 
@@ -164,8 +185,10 @@ export function useDiary() {
   };
 
   useEffect(() => {
-    fetchEntries();
-  }, []);
+    if (user) {
+      fetchEntries();
+    }
+  }, [user]);
 
   return {
     entries,
