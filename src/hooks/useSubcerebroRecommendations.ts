@@ -65,7 +65,13 @@ export const useSubcerebroRecommendations = () => {
       }
 
       console.log('Recomendações encontradas:', data);
-      setRecommendations(data || []);
+      // Type assertion to ensure correct status type
+      const typedRecommendations = data?.map(item => ({
+        ...item,
+        status: item.status as 'pending' | 'accepted' | 'rejected'
+      })) || [];
+      
+      setRecommendations(typedRecommendations);
     } catch (error: any) {
       console.error('Erro ao carregar recomendações:', error);
       toast({

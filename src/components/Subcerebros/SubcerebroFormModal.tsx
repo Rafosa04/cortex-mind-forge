@@ -7,11 +7,12 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Slider } from '@/components/ui/slider';
-import { useSubcerebros, CreateSubcerebroData } from '@/hooks/useSubcerebros';
+import { useSubcerebros, CreateSubcerebroData, Subcerebro } from '@/hooks/useSubcerebros';
 import { X, Plus } from 'lucide-react';
 
 interface SubcerebroFormModalProps {
   onSubmit: () => void;
+  subcerebro?: Subcerebro | null;
   initialData?: Partial<CreateSubcerebroData>;
 }
 
@@ -28,15 +29,15 @@ const AREAS_PREDEFINIDAS = [
   'Espiritualidade'
 ];
 
-export const SubcerebroFormModal = ({ onSubmit, initialData }: SubcerebroFormModalProps) => {
-  const { createSubcerebro } = useSubcerebros();
+export const SubcerebroFormModal = ({ onSubmit, subcerebro, initialData }: SubcerebroFormModalProps) => {
+  const { createSubcerebro, updateSubcerebro } = useSubcerebros();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState<CreateSubcerebroData>({
-    nome: initialData?.nome || '',
-    descricao: initialData?.descricao || '',
-    tags: initialData?.tags || [],
-    area: initialData?.area || '',
-    relevancia: initialData?.relevancia || 5
+    nome: subcerebro?.nome || initialData?.nome || '',
+    descricao: subcerebro?.descricao || initialData?.descricao || '',
+    tags: subcerebro?.tags || initialData?.tags || [],
+    area: subcerebro?.area || initialData?.area || '',
+    relevancia: subcerebro?.relevancia || initialData?.relevancia || 5
   });
   const [newTag, setNewTag] = useState('');
 
@@ -49,7 +50,20 @@ export const SubcerebroFormModal = ({ onSubmit, initialData }: SubcerebroFormMod
 
     setLoading(true);
     try {
-      const success = await createSubcerebro(formData);
+      let success = false;
+
+      if (subcerebro) {
+        // Modo edição
+        success = await updateSubcerebro({
+          id: subcerebro.id,
+          ...formData
+        });
+      } else {
+        // Modo criação
+        const result = await createSubcerebro(formData);
+        success = !!result;
+      }
+
       if (success) {
         onSubmit();
       }
@@ -174,7 +188,7 @@ export const SubcerebroFormModal = ({ onSubmit, initialData }: SubcerebroFormMod
       {/* Ações */}
       <div className="flex gap-2 pt-4">
         <Button type="submit" disabled={loading || !formData.nome.trim()} className="flex-1">
-          {loading ? 'Criando...' : 'Criar Subcérebro'}
+          {loading ? (subcerebro ? 'Atualizando...' : 'Criando...') : (subcerebro ? 'Atualizar Subcérebro' : 'Criar Subcérebro')}
         </Button>
       </div>
     </form>

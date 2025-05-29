@@ -41,6 +41,7 @@ export interface CreateSubcerebroData {
 
 export interface UpdateSubcerebroData extends Partial<CreateSubcerebroData> {
   id: string;
+  last_access?: string;
 }
 
 export const useSubcerebros = () => {
