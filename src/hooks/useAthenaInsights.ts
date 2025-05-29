@@ -34,6 +34,24 @@ interface AthenaPrediction {
   created_at: string;
 }
 
+// Helper function to cast database response to AthenaInsight type
+const castToAthenaInsight = (dbInsight: any): AthenaInsight => ({
+  id: dbInsight.id,
+  type: dbInsight.type as 'proactive' | 'predictive' | 'contextual',
+  category: dbInsight.category,
+  title: dbInsight.title,
+  description: dbInsight.description,
+  action_suggestion: dbInsight.action_suggestion,
+  confidence_score: dbInsight.confidence_score,
+  context_data: dbInsight.context_data,
+  related_item_id: dbInsight.related_item_id,
+  related_item_type: dbInsight.related_item_type,
+  priority: dbInsight.priority,
+  status: dbInsight.status as 'active' | 'dismissed' | 'acted_upon',
+  expires_at: dbInsight.expires_at,
+  created_at: dbInsight.created_at
+});
+
 export const useAthenaInsights = () => {
   const [insights, setInsights] = useState<AthenaInsight[]>([]);
   const [predictions, setPredictions] = useState<AthenaPrediction[]>([]);
@@ -54,7 +72,7 @@ export const useAthenaInsights = () => {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setInsights(data || []);
+      setInsights((data || []).map(castToAthenaInsight));
     } catch (error) {
       console.error('Erro ao buscar insights:', error);
       toast({
@@ -192,9 +210,9 @@ export const useAthenaInsights = () => {
 
       if (error) throw error;
 
-      setInsights(prev => [data, ...prev]);
+      setInsights(prev => [castToAthenaInsight(data), ...prev]);
       
-      return data;
+      return castToAthenaInsight(data);
     } catch (error) {
       console.error('Erro ao criar insight:', error);
       throw error;
