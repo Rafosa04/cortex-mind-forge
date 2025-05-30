@@ -117,13 +117,17 @@ export default function Connecta() {
     };
   };
 
-  // Filter posts based on active tab
+  // Filter posts based on active tab and category
   const getFilteredPosts = () => {
     switch (activeTab) {
+      case "feed":
+        // Feed mostra posts de todas as categorias
+        return posts;
       case "trending":
+        // Em Alta mostra posts mais curtidos de todas as categorias
         return [...posts].sort((a, b) => b.likes - a.likes);
       case "following":
-        // TODO: Filtrar posts de usuários seguidos
+        // Seguindo mostra posts de usuários seguidos (por enquanto simulado)
         return posts.filter((_, index) => index % 2 === 0);
       default:
         return posts;
@@ -263,6 +267,11 @@ export default function Connecta() {
                 <div className="text-center py-8 text-gray-400">
                   Carregando posts em alta...
                 </div>
+              ) : getFilteredPosts().length === 0 ? (
+                <div className="text-center py-12 text-gray-500">
+                  <p className="text-lg mb-2">Nenhum post em alta encontrado</p>
+                  <p className="text-sm">Curta alguns posts para ver o que está em alta!</p>
+                </div>
               ) : (
                 <AnimatePresence mode="popLayout">
                   {getFilteredPosts().map((post, i) => (
@@ -290,6 +299,11 @@ export default function Connecta() {
               {postsLoading ? (
                 <div className="text-center py-8 text-gray-400">
                   Carregando posts de quem você segue...
+                </div>
+              ) : getFilteredPosts().length === 0 ? (
+                <div className="text-center py-12 text-gray-500">
+                  <p className="text-lg mb-2">Nenhum post de quem você segue</p>
+                  <p className="text-sm">Siga outros usuários para ver seus posts aqui!</p>
                 </div>
               ) : (
                 <AnimatePresence mode="popLayout">
