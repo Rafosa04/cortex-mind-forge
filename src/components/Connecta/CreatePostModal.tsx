@@ -11,7 +11,7 @@ import { Brain, Lightbulb, TreePine } from 'lucide-react';
 interface CreatePostModalProps {
   open: boolean;
   onClose: () => void;
-  onSubmit: (content: string, category: 'focus' | 'expansion' | 'reflection', imageUrl?: string) => Promise<void>;
+  onSubmit: (content: string, category: 'focus' | 'expansion' | 'reflection', imageUrl?: string) => Promise<any>;
   loading?: boolean;
 }
 
@@ -52,8 +52,6 @@ export default function CreatePostModal({ open, onClose, onSubmit, loading }: Cr
   const handleCategoryChange = (value: string) => {
     setCategory(value as 'focus' | 'expansion' | 'reflection');
   };
-
-  const selectedCategory = categoryOptions.find(opt => opt.value === category);
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
