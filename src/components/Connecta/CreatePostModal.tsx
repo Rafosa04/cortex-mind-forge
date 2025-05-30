@@ -11,7 +11,7 @@ import { Brain, Lightbulb, TreePine } from 'lucide-react';
 interface CreatePostModalProps {
   open: boolean;
   onClose: () => void;
-  onSubmit: (content: string, category: 'focus' | 'expansion' | 'reflection', imageUrl?: string) => void;
+  onSubmit: (content: string, category: 'focus' | 'expansion' | 'reflection', imageUrl?: string) => Promise<void>;
   loading?: boolean;
 }
 
@@ -25,18 +25,28 @@ export default function CreatePostModal({ open, onClose, onSubmit, loading }: Cr
   const [content, setContent] = useState('');
   const [category, setCategory] = useState<'focus' | 'expansion' | 'reflection'>('focus');
   const [imageUrl, setImageUrl] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!content.trim()) return;
+    if (!content.trim() || isSubmitting) return;
     
-    onSubmit(content.trim(), category, imageUrl.trim() || undefined);
+    setIsSubmitting(true);
     
-    // Reset form
-    setContent('');
-    setCategory('focus');
-    setImageUrl('');
-    onClose();
+    try {
+      await onSubmit(content.trim(), category, imageUrl.trim() || undefined);
+      
+      // Reset form only on success
+      setContent('');
+      setCategory('focus');
+      setImageUrl('');
+      onClose();
+    } catch (error) {
+      console.error('Erro ao criar post:', error);
+      // Don't close modal on error, let user try again
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleCategoryChange = (value: string) => {
@@ -62,12 +72,13 @@ export default function CreatePostModal({ open, onClose, onSubmit, loading }: Cr
               placeholder="Compartilhe sua reflexão, insight ou descoberta..."
               className="mt-2 bg-gray-900 border-gray-600 text-white min-h-[120px]"
               required
+              disabled={isSubmitting}
             />
           </div>
 
           <div>
             <Label>Categoria</Label>
-            <Select value={category} onValueChange={handleCategoryChange}>
+            <Select value={category} onValueChange={handleCategoryChange} disabled={isSubmitting}>
               <SelectTrigger className="mt-2 bg-gray-900 border-gray-600 text-white">
                 <SelectValue />
               </SelectTrigger>
@@ -100,6 +111,7 @@ export default function CreatePostModal({ open, onClose, onSubmit, loading }: Cr
               onChange={(e) => setImageUrl(e.target.value)}
               placeholder="https://exemplo.com/imagem.jpg"
               className="mt-2 bg-gray-900 border-gray-600 text-white"
+              disabled={isSubmitting}
             />
           </div>
 
@@ -109,15 +121,16 @@ export default function CreatePostModal({ open, onClose, onSubmit, loading }: Cr
               variant="ghost"
               onClick={onClose}
               className="text-gray-400 hover:text-white"
+              disabled={isSubmitting}
             >
               Cancelar
             </Button>
             <Button
               type="submit"
-              disabled={!content.trim() || loading}
+              disabled={!content.trim() || isSubmitting}
               className="bg-gradient-to-r from-purple-600 to-blue-500 hover:from-purple-700 hover:to-blue-600"
             >
-              {loading ? 'Publicando...' : 'Publicar'}
+              {isSubmitting ? 'Publicando...' : 'Publicar'}
             </Button>
           </div>
         </form>

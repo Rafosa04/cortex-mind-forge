@@ -55,7 +55,7 @@ export default function Connecta() {
     });
   };
 
-  // Handle new post
+  // Handle new post - corrigido para funcionar adequadamente
   const handleNewPost = () => {
     if (!user) {
       toast({
@@ -146,7 +146,7 @@ export default function Connecta() {
 
         {/* Main Content */}
         <motion.div 
-          className="flex-1 min-h-screen px-6"
+          className="flex-1 min-h-screen px-6 pb-24"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.5, delay: 0.2 }}
@@ -291,9 +291,9 @@ export default function Connecta() {
             </TabsContent>
           </Tabs>
 
-          {/* Floating New Post Button */}
+          {/* Floating New Post Button - agora bem posicionado sem conflito */}
           <motion.div
-            className="fixed bottom-8 right-8"
+            className="fixed bottom-8 right-8 z-40"
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
           >

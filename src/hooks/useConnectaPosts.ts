@@ -53,10 +53,6 @@ interface ConnectaPost {
 
 /**
  * Hook para gerenciar posts da rede social Connecta
- * 
- * @returns {Object} Estado e funções para manipular posts
- * @example
- * const { posts, loading, error, createPost, toggleLike } = useConnectaPosts();
  */
 export const useConnectaPosts = () => {
   const [posts, setPosts] = useState<ConnectaPost[]>([]);
@@ -163,37 +159,61 @@ export const useConnectaPosts = () => {
   /**
    * Cria um novo post
    */
-  const createPost = async (content: string, category: string) => {
+  const createPost = async (content: string, category: 'focus' | 'expansion' | 'reflection', imageUrl?: string) => {
     if (!user) {
       throw new Error('Usuário não autenticado');
     }
 
     try {
+      console.log('Criando post:', { content, category, imageUrl, user_id: user.id });
+
       const { data, error } = await supabase
         .from('posts')
         .insert([
           {
             content,
             category,
-            user_id: user.id
+            user_id: user.id,
+            image_url: imageUrl || null,
+            likes_count: 0,
+            comments_count: 0,
+            saves_count: 0
           }
         ])
-        .select()
+        .select(`
+          id,
+          content,
+          category,
+          created_at,
+          likes_count,
+          comments_count,
+          saves_count,
+          user_id,
+          image_url
+        `)
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Erro ao criar post:', error);
+        throw error;
+      }
+
+      console.log('Post criado com sucesso:', data);
 
       toast({
         title: "Post criado!",
         description: "Seu post foi publicado com sucesso.",
       });
 
+      // Recarregar posts para mostrar o novo post
       await fetchPosts();
+      
       return data;
     } catch (error: any) {
+      console.error('Erro completo ao criar post:', error);
       toast({
         title: "Erro",
-        description: "Não foi possível criar o post.",
+        description: "Não foi possível criar o post. Tente novamente.",
         variant: "destructive"
       });
       throw error;
@@ -287,7 +307,9 @@ export const useConnectaPosts = () => {
   };
 
   useEffect(() => {
-    fetchPosts();
+    if (user) {
+      fetchPosts();
+    }
   }, [user]);
 
   return {
@@ -300,46 +322,3 @@ export const useConnectaPosts = () => {
     refetch: fetchPosts
   };
 };
-
-/**
- * Teste unitário sugerido:
- * 
- * @example
- * // Mock do Supabase
- * jest.mock('@/integrations/supabase/client');
- * 
- * describe('useConnectaPosts', () => {
- *   it('should fetch posts with author data', async () => {
- *     const mockPosts = [
- *       {
- *         id: '1',
- *         content: 'Test post',
- *         profiles: { name: 'Test User', avatar_url: 'test.jpg' }
- *       }
- *     ];
- *     
- *     (supabase.from as jest.Mock).mockReturnValue({
- *       select: jest.fn().mockReturnValue({
- *         order: jest.fn().mockResolvedValue({ data: mockPosts, error: null })
- *       })
- *     });
- *     
- *     const { result } = renderHook(() => useConnectaPosts());
- *     await waitFor(() => expect(result.current.loading).toBe(false));
- *     expect(result.current.posts).toHaveLength(1);
- *   });
- * 
- *   it('should handle SelectQueryError properly', async () => {
- *     const mockError = { message: 'Database error' };
- *     
- *     (supabase.from as jest.Mock).mockReturnValue({
- *       select: jest.fn().mockReturnValue({
- *         order: jest.fn().mockResolvedValue({ data: null, error: mockError })
- *       })
- *     });
- *     
- *     const { result } = renderHook(() => useConnectaPosts());
- *     await waitFor(() => expect(result.current.error).toBe('Database error'));
- *   });
- * });
- */

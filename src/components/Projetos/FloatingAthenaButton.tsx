@@ -5,6 +5,7 @@ import { Bot } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { saveAthenaLog } from "@/utils/athenaUtils";
 import { toast } from "@/hooks/use-toast";
+import { useLocation } from "react-router-dom";
 
 type Props = {
   onClick?: () => void;
@@ -12,6 +13,13 @@ type Props = {
 };
 
 export function FloatingAthenaButton({ onClick, onAthenaAction }: Props) {
+  const location = useLocation();
+  
+  // Não mostrar o botão na página do Connecta para evitar conflito
+  if (location.pathname === '/connecta') {
+    return null;
+  }
+
   const handleClick = async () => {
     if (onClick) {
       onClick();
