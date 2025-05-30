@@ -55,7 +55,7 @@ export default function Connecta() {
     });
   };
 
-  // Handle new post - corrigido para funcionar adequadamente
+  // Handle new post
   const handleNewPost = () => {
     if (!user) {
       toast({
@@ -66,6 +66,30 @@ export default function Connecta() {
       return;
     }
     setShowCreateModal(true);
+  };
+
+  // Handle post creation with proper error handling
+  const handleCreatePost = async (content: string, category: 'focus' | 'expansion' | 'reflection', imageUrl?: string) => {
+    try {
+      console.log('Criando post:', { content, category, imageUrl });
+      const result = await createPost(content, category, imageUrl);
+      console.log('Post criado com sucesso:', result);
+      
+      toast({
+        title: "Post criado!",
+        description: "Seu post foi publicado com sucesso.",
+      });
+      
+      return result;
+    } catch (error: any) {
+      console.error('Erro ao criar post:', error);
+      toast({
+        title: "Erro",
+        description: error.message || "Não foi possível criar o post. Tente novamente.",
+        variant: "destructive"
+      });
+      throw error;
+    }
   };
 
   // Handle message selection
@@ -291,9 +315,9 @@ export default function Connecta() {
             </TabsContent>
           </Tabs>
 
-          {/* Floating New Post Button - agora bem posicionado sem conflito */}
+          {/* Floating New Post Button */}
           <motion.div
-            className="fixed bottom-8 right-8 z-40"
+            className="fixed bottom-8 right-8 z-50"
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
           >
@@ -325,7 +349,7 @@ export default function Connecta() {
       <CreatePostModal
         open={showCreateModal}
         onClose={() => setShowCreateModal(false)}
-        onSubmit={createPost}
+        onSubmit={handleCreatePost}
       />
     </div>
   );

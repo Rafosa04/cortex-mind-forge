@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -164,22 +163,26 @@ export const useConnectaPosts = () => {
       throw new Error('Usuário não autenticado');
     }
 
+    if (!content.trim()) {
+      throw new Error('Conteúdo não pode estar vazio');
+    }
+
     try {
       console.log('Criando post:', { content, category, imageUrl, user_id: user.id });
 
+      const postData = {
+        content: content.trim(),
+        category,
+        user_id: user.id,
+        image_url: imageUrl || null,
+        likes_count: 0,
+        comments_count: 0,
+        saves_count: 0
+      };
+
       const { data, error } = await supabase
         .from('posts')
-        .insert([
-          {
-            content,
-            category,
-            user_id: user.id,
-            image_url: imageUrl || null,
-            likes_count: 0,
-            comments_count: 0,
-            saves_count: 0
-          }
-        ])
+        .insert([postData])
         .select(`
           id,
           content,
@@ -194,16 +197,15 @@ export const useConnectaPosts = () => {
         .single();
 
       if (error) {
-        console.error('Erro ao criar post:', error);
-        throw error;
+        console.error('Erro do Supabase ao criar post:', error);
+        throw new Error(`Erro ao criar post: ${error.message}`);
+      }
+
+      if (!data) {
+        throw new Error('Nenhum dado retornado após criação do post');
       }
 
       console.log('Post criado com sucesso:', data);
-
-      toast({
-        title: "Post criado!",
-        description: "Seu post foi publicado com sucesso.",
-      });
 
       // Recarregar posts para mostrar o novo post
       await fetchPosts();
@@ -211,11 +213,6 @@ export const useConnectaPosts = () => {
       return data;
     } catch (error: any) {
       console.error('Erro completo ao criar post:', error);
-      toast({
-        title: "Erro",
-        description: "Não foi possível criar o post. Tente novamente.",
-        variant: "destructive"
-      });
       throw error;
     }
   };
