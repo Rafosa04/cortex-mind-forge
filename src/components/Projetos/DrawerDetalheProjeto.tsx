@@ -25,6 +25,7 @@ import { AthenaProjectSuggestion } from "./AthenaProjectSuggestion";
 import { ProjetoModoFoco } from "./ProjetoModoFoco";
 import { supabase } from "@/integrations/supabase/client";
 import { enableRealtimeForTable } from "@/utils/supabaseUtils";
+import { AthenaProjectInsights } from "./AthenaProjectInsights";
 
 type Props = {
   projeto: ProjectWithSteps | null;
@@ -410,7 +411,7 @@ export function DrawerDetalheProjeto({ projeto, open, onOpenChange, onProjectUpd
   return (
     <>
       <Drawer open={open} onOpenChange={onOpenChange}>
-        <DrawerContent className="w-full max-w-lg ml-auto rounded-t-2xl md:rounded-l-2xl md:rounded-t-none h-[90vh] md:h-auto glass-morphism shadow-xl border-l-2 border-[#60B5B5]/40">
+        <DrawerContent className="w-full max-w-4xl ml-auto rounded-t-2xl md:rounded-l-2xl md:rounded-t-none h-[90vh] md:h-auto glass-morphism shadow-xl border-l-2 border-[#60B5B5]/40">
           <DrawerHeader>
             <div className="flex justify-between items-center">
               <DrawerTitle className="text-2xl font-bold text-primary drop-shadow flex items-center gap-2">
@@ -505,170 +506,178 @@ export function DrawerDetalheProjeto({ projeto, open, onOpenChange, onProjectUpd
             </div>
           </DrawerHeader>
           
-          <div className="px-6 pb-6 overflow-y-auto max-h-[65vh]">
-            {/* Bloco Etapas */}
-            <div>
-              <div className="flex justify-between items-center">
-                <span className="font-semibold text-primary mb-2 block">Etapas</span>
-                <Button 
-                  size="sm" 
-                  variant="ghost"
-                  className="h-7 px-2 text-xs text-primary hover:bg-[#60B5B5]/10"
-                  onClick={handleSugerirEtapaComAthena}
-                >
-                  <Bot className="w-3 h-3 mr-1" />
-                  Sugerir com Athena
-                </Button>
+          <div className="flex flex-1 overflow-hidden">
+            {/* Coluna Principal (Esquerda) */}
+            <div className="flex-1 px-6 pb-6 overflow-y-auto max-h-[65vh]">
+              {/* Bloco Etapas */}
+              <div>
+                <div className="flex justify-between items-center">
+                  <span className="font-semibold text-primary mb-2 block">Etapas</span>
+                  <Button 
+                    size="sm" 
+                    variant="ghost"
+                    className="h-7 px-2 text-xs text-primary hover:bg-[#60B5B5]/10"
+                    onClick={handleSugerirEtapaComAthena}
+                  >
+                    <Bot className="w-3 h-3 mr-1" />
+                    Sugerir com Athena
+                  </Button>
+                </div>
+                
+                <div className="flex flex-col gap-2">
+                  {localProjeto.steps && localProjeto.steps.length > 0 ? (
+                    localProjeto.steps.map((etapa) => (
+                      <div key={etapa.id} className={`flex items-center gap-2 p-2 rounded-lg transition ${etapa.done ? "bg-[#60B5B522]" : "bg-[#191933]/40"}`}>
+                        <label className="flex items-center gap-2 cursor-pointer flex-grow">
+                          <input 
+                            type="checkbox" 
+                            checked={etapa.done} 
+                            onChange={() => handleToggleEtapa(etapa.id, !etapa.done)} 
+                            className="accent-[#60B5B5] w-5 h-5" 
+                          />
+                          <span className={etapa.done ? "line-through text-secondary/70" : ""}>
+                            {etapa.description}
+                          </span>
+                          {etapa.done && <CircleCheck className="w-4 h-4 text-[#60B5B5]" />}
+                        </label>
+                        <Button 
+                          size="icon" 
+                          variant="ghost" 
+                          className="h-6 w-6 text-red-400 hover:text-red-500 hover:bg-red-500/10"
+                          onClick={() => handleRemoveEtapa(etapa.id)}
+                        >
+                          <Trash2 className="w-3 h-3" />
+                        </Button>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="text-secondary/70 italic p-2">Nenhuma etapa definida.</div>
+                  )}
+                  
+                  <div className="mt-2 flex gap-2 items-center">
+                    <Input
+                      placeholder="Adicionar nova etapa..."
+                      value={novaEtapa}
+                      onChange={(e) => setNovaEtapa(e.target.value)}
+                      className="bg-[#191933]/40 border-[#60B5B5]/20"
+                      onKeyPress={(e) => e.key === 'Enter' && handleAddEtapa()}
+                    />
+                    <Button 
+                      size="sm" 
+                      variant="outline" 
+                      className="border-[#60B5B5] text-primary"
+                      onClick={handleAddEtapa}
+                      disabled={adicionandoEtapa || !novaEtapa.trim()}
+                    >
+                      <CirclePlus className="w-4 h-4 mr-1" />
+                      {adicionandoEtapa ? "Salvando..." : "Adicionar"}
+                    </Button>
+                  </div>
+                </div>
               </div>
               
-              <div className="flex flex-col gap-2">
-                {localProjeto.steps && localProjeto.steps.length > 0 ? (
-                  localProjeto.steps.map((etapa) => (
-                    <div key={etapa.id} className={`flex items-center gap-2 p-2 rounded-lg transition ${etapa.done ? "bg-[#60B5B522]" : "bg-[#191933]/40"}`}>
-                      <label className="flex items-center gap-2 cursor-pointer flex-grow">
-                        <input 
-                          type="checkbox" 
-                          checked={etapa.done} 
-                          onChange={() => handleToggleEtapa(etapa.id, !etapa.done)} 
-                          className="accent-[#60B5B5] w-5 h-5" 
-                        />
-                        <span className={etapa.done ? "line-through text-secondary/70" : ""}>
-                          {etapa.description}
-                        </span>
-                        {etapa.done && <CircleCheck className="w-4 h-4 text-[#60B5B5]" />}
-                      </label>
-                      <Button 
-                        size="icon" 
-                        variant="ghost" 
-                        className="h-6 w-6 text-red-400 hover:text-red-500 hover:bg-red-500/10"
-                        onClick={() => handleRemoveEtapa(etapa.id)}
-                      >
-                        <Trash2 className="w-3 h-3" />
-                      </Button>
-                    </div>
-                  ))
-                ) : (
-                  <div className="text-secondary/70 italic p-2">Nenhuma etapa definida.</div>
-                )}
+              {/* Bloco Conteúdo */}
+              <div className="mt-6">
+                <div className="flex justify-between items-center mb-2">
+                  <span className="font-semibold text-primary">Conteúdo / Anotações</span>
+                  <Button 
+                    size="sm" 
+                    variant="ghost" 
+                    className="h-7 px-2 text-xs"
+                    onClick={() => setEditandoConteudo(!editandoConteudo)}
+                  >
+                    <Edit className="w-3 h-3 mr-1" />
+                    {editandoConteudo ? "Cancelar" : "Editar"}
+                  </Button>
+                </div>
                 
-                <div className="mt-2 flex gap-2 items-center">
-                  <Input
-                    placeholder="Adicionar nova etapa..."
-                    value={novaEtapa}
-                    onChange={(e) => setNovaEtapa(e.target.value)}
-                    className="bg-[#191933]/40 border-[#60B5B5]/20"
-                    onKeyPress={(e) => e.key === 'Enter' && handleAddEtapa()}
-                  />
+                {editandoConteudo ? (
+                  <div className="flex flex-col gap-2">
+                    <Textarea 
+                      value={conteudo} 
+                      onChange={(e) => setConteudo(e.target.value)}
+                      rows={5}
+                      className="bg-[#191933]/60 border-[#60B5B5]/20 text-foreground/90"
+                      placeholder="Anote suas ideias, questões ou referências para este projeto..."
+                    />
+                    <Button 
+                      size="sm" 
+                      onClick={handleSaveContent}
+                      className="self-end"
+                    >
+                      Salvar
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="bg-[#191933]/60 p-3 rounded-lg text-foreground/90 min-h-[64px]">
+                    {conteudo ? conteudo : "Sem conteúdo ou anotações. Clique em Editar para adicionar."}
+                  </div>
+                )}
+              </div>
+              
+              {/* Histórico Narrativo */}
+              <div className="mt-6">
+                <span className="font-semibold text-primary mb-2 block">Histórico Narrativo</span>
+                <ul className="text-xs text-secondary/90 space-y-2">
+                  <li>[{formatDate(localProjeto.created_at)}] Projeto criado</li>
+                  {localProjeto.steps && localProjeto.steps.filter(s => s.done).map((step, i) => (
+                    <li key={i}>[{formatDate(step.created_at)}] Etapa "{step.description}" concluída</li>
+                  ))}
+                </ul>
+              </div>
+              
+              {/* Integrações */}
+              <div className="mt-6">
+                <span className="font-semibold text-primary mb-2 block">Integrações</span>
+                <div className="flex gap-2 flex-wrap">
                   <Button 
                     size="sm" 
                     variant="outline" 
-                    className="border-[#60B5B5] text-primary"
-                    onClick={handleAddEtapa}
-                    disabled={adicionandoEtapa || !novaEtapa.trim()}
+                    className="border-[#60B5B5]/40 text-primary gap-1 flex items-center"
+                    onClick={handleModoFoco}
                   >
-                    <CirclePlus className="w-4 h-4 mr-1" />
-                    {adicionandoEtapa ? "Salvando..." : "Adicionar"}
+                    <Eye className="w-4 h-4" />Modo Foco
                   </Button>
-                </div>
-              </div>
-            </div>
-            
-            {/* Bloco Conteúdo */}
-            <div className="mt-6">
-              <div className="flex justify-between items-center mb-2">
-                <span className="font-semibold text-primary">Conteúdo / Anotações</span>
-                <Button 
-                  size="sm" 
-                  variant="ghost" 
-                  className="h-7 px-2 text-xs"
-                  onClick={() => setEditandoConteudo(!editandoConteudo)}
-                >
-                  <Edit className="w-3 h-3 mr-1" />
-                  {editandoConteudo ? "Cancelar" : "Editar"}
-                </Button>
-              </div>
-              
-              {editandoConteudo ? (
-                <div className="flex flex-col gap-2">
-                  <Textarea 
-                    value={conteudo} 
-                    onChange={(e) => setConteudo(e.target.value)}
-                    rows={5}
-                    className="bg-[#191933]/60 border-[#60B5B5]/20 text-foreground/90"
-                    placeholder="Anote suas ideias, questões ou referências para este projeto..."
-                  />
+                  
                   <Button 
                     size="sm" 
-                    onClick={handleSaveContent}
-                    className="self-end"
+                    variant={localProjeto.is_favorite ? "secondary" : "outline"} 
+                    className={`${!localProjeto.is_favorite ? "border-[#993887]/40 text-secondary" : ""} gap-1 flex items-center`}
+                    onClick={handleToggleFavorite}
                   >
-                    Salvar
+                    <Star className={`w-4 h-4 ${localProjeto.is_favorite ? "fill-white" : ""}`} />
+                    {localProjeto.is_favorite ? "Favorito" : "Favoritar"}
+                  </Button>
+                  
+                  <Button 
+                    size="sm" 
+                    variant="outline" 
+                    className="border-[#60B5B5]/40 text-primary gap-1 flex items-center"
+                    onClick={handleShareProjeto}
+                  >
+                    <Share2 className="w-4 h-4" />Compartilhar
                   </Button>
                 </div>
-              ) : (
-                <div className="bg-[#191933]/60 p-3 rounded-lg text-foreground/90 min-h-[64px]">
-                  {conteudo ? conteudo : "Sem conteúdo ou anotações. Clique em Editar para adicionar."}
+              </div>
+              
+              {/* Progresso e Datas */}
+              <div className="mt-8 flex gap-12 items-center">
+                <div className="flex-1">
+                  <span className="block text-xs text-secondary">Progresso</span>
+                  <Progress value={localProjeto.progress} className="h-2 bg-[#191933]" />
+                  <span className="block text-xs mt-1 text-secondary">{localProjeto.progress}%</span>
                 </div>
-              )}
-            </div>
-            
-            {/* Histórico Narrativo */}
-            <div className="mt-6">
-              <span className="font-semibold text-primary mb-2 block">Histórico Narrativo</span>
-              <ul className="text-xs text-secondary/90 space-y-2">
-                <li>[{formatDate(localProjeto.created_at)}] Projeto criado</li>
-                {localProjeto.steps && localProjeto.steps.filter(s => s.done).map((step, i) => (
-                  <li key={i}>[{formatDate(step.created_at)}] Etapa "{step.description}" concluída</li>
-                ))}
-              </ul>
-            </div>
-            
-            {/* Integrações */}
-            <div className="mt-6">
-              <span className="font-semibold text-primary mb-2 block">Integrações</span>
-              <div className="flex gap-2 flex-wrap">
-                <Button 
-                  size="sm" 
-                  variant="outline" 
-                  className="border-[#60B5B5]/40 text-primary gap-1 flex items-center"
-                  onClick={handleModoFoco}
-                >
-                  <Eye className="w-4 h-4" />Modo Foco
-                </Button>
-                
-                <Button 
-                  size="sm" 
-                  variant={localProjeto.is_favorite ? "secondary" : "outline"} 
-                  className={`${!localProjeto.is_favorite ? "border-[#993887]/40 text-secondary" : ""} gap-1 flex items-center`}
-                  onClick={handleToggleFavorite}
-                >
-                  <Star className={`w-4 h-4 ${localProjeto.is_favorite ? "fill-white" : ""}`} />
-                  {localProjeto.is_favorite ? "Favorito" : "Favoritar"}
-                </Button>
-                
-                <Button 
-                  size="sm" 
-                  variant="outline" 
-                  className="border-[#60B5B5]/40 text-primary gap-1 flex items-center"
-                  onClick={handleShareProjeto}
-                >
-                  <Share2 className="w-4 h-4" />Compartilhar
-                </Button>
+                <div className="space-y-1 text-xs text-secondary/80">
+                  <div>Criado: <span>{formatDate(localProjeto.created_at)}</span></div>
+                  <div>Prazo: <span>{formatDate(localProjeto.deadline)}</span></div>
+                  <div>Última At.: <span>{formatDate(localProjeto.created_at)}</span></div>
+                </div>
               </div>
             </div>
             
-            {/* Progresso e Datas */}
-            <div className="mt-8 flex gap-12 items-center">
-              <div className="flex-1">
-                <span className="block text-xs text-secondary">Progresso</span>
-                <Progress value={localProjeto.progress} className="h-2 bg-[#191933]" />
-                <span className="block text-xs mt-1 text-secondary">{localProjeto.progress}%</span>
-              </div>
-              <div className="space-y-1 text-xs text-secondary/80">
-                <div>Criado: <span>{formatDate(localProjeto.created_at)}</span></div>
-                <div>Prazo: <span>{formatDate(localProjeto.deadline)}</span></div>
-                <div>Última At.: <span>{formatDate(localProjeto.created_at)}</span></div>
-              </div>
+            {/* Coluna de Insights da Athena (Direita) */}
+            <div className="w-80 border-l border-[#60B5B5]/20 p-6 overflow-y-auto bg-[#141429]/50">
+              <AthenaProjectInsights projeto={localProjeto} />
             </div>
           </div>
           
