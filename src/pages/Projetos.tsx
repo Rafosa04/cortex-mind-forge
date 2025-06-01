@@ -1,10 +1,11 @@
 
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { FiltroProjetos } from "@/components/Projetos/FiltroProjetos";
-import { ProjetoCard } from "@/components/Projetos/ProjetoCard";
-import { NovaCelulaModal } from "@/components/Projetos/NovaCelulaModal";
-import { Plus, Bot } from "lucide-react";
+import { EnhancedFiltroProjetos } from "@/components/Projetos/EnhancedFiltroProjetos";
+import { EnhancedProjetoCard } from "@/components/Projetos/EnhancedProjetoCard";
+import { EnhancedNovaCelulaModal } from "@/components/Projetos/EnhancedNovaCelulaModal";
+import { AthenaCommandBar } from "@/components/Projetos/AthenaCommandBar";
+import { Plus, Bot, Sparkles } from "lucide-react";
 import { motion } from "framer-motion";
 import { DrawerDetalheProjeto } from "@/components/Projetos/DrawerDetalheProjeto";
 import { FiltroLateralProjetos } from "@/components/Projetos/FiltroLateralProjetos";
@@ -17,11 +18,9 @@ import { toast } from "@/hooks/use-toast";
 import { ProjetoTimeline } from "@/components/Projetos/ProjetoTimeline";
 import { ProjetoGaleria } from "@/components/Projetos/ProjetoGaleria";
 
-// Modos de visualização possíveis, com type literal
 const modosVisao = ["Lista", "Kanban", "Linha do tempo", "Galeria"] as const;
 type ModoVisao = typeof modosVisao[number];
 
-// Status types for projects
 const STATUS_OPTIONS = ["ativo", "pausado", "concluído"] as const;
 type StatusOption = typeof STATUS_OPTIONS[number];
 
@@ -32,9 +31,10 @@ export default function Projetos() {
   const [modoVisao, setModoVisao] = useState<ModoVisao>("Lista");
   const [abrirAthena, setAbrirAthena] = useState(false);
   const [draggingProject, setDraggingProject] = useState<string | null>(null);
+  const [filterPriority, setFilterPriority] = useState<string | null>(null);
+  const [filterDeadline, setFilterDeadline] = useState<string | null>(null);
   const navigate = useNavigate();
   
-  // Get all projects data and functions from the hook
   const { 
     projetos, 
     allProjetos,
@@ -52,7 +52,6 @@ export default function Projetos() {
     setFilterStatus
   } = useProjetos();
 
-  // Extract all unique tags from projects for filtering
   const [availableTags, setAvailableTags] = useState<string[]>([]);
 
   useEffect(() => {
@@ -67,13 +66,63 @@ export default function Projetos() {
     }
   }, [allProjetos]);
 
+  // Enhanced filtering with AI insights
+  const getFilteredProjetos = () => {
+    let filtered = [...projetos];
+    
+    // AI Priority filtering
+    if (filterPriority) {
+      filtered = filtered.filter(projeto => {
+        const daysSinceCreation = Math.floor(
+          (new Date().getTime() - new Date(projeto.created_at).getTime()) / (1000 * 60 * 60 * 24)
+        );
+        
+        switch (filterPriority) {
+          case "critical":
+            return projeto.deadline && new Date(projeto.deadline) < new Date();
+          case "attention":
+            return projeto.status === "ativo" && daysSinceCreation > 14 && projeto.progress < 20;
+          case "good":
+            return projeto.progress > 60 && projeto.status === "ativo";
+          default:
+            return true;
+        }
+      });
+    }
+    
+    // Deadline filtering
+    if (filterDeadline) {
+      const today = new Date();
+      filtered = filtered.filter(projeto => {
+        if (!projeto.deadline && filterDeadline === "no-deadline") return true;
+        if (!projeto.deadline) return false;
+        
+        const deadline = new Date(projeto.deadline);
+        const diffDays = Math.ceil((deadline.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+        
+        switch (filterDeadline) {
+          case "overdue":
+            return diffDays < 0;
+          case "week":
+            return diffDays >= 0 && diffDays <= 7;
+          case "month":
+            return diffDays >= 0 && diffDays <= 30;
+          default:
+            return true;
+        }
+      });
+    }
+    
+    return filtered;
+  };
+
   const handleVerDetalhes = (projeto: ProjectWithSteps) => {
     setProjetoSelecionado(projeto);
     setDetalheAberto(true);
   };
 
   const getProjetosPorStatus = (status: string) => {
-    return projetos.filter(p => p.status === status);
+    return getFilteredProjetos().filter(p => p.status === status);
   };
 
   const handleRemoveProjeto = async (projetoId: string) => {
@@ -89,7 +138,6 @@ export default function Projetos() {
   };
 
   const handleSugerirEtapa = (projeto: ProjectWithSteps) => {
-    // Navigate to Athena chat with project context
     navigate(`/athena?project=${projeto.id}&type=etapa`);
   };
 
@@ -98,8 +146,28 @@ export default function Projetos() {
       navigate("/athena");
     }
   };
+
+  const handleAthenaCommand = (command: string) => {
+    toast({
+      title: "Comando Athena processado",
+      description: "Verifique o chat da Athena para ver a resposta",
+    });
+  };
+
+  const handleAthenaSearch = (query: string) => {
+    setFilterText(query);
+  };
+
+  const handleAthenaFilter = (query: string) => {
+    if (query.includes("atenção")) {
+      setFilterPriority("attention");
+    }
+    toast({
+      title: "Filtro IA aplicado",
+      description: query,
+    });
+  };
   
-  // Drag and drop handling
   const handleDragStart = (projectId: string) => {
     setDraggingProject(projectId);
   };
@@ -112,7 +180,7 @@ export default function Projetos() {
     e.preventDefault();
     
     if (draggingProject) {
-      const projectToUpdate = projetos.find(p => p.id === draggingProject);
+      const projectToUpdate = getFilteredProjetos().find(p => p.id === draggingProject);
       
       if (projectToUpdate && projectToUpdate.status !== newStatus) {
         atualizarStatusProjeto(draggingProject, newStatus);
@@ -152,59 +220,76 @@ export default function Projetos() {
 
   return (
     <div className="w-full flex flex-col md:flex-row fade-in">
-      {/* Filtro lateral (aparece só em md+) */}
       <FiltroLateralProjetos modo={modoVisao} setModo={setModoVisao} />
       
       <div className="flex-1 min-w-0 mt-4 md:mt-0">
-        <header className="flex items-center justify-between py-2 mb-2 gap-2 sm:gap-4 flex-wrap">
-          <motion.h2
-            className="text-xl sm:text-2xl md:text-3xl font-bold text-primary drop-shadow"
+        <header className="flex items-center justify-between py-2 mb-4 gap-2 sm:gap-4 flex-wrap">
+          <motion.div
+            className="flex flex-col"
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4 }}
           >
-            Meus Projetos
-          </motion.h2>
+            <h2 className="text-xl sm:text-2xl md:text-3xl font-bold bg-gradient-to-r from-[#993887] via-[#60B5B5] to-primary bg-clip-text text-transparent drop-shadow">
+              Minhas Células de Conhecimento
+            </h2>
+            <p className="text-sm text-secondary/70 mt-1">
+              Células vivas que evoluem com você • Potencializadas pela Athena
+            </p>
+          </motion.div>
+          
           <Button
             variant="default"
-            className="flex items-center gap-2 px-3 sm:px-5 py-1 sm:py-2 bg-primary hover:bg-secondary text-background rounded-lg font-bold shadow animate-card-pop neon-anim"
+            className="flex items-center gap-2 px-3 sm:px-6 py-2 sm:py-3 bg-gradient-to-r from-[#993887] to-[#60B5B5] hover:from-[#993887]/80 hover:to-[#60B5B5]/80 text-white rounded-lg font-bold shadow-lg neon-anim"
             onClick={() => setModalAberto(true)}
           >
-            <Plus className="w-4 h-4 sm:w-5 sm:h-5" /> Nova Célula
+            <Plus className="w-4 h-4 sm:w-5 sm:h-5" /> 
+            <Sparkles className="w-4 h-4 sm:w-5 sm:h-5" />
+            Nova Célula
           </Button>
-          <NovaCelulaModal open={modalAberto} onOpenChange={setModalAberto} />
         </header>
         
-        <FiltroProjetos 
+        {/* Enhanced Command Bar with Athena Integration */}
+        <AthenaCommandBar 
+          onCommand={handleAthenaCommand}
+          onSearch={handleAthenaSearch}
+          className="mb-6"
+        />
+        
+        <EnhancedFiltroProjetos 
           filterText={filterText}
           setFilterText={setFilterText}
           filterTags={filterTags}
           setFilterTags={setFilterTags}
           filterStatus={filterStatus}
           setFilterStatus={setFilterStatus}
+          filterPriority={filterPriority}
+          setFilterPriority={setFilterPriority}
+          filterDeadline={filterDeadline}
+          setFilterDeadline={setFilterDeadline}
           allTags={availableTags}
+          onAthenaFilter={handleAthenaFilter}
         />
         
-        {/* Estado de erro */}
         {error && !loading && (
           <div className="p-6 text-center">
-            <p className="text-red-400 mb-2">Erro ao carregar projetos</p>
+            <p className="text-red-400 mb-2">Erro ao carregar células</p>
             <Button onClick={() => carregarProjetos()} variant="outline">
               Tentar novamente
             </Button>
           </div>
         )}
         
-        {/* Estado vazio */}
-        {!loading && !error && projetos.length === 0 && (
+        {!loading && !error && getFilteredProjetos().length === 0 && (
           <div className="rounded-xl bg-[#191933]/60 p-6 sm:p-10 text-secondary/70 flex flex-col items-center justify-center h-[320px] fade-in">
-            <span className="text-xl">Nenhum projeto encontrado</span>
-            <div className="mt-4 text-base">
+            <Bot className="w-16 h-16 text-[#993887]/50 mb-4" />
+            <span className="text-xl mb-2">Nenhuma célula encontrada</span>
+            <div className="mt-4 text-base text-center max-w-md">
               {allProjetos.length === 0
-                ? "Crie sua primeira célula usando o botão 'Nova Célula'."
+                ? "Manifeste sua primeira célula de conhecimento e comece sua jornada no CÓRTEX."
                 : "Nenhum resultado corresponde aos filtros aplicados."}
             </div>
-            {allProjetos.length > 0 && projetos.length === 0 && (
+            {allProjetos.length > 0 && getFilteredProjetos().length === 0 && (
               <Button 
                 variant="outline" 
                 className="mt-4 border-[#993887]/40" 
@@ -212,6 +297,8 @@ export default function Projetos() {
                   setFilterText('');
                   setFilterTags([]);
                   setFilterStatus(null);
+                  setFilterPriority(null);
+                  setFilterDeadline(null);
                 }}
               >
                 Limpar filtros
@@ -220,16 +307,14 @@ export default function Projetos() {
           </div>
         )}
         
-        {/* Grid/List view */}
         <div className="relative">
-          {/* Lista */}
           {modoVisao === "Lista" && (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-7 fade-in mt-1">
               {loading ? (
                 renderLoaderCards()
               ) : (
-                projetos.map((projeto) => (
-                  <ProjetoCard
+                getFilteredProjetos().map((projeto) => (
+                  <EnhancedProjetoCard
                     key={projeto.id}
                     projeto={projeto}
                     onVerDetalhes={handleVerDetalhes}
@@ -242,17 +327,21 @@ export default function Projetos() {
             </div>
           )}
           
-          {/* Kanban */}
           {modoVisao === "Kanban" && (
             <div className="flex flex-col md:flex-row gap-4 md:gap-6 mt-1 fade-in min-h-[350px] overflow-x-auto pb-4">
               {STATUS_OPTIONS.map((status) => (
                 <div 
                   key={status} 
-                  className="flex-1 min-w-[250px] bg-[#191933]/70 rounded-xl p-4"
+                  className="flex-1 min-w-[250px] bg-[#191933]/70 rounded-xl p-4 border border-[#60B5B5]/20"
                   onDragOver={handleDragOver}
                   onDrop={(e) => handleDrop(e, status as StatusOption)}
                 >
-                  <div className="font-bold text-secondary mb-3 capitalize">{status}</div>
+                  <div className="font-bold text-secondary mb-3 capitalize flex items-center gap-2">
+                    {status}
+                    <span className="text-xs bg-[#60B5B5]/20 px-2 py-1 rounded-full">
+                      {getProjetosPorStatus(status).length}
+                    </span>
+                  </div>
                   
                   {loading ? (
                     <div className="space-y-4">
@@ -261,7 +350,7 @@ export default function Projetos() {
                     </div>
                   ) : getProjetosPorStatus(status).length === 0 ? (
                     <div className="text-secondary/60 italic text-sm min-h-[100px] flex items-center justify-center border border-dashed border-[#60B5B5]/20 rounded-lg">
-                      Arraste projetos para aqui
+                      Arraste células para aqui
                     </div>
                   ) : (
                     <div className="flex flex-col gap-3">
@@ -271,7 +360,7 @@ export default function Projetos() {
                           draggable
                           onDragStart={() => handleDragStart(projeto.id)}
                         >
-                          <ProjetoCard
+                          <EnhancedProjetoCard
                             projeto={projeto}
                             onVerDetalhes={handleVerDetalhes}
                             onRemoveProjeto={handleRemoveProjeto}
@@ -289,7 +378,6 @@ export default function Projetos() {
             </div>
           )}
           
-          {/* Linha do tempo */}
           {modoVisao === "Linha do tempo" && (
             <div className="mt-1 pb-6 fade-in">
               {loading ? (
@@ -303,14 +391,13 @@ export default function Projetos() {
                 </div>
               ) : (
                 <ProjetoTimeline 
-                  projetos={projetos}
+                  projetos={getFilteredProjetos()}
                   onVerDetalhes={handleVerDetalhes}
                 />
               )}
             </div>
           )}
           
-          {/* Galeria - Agora usando o componente real */}
           {modoVisao === "Galeria" && (
             <div className="mt-1 pb-6 fade-in">
               {loading ? (
@@ -321,7 +408,7 @@ export default function Projetos() {
                 </div>
               ) : (
                 <ProjetoGaleria 
-                  projetos={projetos}
+                  projetos={getFilteredProjetos()}
                   onVerDetalhes={handleVerDetalhes}
                   onToggleFavorite={handleToggleFavorite}
                 />
@@ -334,13 +421,18 @@ export default function Projetos() {
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.1 }}
-          className="text-secondary text-center text-xs sm:text-sm italic mt-8 sm:mt-12 select-none"
+          className="text-center mt-8 sm:mt-12 select-none"
         >
-          "O CÓRTEX não exibe projetos. Ele manifesta células vivas que evoluem com você."
+          <div className="text-sm text-[#993887]/80 font-medium mb-2 flex items-center justify-center gap-2">
+            <Sparkles className="w-4 h-4" />
+            CÓRTEX • Inteligência Conectada
+          </div>
+          <div className="text-xs text-secondary/60 italic">
+            "Células vivas que evoluem, pensam e se conectam • Potencializadas pela Athena"
+          </div>
         </motion.div>
       </div>
       
-      {/* Drawer lateral de detalhes */}
       <DrawerDetalheProjeto
         projeto={projetoSelecionado}
         open={detalheAberto}
@@ -348,54 +440,12 @@ export default function Projetos() {
         onProjectUpdated={carregarProjetos}
       />
       
-      {/* Botão flutuante "Falar com a Athena" */}
       <FloatingAthenaButton 
         onClick={() => setAbrirAthena(true)} 
         onAthenaAction={handleAthenaAction}
       />
       
-      {/* Chat lateral da Athena (mock visual) */}
-      {abrirAthena && (
-        <div className="fixed bottom-20 sm:bottom-24 right-4 sm:right-8 w-full max-w-[280px] sm:max-w-xs rounded-2xl glass-morphism p-3 sm:p-4 shadow-xl border-[#993887] z-50 animate-fade-in">
-          <div className="flex justify-between items-center mb-2">
-            <div className="flex items-center gap-2">
-              <span className="bg-[#993887] text-[#E6E6F0] px-2 sm:px-3 py-1 rounded-full font-bold text-sm">Athena</span>
-              <span className="text-xs text-secondary/80">IA Contextual</span>
-            </div>
-            <Button size="icon" variant="ghost" onClick={() => setAbrirAthena(false)}>x</Button>
-          </div>
-          <div className="text-primary mb-2">Como posso ajudar nos seus projetos?</div>
-          <div className="flex gap-2">
-            <input
-              type="text"
-              className="flex-1 px-3 py-2 rounded-lg bg-[#191933]/70 border border-[#993887]/40 text-foreground focus:outline-none focus:border-primary text-sm"
-              placeholder="Pergunte algo para Athena..."
-            />
-            <Button 
-              size="icon" 
-              variant="ghost"
-              className="border-[#993887]/40"
-              onClick={() => {
-                navigate('/athena');
-                setAbrirAthena(false);
-              }}
-            >
-              <Bot className="w-4 h-4 text-[#993887]" />
-            </Button>
-          </div>
-          <div className="mt-3 space-y-1">
-            <div className="text-xs text-primary/70 hover:text-primary cursor-pointer" onClick={() => navigate('/athena')}>
-              » Como posso organizar meu projeto?
-            </div>
-            <div className="text-xs text-primary/70 hover:text-primary cursor-pointer" onClick={() => navigate('/athena')}>
-              » Sugira etapas para a célula
-            </div>
-            <div className="text-xs text-primary/70 hover:text-primary cursor-pointer" onClick={() => navigate('/athena')}>
-              » Ajude-me a planejar um cronograma
-            </div>
-          </div>
-        </div>
-      )}
+      <EnhancedNovaCelulaModal open={modalAberto} onOpenChange={setModalAberto} />
     </div>
   );
 }
