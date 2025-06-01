@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { EnhancedFiltroProjetos } from "@/components/Projetos/EnhancedFiltroProjetos";
@@ -66,7 +65,6 @@ export default function Projetos() {
     }
   }, [allProjetos]);
 
-  // Enhanced filtering with AI insights
   const getFilteredProjetos = () => {
     let filtered = [...projetos];
     

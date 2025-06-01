@@ -1,62 +1,124 @@
 
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogClose } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Bot, Calendar, PlusCircle, X, Sparkles } from "lucide-react";
 import React, { useState } from "react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { useProjetos } from "@/hooks/useProjetos";
-import { toast } from "@/hooks/use-toast";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { 
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import { 
+import { Calendar, Plus, X, Sparkles, Bot } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { toast } from "@/hooks/use-toast";
+import { useProjetos } from "@/hooks/useProjetos";
+import { AthenaProjectCreator } from "./AthenaProjectCreator";
+import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
-import { Calendar as CalendarComponent } from "@/components/ui/calendar";
-import { cn } from "@/lib/utils";
-import { AthenaProjectCreator } from "./AthenaProjectCreator";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
-type Props = {
+interface EnhancedNovaCelulaModalProps {
   open: boolean;
-  onOpenChange: (o: boolean) => void;
-};
+  onOpenChange: (open: boolean) => void;
+}
 
-export function EnhancedNovaCelulaModal({ open, onOpenChange }: Props) {
-  const { criarProjeto } = useProjetos();
-
+export function EnhancedNovaCelulaModal({ open, onOpenChange }: EnhancedNovaCelulaModalProps) {
   const [nome, setNome] = useState("");
   const [descricao, setDescricao] = useState("");
   const [categoria, setCategoria] = useState("");
-  const [etapas, setEtapas] = useState<string[]>([""]); 
   const [prazo, setPrazo] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-  const [tagInput, setTagInput] = useState("");
   const [tags, setTags] = useState<string[]>([]);
-  const [date, setDate] = useState<Date | undefined>(undefined);
-  const [priority, setPriority] = useState<string>("");
+  const [novaTag, setNovaTag] = useState("");
+  const [etapas, setEtapas] = useState<{ texto: string; feita: boolean }[]>([]);
+  const [novaEtapa, setNovaEtapa] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [showAthena, setShowAthena] = useState(false);
+
+  const { criarProjeto } = useProjetos();
+
+  const categorias = [
+    "Educação",
+    "Trabalho", 
+    "Pessoal",
+    "Saúde",
+    "Tecnologia",
+    "Criativo",
+    "Financeiro",
+    "Relacionamentos"
+  ];
 
   const resetForm = () => {
     setNome("");
     setDescricao("");
     setCategoria("");
-    setEtapas([""]);
     setPrazo("");
     setTags([]);
-    setTagInput("");
-    setDate(undefined);
-    setPriority("");
+    setNovaTag("");
+    setEtapas([]);
+    setNovaEtapa("");
+    setShowAthena(false);
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!nome.trim()) {
+      toast({
+        title: "Nome obrigatório",
+        description: "Por favor, insira um nome para a célula",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setLoading(true);
+    
+    try {
+      await criarProjeto(
+        nome,
+        descricao,
+        categoria || null,
+        "ativo",
+        prazo || null,
+        etapas,
+        tags
+      );
+      
+      resetForm();
+      onOpenChange(false);
+    } catch (error) {
+      toast({
+        title: "Erro ao criar célula",
+        description: "Não foi possível criar a célula. Tente novamente.",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const adicionarTag = () => {
+    if (novaTag.trim() && !tags.includes(novaTag.trim())) {
+      setTags([...tags, novaTag.trim()]);
+      setNovaTag("");
+    }
+  };
+
+  const removerTag = (tagRemover: string) => {
+    setTags(tags.filter(tag => tag !== tagRemover));
+  };
+
+  const adicionarEtapa = () => {
+    if (novaEtapa.trim()) {
+      setEtapas([...etapas, { texto: novaEtapa.trim(), feita: false }]);
+      setNovaEtapa("");
+    }
+  };
+
+  const removerEtapa = (index: number) => {
+    setEtapas(etapas.filter((_, i) => i !== index));
   };
 
   const handleAthenaProjectSuggestion = (suggestion: {
@@ -68,311 +130,222 @@ export function EnhancedNovaCelulaModal({ open, onOpenChange }: Props) {
   }) => {
     setNome(suggestion.nome);
     setDescricao(suggestion.descricao);
-    setCategoria(suggestion.categoria || "");
+    if (suggestion.categoria) setCategoria(suggestion.categoria);
     setTags(suggestion.tags);
-    setEtapas(suggestion.etapas.map(e => e.texto));
-  };
-
-  const handleAddEtapa = () => {
-    setEtapas([...etapas, ""]);
-  };
-
-  const handleEtapaChange = (index: number, value: string) => {
-    const novasEtapas = [...etapas];
-    novasEtapas[index] = value;
-    setEtapas(novasEtapas);
-  };
-
-  const handleRemoveEtapa = (index: number) => {
-    if (etapas.length <= 1) return;
-    const novasEtapas = etapas.filter((_, i) => i !== index);
-    setEtapas(novasEtapas);
-  };
-
-  const handleAddTag = () => {
-    if (!tagInput.trim()) return;
-    if (tags.includes(tagInput.trim())) {
-      toast({
-        title: "Tag já existe",
-        description: "Esta tag já foi adicionada ao projeto",
-      });
-      return;
-    }
-    setTags([...tags, tagInput.trim()]);
-    setTagInput("");
-  };
-
-  const handleRemoveTag = (tag: string) => {
-    setTags(tags.filter(t => t !== tag));
-  };
-
-  const handleDateSelect = (selectedDate: Date | undefined) => {
-    setDate(selectedDate);
-    if (selectedDate) {
-      setPrazo(format(selectedDate, 'yyyy-MM-dd'));
-    } else {
-      setPrazo('');
-    }
-  };
-
-  const handleSubmit = async () => {
-    if (!nome.trim()) {
-      toast({
-        title: "Nome obrigatório",
-        description: "Por favor, insira um nome para o projeto",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    try {
-      setIsLoading(true);
-      
-      const etapasFiltradas = etapas
-        .filter(e => e.trim() !== "")
-        .map(texto => ({ texto, feita: false }));
-
-      const resultado = await criarProjeto(
-        nome,
-        descricao,
-        categoria || null,
-        "ativo",
-        prazo || null,
-        etapasFiltradas,
-        tags
-      );
-
-      if (resultado) {
-        toast({
-          title: "Célula criada com sucesso",
-          description: "Sua nova célula de conhecimento foi manifestada no CÓRTEX",
-        });
-        resetForm();
-        onOpenChange(false);
-      }
-    } catch (error) {
-      console.error("Erro ao criar projeto:", error);
-    } finally {
-      setIsLoading(false);
-    }
+    setEtapas(suggestion.etapas);
+    setShowAthena(false);
   };
 
   return (
-    <Dialog open={open} onOpenChange={(newOpen) => {
-      if (!newOpen) resetForm();
-      onOpenChange(newOpen);
-    }}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl bg-background border border-[#60B5B5]/60 neon-anim">
-        <DialogHeader className="mb-4">
-          <DialogTitle className="flex items-center gap-2 text-xl text-primary drop-shadow">
-            <Bot className="text-primary w-6 h-6" /> 
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-[#141429] border-[#191933]">
+        <DialogHeader>
+          <DialogTitle className="text-xl font-bold bg-gradient-to-r from-[#993887] to-[#60B5B5] bg-clip-text text-transparent">
             Nova Célula de Conhecimento
           </DialogTitle>
-          <DialogDescription className="text-secondary text-sm">
-            Manifeste uma nova célula viva que evolui com você no CÓRTEX
-          </DialogDescription>
         </DialogHeader>
-        
-        <Tabs defaultValue="manual" className="w-full">
-          <TabsList className="grid w-full grid-cols-2 bg-[#191933]">
-            <TabsTrigger value="manual">Criação Manual</TabsTrigger>
-            <TabsTrigger value="athena" className="text-[#993887]">
-              <Sparkles className="w-4 h-4 mr-2" />
-              Com Athena
-            </TabsTrigger>
-          </TabsList>
-          
-          <TabsContent value="athena" className="space-y-4">
-            <AthenaProjectCreator onProjectSuggestion={handleAthenaProjectSuggestion} />
-          </TabsContent>
-          
-          <TabsContent value="manual" className="space-y-4">
+
+        <div className="space-y-6">
+          {/* Athena Project Creator */}
+          <AthenaProjectCreator onProjectSuggestion={handleAthenaProjectSuggestion} />
+
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {/* Nome */}
+            <div className="space-y-2">
+              <Label htmlFor="nome">Nome da Célula *</Label>
+              <Input
+                id="nome"
+                value={nome}
+                onChange={(e) => setNome(e.target.value)}
+                placeholder="Ex: Aprender React com TypeScript"
+                className="bg-[#191933]/70 border-[#60B5B5]/40"
+                required
+              />
+            </div>
+
+            {/* Descrição */}
+            <div className="space-y-2">
+              <Label htmlFor="descricao">Descrição</Label>
+              <Textarea
+                id="descricao"
+                value={descricao}
+                onChange={(e) => setDescricao(e.target.value)}
+                placeholder="Descreva os objetivos e contexto desta célula..."
+                rows={3}
+                className="bg-[#191933]/70 border-[#60B5B5]/40 resize-none"
+              />
+            </div>
+
+            {/* Categoria e Prazo */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-4">
-                <div>
-                  <Label htmlFor="nome" className="text-sm mb-1">Nome da Célula</Label>
-                  <Input 
-                    id="nome" 
-                    placeholder="Nome da sua célula de conhecimento" 
-                    value={nome} 
-                    onChange={e => setNome(e.target.value)} 
+              <div className="space-y-2">
+                <Label htmlFor="categoria">Categoria</Label>
+                <Select value={categoria} onValueChange={setCategoria}>
+                  <SelectTrigger className="bg-[#191933]/70 border-[#60B5B5]/40">
+                    <SelectValue placeholder="Selecione uma categoria" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {categorias.map((cat) => (
+                      <SelectItem key={cat} value={cat.toLowerCase()}>
+                        {cat}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="prazo">Prazo Final</Label>
+                <div className="relative">
+                  <Calendar className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                  <Input
+                    id="prazo"
+                    type="date"
+                    value={prazo}
+                    onChange={(e) => setPrazo(e.target.value)}
+                    className="pl-10 bg-[#191933]/70 border-[#60B5B5]/40"
                   />
                 </div>
-                
-                <div>
-                  <Label htmlFor="categoria" className="text-sm mb-1">Categoria</Label>
-                  <Select value={categoria} onValueChange={setCategoria}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione uma categoria" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="pessoal">Pessoal</SelectItem>
-                      <SelectItem value="trabalho">Trabalho</SelectItem>
-                      <SelectItem value="estudo">Estudo</SelectItem>
-                      <SelectItem value="saude">Saúde</SelectItem>
-                      <SelectItem value="criativo">Criativo</SelectItem>
-                      <SelectItem value="financeiro">Financeiro</SelectItem>
-                      <SelectItem value="casa">Casa</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                <div>
-                  <Label htmlFor="priority" className="text-sm mb-1">Prioridade</Label>
-                  <Select value={priority} onValueChange={setPriority}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Definir prioridade" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="baixa">Baixa</SelectItem>
-                      <SelectItem value="media">Média</SelectItem>
-                      <SelectItem value="alta">Alta</SelectItem>
-                      <SelectItem value="critica">Crítica</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                <div>
-                  <Label htmlFor="prazo" className="text-sm mb-1">Prazo</Label>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        className={cn(
-                          "w-full justify-start text-left font-normal",
-                          !date && "text-muted-foreground"
-                        )}
-                      >
-                        <Calendar className="mr-2 h-4 w-4" />
-                        {date ? format(date, "dd/MM/yyyy", { locale: ptBR }) : <span>Selecione uma data</span>}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0 bg-card" align="start">
-                      <CalendarComponent
-                        mode="single"
-                        selected={date}
-                        onSelect={handleDateSelect}
-                        initialFocus
-                        className="p-3 pointer-events-auto"
-                      />
-                    </PopoverContent>
-                  </Popover>
-                </div>
+              </div>
+            </div>
+
+            {/* Tags */}
+            <div className="space-y-2">
+              <Label>Tags</Label>
+              <div className="flex gap-2">
+                <Input
+                  value={novaTag}
+                  onChange={(e) => setNovaTag(e.target.value)}
+                  placeholder="Adicionar tag..."
+                  className="bg-[#191933]/70 border-[#60B5B5]/40"
+                  onKeyPress={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      adicionarTag();
+                    }
+                  }}
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={adicionarTag}
+                  className="border-[#60B5B5]/40"
+                >
+                  <Plus className="w-4 h-4" />
+                </Button>
               </div>
               
-              <div className="space-y-4">
-                <div>
-                  <Label htmlFor="descricao" className="text-sm mb-1">Descrição</Label>
-                  <Textarea 
-                    id="descricao" 
-                    placeholder="Descreva o propósito e objetivos desta célula..." 
-                    value={descricao} 
-                    onChange={e => setDescricao(e.target.value)} 
-                    rows={3}
-                    className="resize-none"
-                  />
-                </div>
-                
-                <div>
-                  <Label className="text-sm mb-1">Tags de Conhecimento</Label>
-                  <div className="flex gap-2 mb-2">
-                    <Input
-                      placeholder="Adicionar tag..."
-                      value={tagInput}
-                      onChange={(e) => setTagInput(e.target.value)}
-                      onKeyDown={(e) => e.key === 'Enter' && handleAddTag()}
-                      className="flex-1"
-                    />
-                    <Button 
-                      onClick={handleAddTag}
-                      disabled={!tagInput.trim()}
-                      variant="outline"
-                      className="border-[#993887]/40 text-secondary whitespace-nowrap"
-                      size="sm"
-                    >
-                      Adicionar
-                    </Button>
-                  </div>
-                  {tags.length > 0 && (
-                    <div className="flex flex-wrap gap-1 mt-1">
-                      {tags.map(tag => (
-                        <Badge 
-                          key={tag}
-                          className="flex items-center gap-1 bg-[#993887]/30 text-[#E6E6F0] px-2 py-1"
+              {tags.length > 0 && (
+                <div className="flex flex-wrap gap-2 mt-2">
+                  <AnimatePresence>
+                    {tags.map((tag) => (
+                      <motion.div
+                        key={tag}
+                        initial={{ opacity: 0, scale: 0.8 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.8 }}
+                      >
+                        <Badge
+                          variant="outline"
+                          className="border-[#60B5B5]/40 text-[#60B5B5] cursor-pointer hover:bg-[#60B5B5]/10"
+                          onClick={() => removerTag(tag)}
                         >
                           {tag}
-                          <button 
-                            className="ml-1 text-[#E6E6F0]/70 hover:text-[#E6E6F0]"
-                            onClick={() => handleRemoveTag(tag)}
-                            type="button"
-                          >
-                            <X className="h-3 w-3" />
-                          </button>
+                          <X className="w-3 h-3 ml-1" />
                         </Badge>
-                      ))}
-                    </div>
-                  )}
+                      </motion.div>
+                    ))}
+                  </AnimatePresence>
                 </div>
-              </div>
+              )}
             </div>
-            
+
+            {/* Etapas */}
             <div className="space-y-2">
-              <Label className="text-sm mb-1">Etapas Iniciais</Label>
-              {etapas.map((etapa, index) => (
-                <div key={index} className="flex gap-2 items-center">
-                  <Input 
-                    placeholder={`Etapa ${index + 1}`} 
-                    value={etapa} 
-                    onChange={e => handleEtapaChange(index, e.target.value)} 
-                  />
-                  <Button 
-                    type="button" 
-                    variant="outline" 
-                    size="icon" 
-                    onClick={() => handleRemoveEtapa(index)}
-                    disabled={etapas.length <= 1}
-                    className="shrink-0"
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
+              <Label>Etapas Iniciais</Label>
+              <div className="flex gap-2">
+                <Input
+                  value={novaEtapa}
+                  onChange={(e) => setNovaEtapa(e.target.value)}
+                  placeholder="Adicionar etapa..."
+                  className="bg-[#191933]/70 border-[#60B5B5]/40"
+                  onKeyPress={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      adicionarEtapa();
+                    }
+                  }}
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={adicionarEtapa}
+                  className="border-[#60B5B5]/40"
+                >
+                  <Plus className="w-4 h-4" />
+                </Button>
+              </div>
+
+              {etapas.length > 0 && (
+                <div className="space-y-2 mt-3">
+                  <AnimatePresence>
+                    {etapas.map((etapa, index) => (
+                      <motion.div
+                        key={index}
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: -20 }}
+                        className="flex items-center gap-2 p-2 bg-[#191933]/50 rounded border border-[#60B5B5]/20"
+                      >
+                        <span className="text-sm text-gray-300 flex-1">{etapa.texto}</span>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => removerEtapa(index)}
+                          className="h-6 w-6 p-0 text-gray-400 hover:text-red-400"
+                        >
+                          <X className="w-3 h-3" />
+                        </Button>
+                      </motion.div>
+                    ))}
+                  </AnimatePresence>
                 </div>
-              ))}
-              <Button 
-                type="button" 
-                variant="outline" 
-                className="w-full mt-2 text-primary border-[#60B5B5]/40" 
-                onClick={handleAddEtapa}
-                size="sm"
+              )}
+            </div>
+
+            {/* Botões de ação */}
+            <div className="flex justify-end gap-3 pt-4">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => onOpenChange(false)}
+                disabled={loading}
+                className="border-[#60B5B5]/40"
               >
-                <PlusCircle className="h-4 w-4 mr-2" /> Adicionar etapa
+                Cancelar
+              </Button>
+              <Button
+                type="submit"
+                disabled={loading || !nome.trim()}
+                className="bg-gradient-to-r from-[#993887] to-[#60B5B5] hover:from-[#993887]/80 hover:to-[#60B5B5]/80"
+              >
+                {loading ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin mr-2" />
+                    Criando...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="w-4 h-4 mr-2" />
+                    Manifestar Célula
+                  </>
+                )}
               </Button>
             </div>
-          </TabsContent>
-        </Tabs>
-        
-        <div className="flex justify-end gap-3 mt-6 pt-4 border-t border-[#60B5B5]/20">
-          <DialogClose asChild>
-            <Button variant="secondary" size="sm">Cancelar</Button>
-          </DialogClose>
-          <Button 
-            onClick={handleSubmit} 
-            disabled={isLoading} 
-            variant="default"
-            className="bg-gradient-to-r from-[#993887] to-[#60B5B5] hover:from-[#993887]/80 hover:to-[#60B5B5]/80 text-white font-bold shadow-lg"
-            size="sm"
-          >
-            {isLoading ? (
-              <>
-                <Bot className="w-4 h-4 mr-2 animate-spin" />
-                Manifestando...
-              </>
-            ) : (
-              <>
-                <Sparkles className="w-4 h-4 mr-2" />
-                Manifestar Célula
-              </>
-            )}
-          </Button>
+          </form>
         </div>
       </DialogContent>
     </Dialog>
