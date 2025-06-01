@@ -90,7 +90,6 @@ export function AthenaProjectInsights({ projeto }: AthenaProjectInsightsProps) {
   });
 
   const handleAction = (payload: any, actionType: string) => {
-    // Implementar ações baseadas no payload
     switch (actionType) {
       case 'view_diary':
         window.open('/diario', '_blank');
@@ -142,7 +141,7 @@ export function AthenaProjectInsights({ projeto }: AthenaProjectInsightsProps) {
 
   if (isLoading) {
     return (
-      <div className="space-y-4">
+      <div className="p-6 space-y-4">
         <div className="flex items-center gap-2 mb-4">
           <Brain className="w-5 h-5 text-[#993887]" />
           <span className="font-semibold text-[#993887]">Insights da Athena</span>
@@ -160,7 +159,7 @@ export function AthenaProjectInsights({ projeto }: AthenaProjectInsightsProps) {
 
   if (error) {
     return (
-      <div className="space-y-4">
+      <div className="p-6 space-y-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Brain className="w-5 h-5 text-[#993887]" />
@@ -188,7 +187,7 @@ export function AthenaProjectInsights({ projeto }: AthenaProjectInsightsProps) {
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="space-y-4"
+      className="p-6 space-y-4"
     >
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
