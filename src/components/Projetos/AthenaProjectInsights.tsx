@@ -86,7 +86,7 @@ export function AthenaProjectInsights({ projeto }: AthenaProjectInsightsProps) {
       return data;
     },
     staleTime: 5 * 60 * 1000, // 5 minutos
-    cacheTime: 30 * 60 * 1000 // 30 minutos
+    gcTime: 30 * 60 * 1000 // 30 minutos - fixed from cacheTime to gcTime
   });
 
   const handleAction = (payload: any, actionType: string) => {
